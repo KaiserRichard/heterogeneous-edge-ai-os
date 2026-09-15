@@ -1,0 +1,12 @@
+[submodule "third_party/stm32-machine-io-node"]
+	path = third_party/stm32-machine-io-node
+	url = https://github.com/anasmansouri/stm32-machine-io-node.git
+[submodule "third_party/machine-monitoring-edge-gateway"]
+	path = third_party/machine-monitoring-edge-gateway
+	url = https://github.com/anasmansouri/machine-monitoring-edge-gateway.git
+[submodule "third_party/nucleo-f446re-freertos"]
+	path = third_party/nucleo-f446re-freertos
+	url = https://github.com/maherme/nucleo-f446re-freertos.git
+[submodule "third_party/heterogeneous-multicore"]
+	path = third_party/heterogeneous-multicore
+	url = https://github.com/nxp-real-time-edge-sw/heterogeneous-multicore.git

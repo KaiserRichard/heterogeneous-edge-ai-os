@@ -1,0 +1,53 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Editors and IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# C / C++ / Embedded Build Artifacts
+*.o
+*.obj
+*.d
+*.su
+*.map
+*.elf
+*.bin
+*.hex
+*.axf
+*.lst
+build/
+Debug/
+Release/
+cmake-build-*/
+
+# Logs and Temporary Files
+*.log
+*.tmp
+*.temp
+tmp/
+scratch/
