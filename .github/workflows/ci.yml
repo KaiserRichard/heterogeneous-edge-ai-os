@@ -1,0 +1,24 @@
+name: ci
+on:
+  push:
+  pull_request:
+jobs:
+  host-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Protocol unit tests (gcc, ASan/UBSan)
+        run: make -C protocol test
+      - name: Shell script syntax
+        run: for f in scripts/pi/*.sh; do bash -n "$f"; done
+  cortex-m4-build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi
+      - name: Compile protocol for STM32F446RE (Cortex-M4F)
+        run: |
+          arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 \
+            -std=c99 -Os -Wall -Wextra -Wconversion -Werror \
+            -Iprotocol/include -c protocol/src/hea_proto.c -o hea_proto.o
+          arm-none-eabi-size hea_proto.o
