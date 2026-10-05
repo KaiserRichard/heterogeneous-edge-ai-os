@@ -87,7 +87,9 @@ Every measurement goes through `scripts/pi/run_experiment.sh <name> -- <command>
 - Captures metadata before and after: git commit, kernel, CPU governor and frequencies, temperature, `get_throttled`, load average, UART config.
 - Writes everything to `experiments/runs/<UTC timestamp>_<name>/`.
 - Marks the run INVALID if throttling or under-voltage was observed.
-- Commits and pushes the run directory when it finishes (if the network is up).
+- Writes `DONE` into the run directory when it finishes. The Mac pulls results with
+  `rsync -a osedge:heterogeneous-edge-ai-os/experiments/runs/ experiments/runs/`
+  and commits them there, so the Pi needs no GitHub credentials (`HEA_PUSH=1` pushes from the Pi instead).
 
 Measurement hygiene: `performance` CPU governor during runs, SSH session idle
 (no `htop` running), Wi-Fi traffic minimal during runs.
@@ -102,3 +104,38 @@ Proposed alignment: the Pi toggles the sync GPIO and records its
 `CLOCK_MONOTONIC` time; the STM32 timestamps the edge with timer input
 capture. Pairs of (Linux time, STM32 time) give offset and drift. Round-trip
 echo over UART is the fallback (half-RTT bound, no extra wire).
+
+## 7. Agent workflow (Claude conductor + Codex workers)
+
+Roles:
+- **Claude (conductor)** runs as a Remote Control session on the Mac, in the local clone
+  of this repo. It splits work into bounded tickets, runs Codex on them, reviews diffs,
+  runs tests, and is the only agent that talks to the Pi (over SSH) and to hardware.
+- **Codex (workers)** run with `codex exec` on code-only tickets, each in its own git
+  worktree and branch so parallel workers never touch the same checkout. Workers do
+  not SSH to the Pi; the conductor deploys and runs experiments.
+
+### Mac prerequisites (one time, no hardware)
+1. Clone the repo to `~/Desktop/OS/OS-project/heterogeneous-edge-ai-os` (the path `AGENTS.md` names)
+   and check out `claude/project-thread-eq9yql`.
+2. Install the Codex CLI (`npm install -g @openai/codex`). Log in each account into its own
+   home so they never overwrite each other:
+   `CODEX_HOME=~/.codex-a codex login`, `CODEX_HOME=~/.codex-b codex login`, ...
+3. STM32 toolchain: `brew install --cask gcc-arm-embedded` and `brew install open-ocd stlink`.
+4. SSH key for the Pi: `ssh-keygen -t ed25519` if `~/.ssh/id_ed25519.pub` does not exist yet.
+5. Start Remote Control from that folder (`claude remote-control`) so the conductor can work there.
+
+### Pi headless setup (session P0). Bring: Pi 5, 27 W PSU, active cooler, microSD, microSD reader for the Mac.
+1. Raspberry Pi Imager on the Mac: Ubuntu Server 24.04 LTS 64-bit. Settings: hostname `osedge`,
+   user `os`, SSH with public-key only (paste `~/.ssh/id_ed25519.pub`), Wi-Fi of the place the Pi will live.
+2. Boot the Pi. From the Mac: `ssh os@osedge.local` (or the IP from the router).
+3. Add to the Mac's `~/.ssh/config`:
+   ```
+   Host osedge
+     HostName osedge.local
+     User os
+   ```
+   After that, `ssh osedge true` must succeed with no password. This is the check the conductor needs.
+4. On the Pi: clone the repo, `sudo ./scripts/pi/bootstrap.sh`, reboot.
+5. If the Mac and the Pi will not be on the same network, install Tailscale on both and use the
+   Tailscale name as `HostName`.

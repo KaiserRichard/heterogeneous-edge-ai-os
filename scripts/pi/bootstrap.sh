@@ -9,7 +9,7 @@ if [[ $EUID -ne 0 ]]; then echo "run with sudo" >&2; exit 1; fi
 apt-get update
 apt-get install -y --no-install-recommends \
   build-essential cmake git python3 python3-venv python3-pip \
-  stress-ng rt-tests htop tmux picocom socat jq \
+  stress-ng rt-tests htop tmux picocom socat jq rsync avahi-daemon \
   openocd stlink-tools gcc-arm-none-eabi \
   linux-tools-common linux-tools-raspi cpufrequtils
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run one measurement detached from SSH, with before/after metadata, then push results.
+# Run one measurement detached from SSH, with before/after metadata. Writes DONE when finished.
 # Usage: run_experiment.sh <name> -- <command...>
 #   The command runs with cwd = the run directory, so relative output files land there.
 # Status: UNVERIFIED on hardware.
@@ -27,7 +27,12 @@ if [[ "\$t" == "unavailable" ]]; then echo UNKNOWN > validity
 elif [[ "\$t" != "0x0" ]]; then echo "INVALID throttled=\$t" > validity
 else echo OK > validity; fi
 cd "$repo"
-git add -f "$run" && git commit -qm "run: $(basename "$run")" && git push -q || echo "push failed; results kept locally" >> "$run/validity"
+# Default: results stay on the Pi and the Mac pulls them with rsync.
+# Set HEA_PUSH=1 only if the Pi has its own GitHub credentials.
+if [[ "\${HEA_PUSH:-0}" == 1 ]]; then
+  git add -f "$run" && git commit -qm "run: $(basename "$run")" && git push -q || echo "push failed; results kept locally" >> "$run/validity"
+fi
+touch "$run/DONE"
 INNER
 )
 
