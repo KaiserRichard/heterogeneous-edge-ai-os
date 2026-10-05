@@ -162,3 +162,18 @@ Self-recovery so nobody has to walk over and power-cycle:
 
 NVMe boot on Pi 5 needs an M.2 HAT and a recent bootloader EEPROM. If NVMe boot is not
 working within an hour, use a microSD; the project does not depend on disk speed.
+
+## 9. Agent host on the Pi (decided 2026-10-05)
+
+Claude Code (conductor) and the Codex workers run on the Pi, so the Mac can sleep.
+Run after `bootstrap.sh`, as user `os`:
+
+1. Claude Code: `curl -fsSL https://claude.ai/install.sh | bash`, then `claude` once to log in.
+2. Codex: `sudo apt-get install -y nodejs npm && sudo npm install -g @openai/codex`.
+   Copy the logins from the Mac: `scp -r ~/.codex-* osedge:` (each folder keeps one account).
+3. GitHub push from the Pi: `ssh-keygen -t ed25519 -f ~/.ssh/os_deploy`, add the `.pub` as a
+   deploy key with write access on this repository only, and point the remote at it.
+4. Start the conductor so it survives SSH logout:
+   `tmux new -s conductor 'cd ~/heterogeneous-edge-ai-os && claude remote-control'`.
+
+The conductor pauses all agents before a measurement run starts and resumes them after.
