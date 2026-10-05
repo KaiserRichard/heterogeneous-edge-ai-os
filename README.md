@@ -4,6 +4,8 @@ Operating Systems course project exploring a heterogeneous Embedded Linux-FreeRT
 
 ## Documentation
 - [`PROJECT.md`](file:///Users/quockaiser/Desktop/OS/OS-project/heterogeneous-edge-ai-os/PROJECT.md): Detailed technical specification, architecture, experiment directions, and non-goals.
+- [`docs/ENVIRONMENT_AND_HARDWARE.md`](docs/ENVIRONMENT_AND_HARDWARE.md): Which hardware each work session needs, Pi provisioning, unattended experiment runs.
+- [`protocol/PROTOCOL.md`](protocol/PROTOCOL.md): Proposed UART frame format and messages.
 - [`AGENTS.md`](file:///Users/quockaiser/Desktop/OS/OS-project/heterogeneous-edge-ai-os/AGENTS.md): Operational boundaries and developer guidelines for AI coding agents.
 
 ## Repository Layout
