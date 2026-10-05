@@ -1,0 +1,21 @@
+# systemd user unit: start the Claude remote-control conductor in tmux at boot.
+# Install (as user os):
+#   mkdir -p ~/.config/systemd/user && cp scripts/pi/conductor.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now conductor
+#   sudo loginctl enable-linger os     # start at boot without anyone logging in
+# Attach with: tmux attach -t conductor     Status: UNVERIFIED on hardware.
+[Unit]
+Description=Claude remote-control conductor (tmux)
+After=network-online.target
+
+[Service]
+Type=forking
+WorkingDirectory=%h/heterogeneous-edge-ai-os
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/tmux new-session -d -s conductor 'claude remote-control'
+ExecStop=/usr/bin/tmux kill-session -t conductor
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=default.target

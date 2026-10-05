@@ -173,7 +173,12 @@ Run after `bootstrap.sh`, as user `os`:
    Copy the logins from the Mac: `scp -r ~/.codex-* osedge:` (each folder keeps one account).
 3. GitHub push from the Pi: `ssh-keygen -t ed25519 -f ~/.ssh/os_deploy`, add the `.pub` as a
    deploy key with write access on this repository only, and point the remote at it.
-4. Start the conductor so it survives SSH logout:
-   `tmux new -s conductor 'cd ~/heterogeneous-edge-ai-os && claude remote-control'`.
+4. Start the conductor at boot, inside tmux, with the user unit `scripts/pi/conductor.service`
+   (install steps are in the file's header; `loginctl enable-linger os` makes it start with no login).
+5. Tailscale for remote SSH from anywhere: `curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`,
+   same account on the Mac, then `ssh os@osedge` works from any network.
+
+After a power cut the Pi boots by itself when power returns, and SSH, Tailscale and the
+conductor all start without anyone logging in.
 
 The conductor pauses all agents before a measurement run starts and resumes them after.
