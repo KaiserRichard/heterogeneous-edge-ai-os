@@ -139,3 +139,26 @@ Roles:
 4. On the Pi: clone the repo, `sudo ./scripts/pi/bootstrap.sh`, reboot.
 5. If the Mac and the Pi will not be on the same network, install Tailscale on both and use the
    Tailscale name as `HostName`.
+
+## 8. Parked-rig wiring and self-recovery (setup day, 2026-10-06)
+
+Wiring (both sides 3.3 V, no level shifter; Nucleo powered and flashed from a Pi USB port):
+
+| Pi 5 header | Signal | Nucleo-F446RE |
+|---|---|---|
+| pin 8, GPIO14 (UART0 TX) | Pi to STM32 | PA10 = USART1 RX (Arduino D2) |
+| pin 10, GPIO15 (UART0 RX) | STM32 to Pi | PA9 = USART1 TX (Arduino D8) |
+| pin 6, GND | ground | GND |
+| pin 11, GPIO17 | clock-sync edge | PA0 = TIM2_CH1 input capture (Arduino A0) |
+
+Self-recovery so nobody has to walk over and power-cycle:
+- Pi hardware watchdog via systemd (`RuntimeWatchdogSec=15s` in `/etc/systemd/system.conf`):
+  a hung kernel reboots by itself.
+- STM32 reset and reflash from the Pi through the ST-LINK (`openocd ... -c "reset run"`).
+- Fault injection stays at process level (kill, SIGSTOP, FIFO CPU hog). No deliberate kernel
+  freezes on the parked rig.
+- Agents (Claude/Codex) are paused while a measurement runs, so they do not add load to the
+  system under test.
+
+NVMe boot on Pi 5 needs an M.2 HAT and a recent bootloader EEPROM. If NVMe boot is not
+working within an hour, use a microSD; the project does not depend on disk speed.
