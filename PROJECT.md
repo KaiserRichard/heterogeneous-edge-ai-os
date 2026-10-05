@@ -133,3 +133,13 @@ To keep the project grounded, robust, and aligned with course goals, the followi
 - **Real-Time Platform (STM32F446RE)**:
   - C99/C11 firmware with CMSIS and FreeRTOS.
   - Bare-metal HAL or LL drivers with minimal overhead.
+
+---
+
+## 9. Implementation Status
+- **P0.5 — Hardware-Independent Software Skeleton (Completed)**:
+  - `linux/`: Portable timing abstraction (`timing_get_monotonic_ns`), synthetic compute harness with warm-up exclusion, and CSV latency recording.
+  - `protocol/`: Minimal semantic perception/heartbeat message model with big-endian serialization. (Wire framing delimiters and CRC algorithm remain OPEN).
+  - `stm32/`: Platform-independent supervisor state machine (`INIT`, `FRESH`, `HOLD`, `FAILSAFE`) executing strictly in local MCU time domain without HAL/RTOS dependencies.
+  - `tests/`: 100% passing host unit test suite (`test_protocol`, `test_supervisor`, `test_workload`) verifying all state transitions and serialization edge cases.
+
