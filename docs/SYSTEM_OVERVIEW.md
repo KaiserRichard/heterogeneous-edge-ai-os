@@ -52,7 +52,7 @@ scheduler, no pinning, an ordinary queue between stages, no external supervisor.
 | Data path under CPU load | Bridge competes equally with stressors (`SCHED_OTHER`) | Bridge runs `SCHED_FIFO` on a pinned core; workload and stressors capped by cgroup `cpu.max` | Keeps the short, critical path from waiting behind bulk work. |
 | Page faults in the critical path | Possible | Bridge uses `mlockall` and preallocated buffers | Removes a source of multi-ms stalls. |
 | Queueing between stages | FIFO queue; under load it grows, so outputs get older | Latest-value buffer: a new result overwrites an unsent old one | Under overload, sending old data late is worse than dropping it. |
-| Time | Each side has its own clock, never related | Linux and STM32 clocks aligned via GPIO edge capture (UART echo as fallback) | Freshness can only be measured end-to-end if clocks are related. |
+| Time | Each side has its own clock, never related | Linux and STM32 clocks aligned by a four-timestamp UART exchange (NTP-style); a GPIO edge captured by an STM32 timer validates it (R8) | Freshness can only be measured end-to-end if clocks are related. |
 | Evidence | "It feels fast" | Every run logs P50/P95/P99, AoI, deadline misses, throttling validity | Claims become measurements. |
 
 Costs we accept and will report:
@@ -67,10 +67,10 @@ Costs we accept and will report:
 ### Linux side (Pi 5)
 | Component | Role |
 |---|---|
-| `source` | Synthetic "sensor" producing timestamped input frames at a fixed rate (30 Hz, ASSUMED). This is the AoI origin. |
-| `workload` | Inference on each frame (small CNN via ONNX Runtime; synthetic compute as fallback). Variable latency by nature. |
+| `source` | Synthetic "sensor" producing timestamped input frames at a fixed period (100 ms provisional, calibrated after the inference baseline; R7). This is the AoI origin. |
+| `workload` | MobileNetV2 (ONNX, FP32, batch 1) on ONNX Runtime CPU, intra-op threads swept 1/2/4; published Pi 5 means 20-50 ms per inference (R7). Synthetic compute as fallback. |
 | `bridge` | Receives results over a Unix domain socket, keeps the latest value, frames it onto the UART, sends heartbeats (every 20 ms, ASSUMED) and clock-sync echoes. |
-| Runtime profiles | `P0 stock` (all defaults), `P1 tuned` (FIFO + pinning + cgroups + mlockall), `P2 tuned + latest-value` buffer, `P3` = P2 on the packaged Real-time Ubuntu kernel (PREEMPT_RT, installed via `pro enable realtime-kernel --variant=raspi`). Same code, selected by config. |
+| Runtime profiles | `P0 stock` (all defaults), `P1 tuned` (FIFO + pinning + cgroups + mlockall), `P2 tuned + latest-value` buffer, `P3 = P1` on the packaged Real-time Ubuntu kernel (PREEMPT_RT, `pro enable realtime-kernel --variant=raspi`), so P1 vs P3 isolates the kernel (R3/R4). Same code, selected by config. |
 | Stressors | `stress-ng` profiles: CPU, memory/VM, cache, I/O. |
 | Runner + logger | `run_experiment.sh` wrapper, CSV per run, metadata, validity flag. |
 
@@ -78,9 +78,9 @@ Costs we accept and will report:
 | Task / part | Priority | Role |
 |---|---|---|
 | UART RX ISR + RX task | High | Bytes into a stream buffer, parsed by the shared protocol library. |
-| Supervisor task | High, periodic 1 kHz | Tracks heartbeat age and data AoI. State machine: FRESH, then HOLD (3 missed heartbeats, about 60 ms, ASSUMED), then FAILSAFE (about 200 ms, ASSUMED). |
+| Supervisor task | Highest application priority, periodic 1 kHz, absolute release | Tracks **two separate timers**: heartbeat liveness and result freshness (an alive bridge can keep forwarding stale results). Duplicates and malformed frames never refresh either timer. FRESH, then HOLD, then FAILSAFE; FAILSAFE is latched and needs an explicit rearm after a healthy interval (R1). Thresholds TBD from measured inference latency. |
 | Status task | Low, 10 Hz | Sends MCU_STATUS back to the Pi. |
-| Sync capture | Timer input capture | Timestamps the Pi's GPIO edge for clock alignment. |
+| Clock sync | UART RX/TX timestamps + timer input capture | Answers four-timestamp sync requests (T2 at RX, T3 at TX); input capture on the GPIO edge gives independent ground truth (R8). |
 | Failsafe output | GPIO + LED | Visible state, and a pin a logic analyzer can time. |
 
 ### Shared
@@ -92,14 +92,14 @@ Costs we accept and will report:
 | ID | Question | Compare | Main metric |
 |---|---|---|---|
 | E1 | How much does Linux contention hurt the data path? | P0 with no load vs each stressor | Inference + bridge latency P50/P95/P99 |
-| E2 | How much does runtime tuning recover, and how much more does an RT kernel add? | P0 vs P1 vs P3 under each stressor | Same, plus bridge dispatch jitter |
-| E3 | Does latest-value delivery keep data fresh under overload? | P1 vs P2 at rising load | End-to-end AoI distribution, deadline-miss rate |
-| E4 | Is failsafe reaction bounded no matter what Linux does? | Kill bridge, SIGSTOP, FIFO CPU hog | Detection and safe-state latency on the STM32 |
+| E2 | How much does runtime tuning recover, and how much more does an RT kernel add? | P0 vs P1 (tuning) and P1 vs P3 (kernel), under each stressor; SCHED_FIFO priority 50, default RT throttling kept | Same, plus bridge dispatch jitter |
+| E3 | Does latest-value delivery keep data fresh under overload? | P1 vs P2 at rising load | Time-average AoI, peak AoI (P95/P99/max), age-violation fraction V(τ), per-input deadline-miss fraction with explicit denominators (R2) |
+| E4 | Is failsafe reaction bounded no matter what Linux does? | Kill bridge, SIGSTOP, FIFO CPU hog | Fault onset t_f, decision t_d, safe output t_s on one logic-analyzer clock; report t_d−t_f, t_s−t_d, t_s−t_f (R1) |
 
 Expected outcomes (hypotheses, not results):
 - H1: CPU stressors inflate P99 far more than P50.
-- H2: P1 recovers most of the CPU-contention tail but little of the memory/cache-contention tail.
-- H3: Under overload, P2 bounds AoI while P0/P1 let it grow with the queue.
+- H2: P1 recovers most of the CPU-contention tail but little of the memory/cache-contention tail (Pi 5: 512 KB private L2 per core, 2 MB shared L3; stressors in R5).
+- H3: Under overload, P2 lowers time-average AoI and the age-violation fraction compared with P1. It does not give a hard bound: theory (R2) shows no deterministic AoI bound from a small buffer.
 - H4: STM32 failsafe latency stays within timeout + one supervisor tick for every fault type,
   including ones that leave Linux unable to react.
 
@@ -128,3 +128,9 @@ Kept short on purpose. Portable code (protocol, supervisor, Linux side) moves un
 because hardware access stays behind a small port layer and CI already compiles for
 Cortex-M7. The H7 port itself (UART/DMA with D-cache, clocks, FreeRTOS CM7 port) and the
 WBR failsafe policy ("ignore Pi commands, keep balancing") are WBR integration work for later.
+
+## 7. Research basis
+
+Prior work and the evidence behind each design choice: `docs/research/RELATED_WORK.md`
+(summary) and `docs/research/R1.md` to `R8.md` (cited notes). Design changes made from
+them are logged in `docs/research/DESIGN_CHANGES.md`.

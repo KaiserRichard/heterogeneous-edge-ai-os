@@ -32,7 +32,7 @@ their full text read.
   cores do not isolate memory bandwidth; per-core bandwidth regulation does.
   https://experts.illinois.edu/en/publications/memguard-memory-bandwidth-reservation-system-for-efficient-perfor/
 - SOURCE: Bechtel et al., "DeepPicar: A Low-cost Deep Neural Network-based Autonomous Car",
-  arXiv:1712.08644 (2018). On a Raspberry Pi 3, the CNN control loop slowed by up to 11.6x
+  arXiv:1712.08644 (2018). On a Raspberry Pi 3, the CNN control loop slowed by up to 11.6x (arXiv abstract; the authors' revised RTAS text reports up to 9.6x, R5)
   from shared-resource contention. Cache partitioning was ineffective; memory-bandwidth
   throttling was effective. https://arxiv.org/abs/1712.08644
 - SOURCE: RT-Gang (arXiv:1903.00999): one real-time gang at a time plus throttling of
@@ -44,9 +44,12 @@ their full text read.
 
 ## 4. Linux timing on the Raspberry Pi 5
 - SOURCE: arXiv:2604.19275 (2026), "Scheduling Analysis of UAV Flight Control Workloads on
-  PREEMPT_RT Linux Using a Raspberry Pi 5". 250 Hz loop under heavy stress: stock kernel
-  worst case above 9 ms, PREEMPT_RT below 225 us. Residual jitter is attributed mainly to
-  memory contention. [verify authors, setup, stressors] https://arxiv.org/abs/2604.19275
+  PREEMPT_RT Linux Using a Raspberry Pi 5". Ubuntu 24.04 `6.8.0-raspi` vs
+  `6.8.0-raspi-realtime`, 4 ms loop, 10,000 iterations, stressed (Table 4, stock to RT):
+  SCHED_OTHER max 8626 to 9015 us (RT does not help), SCHED_FIFO 99 max 1848 to 224 us,
+  FIFO 50 max 700 to 160 us. The memory-contention explanation is a hypothesis in the
+  paper (section 7.2), not a measurement. Correction of the first pass: the ">9 ms" figure
+  was SCHED_OTHER, not the stock kernel in general. Details in R3. https://arxiv.org/abs/2604.19275
 - SOURCE: PREEMPT_RT is mainline since Linux 6.12 (x86, RISC-V, ARM64).
   https://phoronix.com/review/linux-612-features
 - SOURCE: Canonical, "Real-time Ubuntu 24.04 LTS": optimized and tested for Raspberry Pi 4

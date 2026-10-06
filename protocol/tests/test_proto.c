@@ -65,10 +65,10 @@ static void test_roundtrip_all_types(void)
     n = hea_encode(HEA_MSG_ECHO_REQ, 3, pl, hea_pack_echo_req(&rq, pl), buf, sizeof buf);
     CHECK(feed_all(&p, buf, n, &f) == 1 && hea_unpack_echo_req(&f, &rq2) == 0 && rq2.linux_t1_ns == 42);
 
-    struct hea_echo_resp rs = {43, 0xFFFFFFF0u}, rs2;
+    struct hea_echo_resp rs = {43, 0xFFFFFFF0u, 0x00000010u}, rs2;
     n = hea_encode(HEA_MSG_ECHO_RESP, 4, pl, hea_pack_echo_resp(&rs, pl), buf, sizeof buf);
     CHECK(feed_all(&p, buf, n, &f) == 1 && hea_unpack_echo_resp(&f, &rs2) == 0);
-    CHECK(rs2.linux_t1_ns == 43 && rs2.mcu_rx_us == 0xFFFFFFF0u);
+    CHECK(rs2.linux_t1_ns == 43 && rs2.mcu_rx_us == 0xFFFFFFF0u && rs2.mcu_tx_us == 0x10u);
 
     struct hea_mcu_status st = {1000, HEA_MCU_FAILSAFE, 513, 65535}, st2;
     n = hea_encode(HEA_MSG_MCU_STATUS, 5, pl, hea_pack_mcu_status(&st, pl), buf, sizeof buf);

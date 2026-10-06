@@ -221,15 +221,17 @@ uint8_t hea_pack_echo_resp(const struct hea_echo_resp *m, uint8_t *b)
 {
     put_u64(&b[0], m->linux_t1_ns);
     put_u32(&b[8], m->mcu_rx_us);
-    return 12;
+    put_u32(&b[12], m->mcu_tx_us);
+    return 16;
 }
 
 int hea_unpack_echo_resp(const struct hea_frame *f, struct hea_echo_resp *m)
 {
-    if (check(f, HEA_MSG_ECHO_RESP, 12))
+    if (check(f, HEA_MSG_ECHO_RESP, 16))
         return -1;
     m->linux_t1_ns = get_u64(&f->payload[0]);
     m->mcu_rx_us = get_u32(&f->payload[8]);
+    m->mcu_tx_us = get_u32(&f->payload[12]);
     return 0;
 }
 

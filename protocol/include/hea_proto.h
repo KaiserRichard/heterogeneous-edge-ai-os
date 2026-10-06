@@ -60,8 +60,9 @@ struct hea_echo_req {
 };
 
 struct hea_echo_resp {
-    uint64_t linux_t1_ns; /* echoed unchanged */
-    uint32_t mcu_rx_us;   /* STM32 time when the request was parsed */
+    uint64_t linux_t1_ns; /* T1, echoed unchanged */
+    uint32_t mcu_rx_us;   /* T2: STM32 time when the request was received */
+    uint32_t mcu_tx_us;   /* T3: STM32 time just before the response is sent */
 };
 
 enum hea_mcu_state {
