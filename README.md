@@ -5,6 +5,7 @@ Operating Systems course project exploring a heterogeneous Embedded Linux-FreeRT
 ## Documentation
 - [`PROJECT.md`](file:///Users/quockaiser/Desktop/OS/OS-project/heterogeneous-edge-ai-os/PROJECT.md): Detailed technical specification, architecture, experiment directions, and non-goals.
 - [`docs/ENVIRONMENT_AND_HARDWARE.md`](docs/ENVIRONMENT_AND_HARDWARE.md): Which hardware each work session needs, Pi provisioning, unattended experiment runs.
+- [`docs/SYSTEM_GUIDE.md`](docs/SYSTEM_GUIDE.md): Plain-language guide to the system, the work items and an OS glossary. Read first.
 - [`docs/SYSTEM_OVERVIEW.md`](docs/SYSTEM_OVERVIEW.md): What the system is, what it improves over stock Linux, the experiments, and where it fits in WBR. Start here.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md): Day-by-day plan with hardware per day.
 - [`protocol/PROTOCOL.md`](protocol/PROTOCOL.md): Proposed UART frame format and messages.
