@@ -3,16 +3,37 @@
 Status: PROPOSED (2026-10-05). Numbers marked ASSUMED are starting values that the
 experiments will tune or justify. Nothing here is MEASURED yet.
 
-## 1. One-paragraph summary
+## 1. The idea in plain terms
 
-A Raspberry Pi 5 running stock Ubuntu does heavy, unpredictable work (AI inference)
-and sends its results to an STM32 running FreeRTOS. Linux is good at throughput but gives
-no timing guarantees, so under load its results arrive late, and if it hangs nobody on
-the Pi side can be trusted to notice. The project adds two things on top of the stock
-systems: a **tuned Linux runtime** that keeps the important data path fast under load,
-and an **independent real-time supervisor** on the STM32 that judges whether the Pi's
-data is still fresh and switches to a safe state on its own when it is not. Then it
-**measures** how much each addition actually helps.
+**Example scenario** (numbers are illustrative, not measured). The Pi takes a camera-like
+input every 33 ms, runs a neural network on it (about 20 ms normally), and sends the
+result, e.g. "obstacle / no obstacle", to the STM32. The STM32 controls something physical
+(e.g. a motor) and must act on a *recent* answer.
+
+**Problem 1: late data.** When other programs load the Pi, Linux shares the CPU "fairly",
+so our program sometimes waits its turn. A 20 ms answer can become 200 ms. Worse, results
+pile up in a queue, so the STM32 acts on an answer about the world 200 ms ago without
+knowing it is old.
+
+**Problem 2: silent failure.** If the program crashes or Linux freezes, the STM32 keeps
+seeing the last answer ("no obstacle") forever. A watchdog program on the Pi does not help,
+because it freezes together with Linux.
+
+**Fix 1, on Linux (built-in features only, no kernel changes).** Give the small program
+that sends results top priority (`SCHED_FIFO`) and its own CPU core, cap the heavy
+programs (cgroups), and always send only the newest result, dropping old ones.
+Goal: the important data stays on time even when the Pi is busy.
+
+**Fix 2, on the STM32.** Every message carries a timestamp, and the Pi sends a heartbeat
+every 20 ms. The STM32 checks the clock: no heartbeat for 60 ms means HOLD (stop trusting
+new Pi decisions); 200 ms means FAILSAFE (go to a safe state, e.g. stop the motor). The
+STM32 is a separate chip with its own real-time OS, so this works even when Linux is dead.
+
+**Then we measure** how late the data gets with and without Fix 1, and how fast Fix 2
+reacts to each kind of failure.
+
+Analogy: the Pi is a smart but easily distracted worker; the STM32 is a strict
+supervisor with a stopwatch who does not depend on the worker to report its own failure.
 
 We do not write a new OS or patch the kernel (see `PROJECT.md` non-goals). The "OS
 design" is how work is partitioned across two operating systems and how the stock
