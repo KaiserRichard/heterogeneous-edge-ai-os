@@ -163,7 +163,7 @@ Two things to reconcile when merging the skeleton:
 1. The skeleton has its own `protocol/protocol.c`; the main branch has `hea_proto.c`. Keep one.
 2. The skeleton supervisor uses **one** timer and recovers after 1 valid packet. The design now
    needs **two** timers and a latched FAILSAFE with rearm (DESIGN_CHANGES #1-#3).
-   Also align state names: PROTOCOL.md says NORMAL/DEGRADED/FAILSAFE, the design says FRESH/HOLD/FAILSAFE.
+   State names are already aligned on main docs: INIT/FRESH/HOLD/FAILSAFE (commit 640d7a0).
 
 ## 10. Implementation plan, in order
 
@@ -172,7 +172,7 @@ Each step has a "done when" check. Do them in this order; later steps depend on 
 ### Stage 1: software only (Mac, no hardware)
 | # | Work | Done when |
 |---|---|---|
-| 1 | Merge the skeleton into the main branch; one protocol library; one byte order; state names aligned | CI green; one `protocol/` |
+| 1 | Merge the skeleton into the main branch; one protocol library; one byte order | CI green; one `protocol/` |
 | 2 | Supervisor v2: two timers, sequence check, latched FAILSAFE + rearm, pure C with no FreeRTOS calls (time passed in as an argument) | host unit tests for: heartbeat lost, results stale but heartbeat alive, duplicates, CRC errors, rearm |
 | 3 | Clock-sync math: offset/delay from T1-T4, drift fit, min-delay filter | host test with synthetic clocks (known offset + drift) recovers them |
 | 4 | Linux bridge: Unix socket in, latest-value or FIFO (config), UART out, heartbeat, echo, MCU_STATUS in | runs against a pseudo-terminal pair (`socat`/`openpty`) with a fake MCU script |
