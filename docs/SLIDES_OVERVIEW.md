@@ -1,208 +1,133 @@
-# Slide Overview: Heterogeneous Edge-AI OS (design after research pass R1-R8)
+# Slide content: Heterogeneous Edge-AI Runtime (progress report)
 
-Status: design as of 2026-10-06 (`docs/SYSTEM_OVERVIEW.md` + `docs/research/DESIGN_CHANGES.md`).
-**Nothing is MEASURED yet.** Every number below is a design value (ASSUMED), a calculation
-(CALCULATED) or a published figure from someone else's setup (SOURCE). Slides must say so.
-
-Part A is a slide-by-slide outline. Part B is the image prompts for ChatGPT.
-Part C lists what not to claim.
+Version 2 (2026-10-06), after the research pass. One section per slide: **title**, the
+**bullets** that go on the slide (short), the **image** ID, and **notes** (what you say).
+Image IDs A1–D4 are in `IMAGE_PROMPTS.md`; IDs marked ★ are new or replaced, in
+`IMAGE_PROMPTS_V2.md`.
 
 ---
 
-## Part A. Slide outline (about 14 slides)
+## 1. Title
+- Heterogeneous Edge-AI Runtime: Linux + FreeRTOS on Raspberry Pi 5 and STM32
+- Team names, course, date
+- Image: A1 (with corrected green Pi / white Nucleo)
+- Notes: one sentence: "We study how a general-purpose OS and a real-time OS can share an AI workload safely, and we measure it."
 
-### 1. Title
-- "Two operating systems, one deadline: supervising a Linux AI workload with a FreeRTOS microcontroller"
-- Raspberry Pi 5 (Ubuntu 24.04) + STM32F446RE (FreeRTOS), linked by UART.
-- Visual: hero image (prompt B1).
+## 2. Motivation
+- Linux: high throughput, no timing guarantees
+- Under load, results arrive late, and the delay is invisible to the receiver
+- If Linux hangs, nothing on Linux can be trusted to notice
+- Image: A2
+- Notes: example: the Pi runs a neural network every 100 ms and sends "obstacle / no obstacle" to a microcontroller that drives a motor. A late or frozen answer is a safety problem, not just a performance one.
 
-### 2. Motivation: the problem in one scenario
-- The Pi reads a "sensor" frame periodically, runs a neural network, and sends the result
-  (e.g. "obstacle / no obstacle") to a microcontroller that drives something physical.
-- **Problem 1, late data:** under load, Linux shares the CPU fairly, results queue up, and the
-  MCU acts on an old answer without knowing it is old.
-- **Problem 2, silent failure:** if the process crashes or Linux freezes, the MCU keeps using the
-  last answer forever. A watchdog on the Pi freezes together with Linux.
-- Visual: prompt B2 (stale data) or a timeline sketch.
+## 3. Problem statement
+- How much does Linux resource contention delay a time-sensitive data path?
+- Which stock OS mechanisms recover that delay, and which cannot?
+- Can an independent real-time supervisor bound the reaction to Linux failures?
+- Image: A3
+- Notes: we do not write a new OS or patch the kernel; we combine and configure existing OS mechanisms and measure the effect.
 
-### 3. Key idea
-- Split responsibility across two OSes:
-  - **Linux (Pi 5):** heavy, variable work (inference, I/O).
-  - **FreeRTOS (STM32):** strict supervisor with a stopwatch, independent of Linux.
-- Analogy: smart but easily distracted worker + strict supervisor who does not rely on the
-  worker to report its own failure.
-- We write no new kernel. The "OS design" is how stock mechanisms are configured and combined.
-- Visual: prompt B3 (worker/supervisor analogy).
+## 4. Related work and our position ★
+- System-Level Simplex (Bak et al., RTAS 2009): complex untrusted subsystem + simple safety subsystem on separate hardware
+- Age of Information (Kaul, Yates, Gruteser, 2012): newest-first delivery keeps data freshest
+- Multicore interference (MemGuard 2013, DeepPicar 2018): dedicated cores do not isolate memory bandwidth
+- Pi 5 + PREEMPT_RT (arXiv 2604.19275, 2026): SCHED_FIFO worst case 1.8 ms stock vs 0.22 ms RT kernel, under stress
+- **Gap we fill:** Simplex papers report no failsafe-latency numbers; we measure them end to end on commodity Linux + FreeRTOS
+- Image: E1★
+- Notes: sources in `docs/research/RELATED_WORK.md`. Say clearly that these are their results, not ours.
 
-### 4. Hardware architecture
-- Raspberry Pi 5: 4x Cortex-A76 @ 2.4 GHz, 4 GB, Ubuntu Server 24.04 ARM64.
-- STM32F446RE Nucleo: Cortex-M4F @ 180 MHz, 128 KB SRAM, FreeRTOS.
-- Direct 3.3 V UART: Pi GPIO14/15 (pins 8/10) to STM32 USART1 (PA10/PA9), shared GND.
-  USART2 stays on the ST-LINK debug console.
-- Optional GPIO line + STM32 timer input capture to validate the clock alignment.
-- Logic analyzer (optional) as an independent timing reference.
-- Visual: prompt B4 (bench photo look), plus a clean wiring diagram drawn in the slide tool.
+## 5. Resource contention on a multicore SoC
+- 4 × Cortex-A76, 512 KB private L2 each, 2 MB shared L3, shared LPDDR4X
+- CPU scheduling controls *who runs*, not *who uses memory bandwidth*
+- Image: A4
+- Notes: this is why we expect tuning to fix CPU contention but not memory contention (hypothesis H2).
 
-### 5. Software architecture (draw this yourself, see diagram D1 below)
-- **Linux side:** `source` (timestamped frames) -> `workload` (MobileNetV2, ONNX Runtime CPU)
-  -> Unix domain socket -> `bridge` (latest-value buffer, UART framing, heartbeat, clock sync).
-  `stress-ng` stressors compete for CPU, memory and cache.
-- **STM32 side:** UART RX interrupt -> stream buffer -> RX task (parser) -> supervisor task
-  (1 kHz) -> failsafe GPIO/LED; status task sends MCU_STATUS back at 10 Hz.
+## 6. System architecture
+- Linux domain (Pi 5, Ubuntu 24.04): sensor source, inference, bridge, stressors
+- Real-time domain (STM32F446RE, FreeRTOS): UART RX task, supervisor, status task, failsafe output
+- One UART link + one GPIO sync line
+- Image: B1
+- Notes: the STM32 has final authority over the (simulated) actuator; Pi outputs are proposals.
 
-### 6. Linux-side mechanisms (stock features only, no kernel patch)
-| Mechanism | What it does here |
-|---|---|
-| `SCHED_FIFO` priority 50 | Bridge preempts bulk work |
-| CPU affinity | Inference on CPU 0, bridge on CPU 1, stressors on CPUs 2-3 |
-| cgroup v2 `cpu.max` | Caps workload and stressors |
-| `mlockall` + preallocated buffers | No page faults on the critical path |
-| Latest-value buffer | A new result overwrites an unsent old one (no growing queue) |
-| RT throttling kept at 95% | Safety net if the FIFO task misbehaves |
+## 7. Hardware platform
+- Raspberry Pi 5 (4 GB), active cooler, 27 W PSU
+- STM32 Nucleo-F446RE (Cortex-M4F, 180 MHz)
+- UART: Pi GPIO14/15 ↔ STM32 PA10/PA9; GPIO17 → PA0 timer capture; shared GND
+- Image: B2
+- Notes: STM32 flashed from the Pi over ST-LINK, so the rig runs unattended.
 
-### 7. Runtime profiles (same code, selected by config)
-| Profile | Meaning | Compared against |
-|---|---|---|
-| P0 stock | All Linux defaults, FIFO queue | baseline |
-| P1 tuned | FIFO + pinning + cgroups + mlockall | P0: effect of tuning |
-| P2 tuned + latest-value | P1 + overwrite buffer | P1: effect of buffering only |
-| P3 RT kernel | P1 on packaged Real-time Ubuntu kernel (PREEMPT_RT) | P1: effect of kernel only |
-- Message: each comparison changes **one** thing.
+## 8. End-to-end data path and freshness
+- Capture → inference → buffer → UART → supervisor → action
+- Age of Information (AoI): how old the newest data at the MCU is, at every instant
+- Image: B3 (+ E4★ sawtooth for the AoI definition)
+- Notes: AoI grows linearly between deliveries and drops at each fresh delivery. Average AoI and the fraction of time above a threshold are our freshness metrics.
 
-### 8. STM32 supervisor (the core safety mechanism)
-- Two separate timers: **heartbeat liveness** and **result freshness**. A live bridge can still
-  forward stale results, so heartbeat alone is not enough (R1, Simplex architecture).
-- States: FRESH -> HOLD (stop trusting new Pi decisions) -> FAILSAFE (safe output).
-  Design values: heartbeat every 20 ms; HOLD after 60 ms; FAILSAFE after 200 ms (ASSUMED,
-  to be tuned from measured inference latency).
-- FAILSAFE is **latched**: leaving it needs an explicit rearm after a healthy interval.
-- Duplicates, old sequence numbers and corrupted frames never refresh a timer.
-- Visual: state machine diagram D2 (draw it yourself).
+## 9. Workload
+- MobileNetV2 (ONNX, FP32, batch 1) on ONNX Runtime CPU
+- Published Pi 5 range: about 20–50 ms per inference (1–4 threads)
+- Input period 100 ms (provisional, calibrated on our Pi)
+- Notes: AI is the workload, not the contribution. It is realistic, compute- and memory-heavy, and variable.
 
-### 9. UART protocol v1
-- Frame: SOF `A5 5A` | version | type | seq | len | payload (0-64 B) | CRC-16/CCITT. 9-byte overhead.
-- Messages: HEARTBEAT, INFERENCE (input/done timestamps, seq, class, confidence),
-  ECHO_REQ / ECHO_RESP (clock sync), MCU_STATUS.
-- CALCULATED: a 31-byte inference frame takes about 2.7 ms at 115200 baud, 0.34 ms at 921600.
-- Host-tested: 19998/20000 frames recovered with random noise between frames, zero false accepts.
-  (Host test only, not yet on a real UART.)
+## 10. Runtime profiles ★
+- P0 stock: Linux defaults
+- P1 tuned: SCHED_FIFO bridge (priority 50), CPU pinning, cgroup CPU caps, locked memory
+- P2 = P1 + latest-value buffer (newest result replaces unsent old one)
+- P3 = P1 on the packaged Real-time Ubuntu kernel (PREEMPT_RT)
+- Image: E2★ (and C1 for stock vs tuned scheduling)
+- Notes: each comparison changes one thing: P0→P1 tuning, P1→P2 buffering, P1→P3 kernel.
 
-### 10. Time: two clocks, one timeline
-- Pi `CLOCK_MONOTONIC_RAW` (ns) and the STM32 timer (us) are separate clock domains.
-  We never subtract across them without a mapping.
-- NTP-style four-timestamp exchange over UART: T1 (Pi send), T2 (MCU receive),
-  T3 (MCU send), T4 (Pi receive) -> offset and drift.
-- A GPIO edge captured by an STM32 timer checks the result independently.
-- Target: sub-millisecond alignment (to be measured, R8).
-- Visual: diagram D3 (four-timestamp exchange).
+## 11. Freshness: queue vs latest value
+- FIFO queue: under overload, results wait and arrive old
+- Latest value: old unsent results are dropped
+- Image: C2
+- Notes: theory predicts lower average age, but no hard bound; we measure how much it helps.
 
-### 11. Metric: Age of Information (AoI)
-- AoI at time t = t minus the capture time of the newest result the MCU has.
-  It grows linearly and drops when a fresh result arrives (sawtooth).
-- Reported: time-average AoI, peak AoI (P95/P99/max), age-violation fraction V(tau),
-  per-input deadline-miss fraction with explicit denominators (R2).
-- Why not just latency: a system can deliver each message "fast" and still act on old data
-  if messages queue up.
-- Visual: sawtooth plot D4 (draw it from a formula, not with an image generator).
+## 12. UART protocol
+- Frame: SOF `A5 5A` | ver | type | seq | len | payload ≤ 64 B | CRC-16
+- Messages: HEARTBEAT, INFERENCE, ECHO_REQ/RESP (clock sync), MCU_STATUS
+- Host-tested: every single-bit error detected; 99.99 % frame recovery under random noise
+- Image: C3
+- Notes: the byte-wise parser runs unchanged on Linux and on the STM32.
 
-### 12. Experiments E1-E4 and hypotheses
-| ID | Question | Compare | Main metric | Hypothesis |
-|---|---|---|---|---|
-| E1 | How much does contention hurt? | P0 idle vs each stressor | latency P50/P95/P99 | H1: P99 grows much more than P50 |
-| E2 | How much does tuning / RT kernel recover? | P0 vs P1, P1 vs P3 | same + dispatch jitter | H2: P1 fixes CPU contention, not memory/cache contention |
-| E3 | Does latest-value keep data fresh? | P1 vs P2, rising load | AoI metrics | H3: P2 lowers average AoI and violations; no hard bound |
-| E4 | Is failsafe reaction bounded? | kill bridge, SIGSTOP, FIFO CPU hog | t_d - t_f, t_s - t_d, t_s - t_f on one logic-analyzer clock | H4: within timeout + one supervisor tick for every fault |
-- Stressors (E1): `stress-ng --stream`, `--cache` swept 256K-8M, `--memrate`, pinned to CPUs 2-3.
-- Workload: MobileNetV2 ONNX FP32, intra-op threads 1/2/4; published Pi 5 means are about
-  20-50 ms per inference (SOURCE, other setups), so the input period is 100 ms provisionally.
+## 13. STM32 supervisor ★
+- Two independent timers: heartbeat liveness and result freshness
+- INIT → FRESH → HOLD → FAILSAFE; FAILSAFE is latched until an explicit rearm
+- Duplicates and corrupt frames never refresh a timer
+- Highest application priority, 1 kHz, absolute release
+- Image: C4★ (replaced) and E3★
+- Notes: why two timers: a live bridge can keep forwarding stale results. Stale data moves FRESH to HOLD; a lost heartbeat goes straight to FAILSAFE (proposed transition table; thresholds are set after measuring inference latency).
 
-### 13. Status and plan
-- Done: protocol + CRC library with host tests; CI (host tests + Cortex-M4/M7 compile);
-  P0.5 skeleton (timing, workload harness, supervisor states); Pi provisioning scripts;
-  research notes R1-R8 and the design revision.
-- Next: real inference workload + bridge; FreeRTOS firmware; UART bring-up; clock sync;
-  experiment campaign; analysis.
-- Be explicit: **no results yet** (or replace this slide with results once they exist).
+## 14. Clock alignment ★
+- Two clock domains: Linux `CLOCK_MONOTONIC_RAW` (ns) and STM32 timer (µs)
+- Four-timestamp exchange over UART (T1–T4, as in NTP), offset + drift estimate
+- GPIO edge + timer input capture as independent ground truth
+- Image: C5★ (replaced)
+- Notes: never subtract timestamps from different clocks without this mapping. Target accuracy: sub-millisecond, to be measured.
 
-### 14. Takeaways / where it leads
-- A safety check must not depend on the thing it checks.
-- Under overload, dropping old data beats sending it late.
-- Measure freshness end-to-end, which requires related clocks.
-- Outlook: the same pattern applies to a robot where Linux does perception and an MCU does
-  balance control. Methods transfer; numbers do not.
+## 15. Experiments
+- E1 contention impact: P0 idle vs CPU / memory-bandwidth / cache / I/O stressors
+- E2 tuning and kernel: P0 vs P1, P1 vs P3
+- E3 freshness: P1 vs P2 at rising load (average AoI, peak AoI, violation fraction)
+- E4 fault injection: kill bridge, stop process, CPU hog; failsafe latency on STM32
+- Image: D1
+- Notes: every run logs temperature, frequency and throttling; throttled runs are excluded.
 
-### Diagrams to draw yourself (do NOT use an image generator for these)
-Image generators misspell labels and invent arrows. Draw these in PowerPoint, draw.io or
-Mermaid so every box and arrow is correct.
+## 16. Fault injection and failsafe latency
+- Measure fault onset t_f, decision t_d, safe output t_s on one logic-analyzer clock
+- Report detection, activation and total latency separately
+- Expected budget: timeout + supervisor period + dispatch delay + execution + output delay
+- Image: D2
+- Notes: Linux logs cannot time a freeze; that is why the STM32 and the logic analyzer observe it.
 
-- **D1 software architecture:** see Mermaid below.
-- **D2 supervisor state machine:** INIT -> FRESH; FRESH -> HOLD (no valid result/heartbeat for
-  60 ms); HOLD -> FRESH (valid fresh frame); HOLD -> FAILSAFE (200 ms); FAILSAFE -> FRESH only
-  via explicit rearm after a healthy interval.
-- **D3 four-timestamp exchange:** two vertical timelines (Pi, STM32), slanted arrows T1->T2 and
-  T3->T4. offset = ((T2 - T1) + (T3 - T4)) / 2, delay = (T4 - T1) - (T3 - T2).
-- **D4 AoI sawtooth:** x = time, y = age; linear ramps that drop at each delivery; a dashed
-  threshold tau; shade the time above tau (that fraction is V(tau)).
+## 17. Hypotheses
+- H1: contention inflates P99 far more than P50
+- H2: tuning recovers CPU-contention tails, not memory-contention tails
+- H3: latest-value lowers average AoI and violation time (no hard bound)
+- H4: STM32 failsafe latency stays within its budget for every fault type
+- Notes: these are predictions; results slides come after the experiments.
 
-```mermaid
-flowchart LR
-  subgraph PI["Raspberry Pi 5 - Ubuntu 24.04"]
-    SRC[source<br/>timestamped frames] --> WL[workload<br/>MobileNetV2 / ONNX Runtime]
-    WL -- Unix socket --> BR[bridge<br/>SCHED_FIFO, latest-value,<br/>heartbeat, clock sync]
-    ST[stress-ng<br/>CPU / memory / cache] -. contention .- WL
-  end
-  BR == UART frames ==> RX
-  subgraph MCU["STM32F446RE - FreeRTOS"]
-    RX[UART ISR + RX task] --> SUP[supervisor 1 kHz<br/>FRESH / HOLD / FAILSAFE]
-    SUP --> OUT[failsafe GPIO + LED]
-    SUP --> STA[status task 10 Hz]
-  end
-  STA == MCU_STATUS ==> BR
-```
-
-```mermaid
-stateDiagram-v2
-  [*] --> INIT
-  INIT --> FRESH: first valid result
-  FRESH --> HOLD: stale > 60 ms
-  HOLD --> FRESH: valid fresh frame
-  HOLD --> FAILSAFE: stale > 200 ms
-  FAILSAFE --> FRESH: explicit rearm after healthy interval
-```
-
----
-
-## Part B. Image prompts for ChatGPT (illustrations only)
-
-Use generated images only for the title, motivation and analogy slides. Each prompt asks for
-**no text**. Add the words yourself in the slide tool, because generated text is often misspelled.
-Common style line to keep the set consistent (already included in each prompt):
-"flat vector illustration, clean, dark navy background, accent colors teal and orange, 16:9, no text, no logos."
-
-**B1, title / hero.**
-> Flat vector illustration, 16:9, dark navy background, accent colors teal and orange, no text, no logos. Two computing boards side by side on a clean desk: on the left a small single-board computer with a heatsink and fan, glowing with busy teal data streams and a stylised neural network floating above it; on the right a smaller microcontroller development board with a single bright orange status LED and a stopwatch icon floating above it. Three thin wires connect the two boards. Calm, technical, minimal composition with generous empty space at the top for a title.
-
-**B2, motivation: stale data.**
-> Flat vector illustration, 16:9, dark navy background, teal and orange accents, no text. A conveyor belt carrying small glowing message envelopes from a crowded, overheated computer on the left (many small competing tasks drawn as colorful blocks pushing each other) to a small robot arm on the right. The envelopes near the robot are faded and grey with tiny cobwebs, showing that they are old; a fresh bright envelope is stuck far back in the queue. Clear, slightly humorous, minimal.
-
-**B3, analogy: worker and supervisor.**
-> Flat vector illustration, 16:9, dark navy background, teal and orange accents, no text. Left: a talented but distracted worker character at a desk covered in many tasks and papers, juggling several items. Right: a calm, strict supervisor character standing apart, holding a large stopwatch and a red stop sign, watching the worker through a small window. The supervisor stands on a separate platform, visually independent from the worker's desk. Friendly, simple character design.
-
-**B4, hardware bench (realistic look, for the hardware slide).**
-> Photorealistic top-down photo of an electronics workbench, soft daylight, shallow depth of field, 16:9. A Raspberry Pi 5 with an active cooler on the left, an STM32 Nucleo-64 development board (white board with a black ST-LINK section) on the right, three colored jumper wires (yellow, green, black) connecting them, a small 8-channel USB logic analyzer with probe clips attached to the wires, and a laptop edge visible at the bottom. No text overlays, no readable labels.
-> (Note: the generator will not reproduce the exact board layouts. Use it as a mood image only, or better, use a real photo of your own rig.)
-
-**B5, closing / outlook (optional).**
-> Flat vector illustration, 16:9, dark navy background, teal and orange accents, no text. A two-wheeled self-balancing robot seen from the side: a camera on its head connected to a "brain" computer (glowing teal), and a separate small "spine" controller near the wheels (glowing orange) keeping it balanced. A faint dashed line separates the two, symbolising that the balance controller keeps working even if the brain stops. Minimal, optimistic.
-
----
-
-## Part C. Do not claim (yet)
-- Any latency, AoI or failsafe-timing number as a result: nothing is MEASURED.
-- That the RT kernel or tuning "solves" contention: H2 predicts memory/cache contention remains.
-- A hard AoI bound from the latest-value buffer: theory gives none (R2).
-- That citations are verified: R1-R8 were written by Codex agents and have not been
-  spot-checked against the papers (R1 relies on a ResearchGate copy).
-- Known doc inconsistency to fix before the slides: `protocol/PROTOCOL.md` lists MCU_STATUS
-  states as NORMAL / DEGRADED / FAILSAFE, while the supervisor design uses
-  FRESH / HOLD / FAILSAFE. Pick one naming; the slides above use FRESH / HOLD / FAILSAFE.
+## 18. Progress and next steps
+- Done: design, research pass (8 cited notes), protocol library + tests, supervisor state machine + tests (113 assertions), CI, Pi provisioning scripts
+- Next: rig setup, firmware, bridge daemon, then E1–E4
+- Image: D3, timeline D4
+- Notes: update before presenting; see "Progress slide text" at the end of `IMAGE_PROMPTS.md`.

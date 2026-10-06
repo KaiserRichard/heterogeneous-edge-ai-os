@@ -66,9 +66,10 @@ struct hea_echo_resp {
 };
 
 enum hea_mcu_state {
-    HEA_MCU_NORMAL = 0,
-    HEA_MCU_DEGRADED = 1, /* data stale, still within grace */
-    HEA_MCU_FAILSAFE = 2,
+    HEA_MCU_INIT = 0,     /* no valid data yet */
+    HEA_MCU_FRESH = 1,
+    HEA_MCU_HOLD = 2,     /* data stale, still within grace */
+    HEA_MCU_FAILSAFE = 3, /* latched until explicit rearm */
 };
 
 struct hea_mcu_status {
