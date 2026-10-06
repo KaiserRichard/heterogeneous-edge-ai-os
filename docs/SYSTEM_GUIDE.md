@@ -31,6 +31,46 @@ by a simple, trusted part on separate hardware).
 
 ---
 
+## Part 2a. The life of one result (follow this and you understand the system)
+
+```
+ Pi 5 (Linux)                                                STM32 (FreeRTOS)
+ ------------                                                ----------------
+ [1] source: makes frame #k, stamps t_input  (CLOCK_MONOTONIC_RAW)
+        |
+ [2] workload: MobileNetV2 inference, ~20-50 ms (SOURCE, other setups)
+        |   stamps t_done
+        |  Unix domain socket
+ [3] bridge: stores result in a 1-slot "latest value" buffer
+        |    (a newer result overwrites an unsent older one)
+        |    frames it: SOF | ver | type | seq | len | payload | CRC
+        v
+     UART, 3.3 V direct wire, ~0.34 ms per frame at 921600 baud (CALCULATED)
+        |
+        +-------------------------------------------------> [4] UART ISR puts bytes in a
+                                                                 stream buffer
+                                                            [5] RX task parses the frame,
+                                                                 checks CRC + sequence number
+                                                            [6] supervisor task (1 kHz):
+                                                                 updates the timers, decides
+                                                                 FRESH / HOLD / FAILSAFE
+                                                            [7] output: GPIO + LED show the state
+                                                            [8] status task (10 Hz) sends
+        <-------------------------------------------------      MCU_STATUS back to the Pi
+ [9] bridge logs MCU_STATUS; the logger writes CSV
+```
+
+In parallel, all the time:
+- **Heartbeat:** the bridge sends HEARTBEAT every 20 ms (ASSUMED), even when no new result exists.
+- **Clock sync:** the bridge sends ECHO_REQ; the STM32 answers with its receive and send
+  times, so the Pi can map the two clocks (section 6).
+- **Stressors:** `stress-ng` loads CPUs 2-3 with CPU, memory-bandwidth or cache pressure.
+
+**Age of Information (AoI)** at any moment = now minus `t_input` of the newest result the
+STM32 holds. This is the number that tells us "how old is the world view the MCU uses".
+
+---
+
 ## Part 2. The parts, one by one
 
 ### 2.1 On the Pi (Linux)
@@ -129,8 +169,8 @@ Status: ✓ done, ◐ partly, ○ not started. Hardware column says what must be
 |---|---|---|---|
 | 1 | Design, research notes R1–R8, design changes | ✓ | None |
 | 2 | UART protocol library + tests | ✓ | None |
-| 3 | Supervisor state machine (your skeleton, 113 test assertions) | ◐ needs two timers + latched FAILSAFE | None |
-| 4 | Merge skeleton into the main branch; fix the Linux build bug (`%llu`) | ○ | None |
+| 3 | Supervisor state machine (your skeleton, 113 test assertions; on `feat/software-skeleton-wip`, not merged) | ◐ has one timer and recovers after 1 valid packet; needs two timers + latched FAILSAFE | None |
+| 4 | Merge skeleton; drop its duplicate `protocol.c` in favour of `hea_proto`; fix the Linux build bug (`%llu`) | ○ | None |
 | 5 | CI: host tests + STM32 compile | ✓ | None |
 | 6 | Pi provisioning and experiment runner scripts | ◐ written, never run | Pi |
 | 7 | Inference program (MobileNetV2, ONNX Runtime) | ○ | None to write, Pi to run |
@@ -144,6 +184,48 @@ Status: ✓ done, ◐ partly, ○ not started. Hardware column says what must be
 | 15 | Report and slides | ◐ outline done | None |
 
 Order: 4 → 3 → 7, 8, 11 in parallel (Codex) → 6, 9, 10 on the Pi → 12 → 13 → 14 → 15.
+
+The same work as an ordered plan with a "done when" check per step:
+
+### Implementation plan, in order
+
+Each step has a "done when" check. Do them in this order; later steps depend on earlier ones.
+
+### Stage 1: software only (Mac, no hardware)
+| # | Work | Done when |
+|---|---|---|
+| 1 | Merge the skeleton into the main branch; one protocol library; one byte order | CI green; one `protocol/` |
+| 2 | Supervisor v2: two timers, sequence check, latched FAILSAFE + rearm, pure C with no FreeRTOS calls (time passed in as an argument) | host unit tests for: heartbeat lost, results stale but heartbeat alive, duplicates, CRC errors, rearm |
+| 3 | Clock-sync math: offset/delay from T1-T4, drift fit, min-delay filter | host test with synthetic clocks (known offset + drift) recovers them |
+| 4 | Linux bridge: Unix socket in, latest-value or FIFO (config), UART out, heartbeat, echo, MCU_STATUS in | runs against a pseudo-terminal pair (`socat`/`openpty`) with a fake MCU script |
+| 5 | Linux source + workload (ORT MobileNetV2; synthetic fallback) + CSV logger | runs on the Mac or the Pi; CSV has `t_input`, `t_done`, `t_sent` per frame |
+| 6 | FreeRTOS project for F446RE: ISR + stream buffer, RX task, supervisor, status task, GPIO/LED output | compiles in CI with `arm-none-eabi-gcc` |
+
+### Stage 2: hardware bring-up
+| # | Work | Done when |
+|---|---|---|
+| 7 | Pi bootstrap; `cyclictest` on the stock kernel; inference latency baseline (sets the source period and the HOLD/FAILSAFE thresholds) | numbers recorded with metadata and validity = OK |
+| 8 | Flash the Nucleo; talk over the ST-LINK virtual COM port first; heartbeat loss drives the LED to FAILSAFE | LED reacts when the sender is stopped |
+| 9 | Direct Pi-STM32 UART (GPIO14/15 to PA10/PA9, shared GND); measure CRC errors at the chosen baud | zero or counted errors over a long run |
+| 10 | Clock sync on real hardware + GPIO-edge validation | offset error distribution measured |
+| 11 | End-to-end AoI chain; logic-analyzer cross-check if available | AoI from logs matches the analyzer within the sync error |
+
+### Stage 3: experiments and analysis
+| # | Work | Done when |
+|---|---|---|
+| 12 | E1 contention: P0, idle vs each stressor (`--stream`, `--cache` 256K-8M, `--memrate`) | P50/P95/P99 per condition, repeated runs |
+| 13 | E2 tuning: P0 vs P1, P1 vs P3 | same metrics + bridge dispatch jitter |
+| 14 | E3 freshness: P1 vs P2 at rising load | time-average AoI, peak AoI, V(τ), deadline-miss fraction |
+| 15 | E4 faults: kill bridge, SIGSTOP, FIFO CPU hog; t_f, t_d, t_s on one analyzer clock | per-fault distribution of detection and reaction time |
+| 16 | Analysis: CDFs, tables, throttled runs excluded; report + slides + demo | |
+
+### Who does what (suggestion for two people)
+
+- **Person A, Linux side:** steps 4, 5, 7, 12-14 (bridge, workload, profiles, contention experiments).
+- **Person B, MCU side:** steps 2, 3, 6, 8-11, 15 (supervisor, clock sync, firmware, bring-up, fault experiments).
+- Together: step 1 (merge) and step 16 (analysis, report).
+The protocol is the contract between the two; change it only together.
+
 
 ---
 
