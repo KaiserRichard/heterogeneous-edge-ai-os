@@ -70,7 +70,7 @@ Costs we accept and will report:
 | `source` | Synthetic "sensor" producing timestamped input frames at a fixed rate (30 Hz, ASSUMED). This is the AoI origin. |
 | `workload` | Inference on each frame (small CNN via ONNX Runtime; synthetic compute as fallback). Variable latency by nature. |
 | `bridge` | Receives results over a Unix domain socket, keeps the latest value, frames it onto the UART, sends heartbeats (every 20 ms, ASSUMED) and clock-sync echoes. |
-| Runtime profiles | `P0 stock` (all defaults), `P1 tuned` (FIFO + pinning + cgroups + mlockall), `P2 tuned + latest-value` buffer. Same code, selected by config. |
+| Runtime profiles | `P0 stock` (all defaults), `P1 tuned` (FIFO + pinning + cgroups + mlockall), `P2 tuned + latest-value` buffer, `P3` = P2 on the packaged Real-time Ubuntu kernel (PREEMPT_RT, installed via `pro enable realtime-kernel --variant=raspi`). Same code, selected by config. |
 | Stressors | `stress-ng` profiles: CPU, memory/VM, cache, I/O. |
 | Runner + logger | `run_experiment.sh` wrapper, CSV per run, metadata, validity flag. |
 
@@ -92,7 +92,7 @@ Costs we accept and will report:
 | ID | Question | Compare | Main metric |
 |---|---|---|---|
 | E1 | How much does Linux contention hurt the data path? | P0 with no load vs each stressor | Inference + bridge latency P50/P95/P99 |
-| E2 | How much does runtime tuning recover? | P0 vs P1 under each stressor | Same, plus bridge dispatch jitter |
+| E2 | How much does runtime tuning recover, and how much more does an RT kernel add? | P0 vs P1 vs P3 under each stressor | Same, plus bridge dispatch jitter |
 | E3 | Does latest-value delivery keep data fresh under overload? | P1 vs P2 at rising load | End-to-end AoI distribution, deadline-miss rate |
 | E4 | Is failsafe reaction bounded no matter what Linux does? | Kill bridge, SIGSTOP, FIFO CPU hog | Detection and safe-state latency on the STM32 |
 

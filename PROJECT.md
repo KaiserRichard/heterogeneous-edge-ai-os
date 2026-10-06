@@ -114,7 +114,7 @@ To keep the project grounded, robust, and aligned with course goals, the followi
 - Containerization (Docker, Podman, Kubernetes)
 - Embedded Linux build systems (Yocto, Buildroot)
 - Custom Linux kernel drivers or kernel recompilation
-- PREEMPT_RT kernel patch
+- Patching or building our own kernel (the packaged Real-time Ubuntu 24.04 kernel is allowed as test profile P3; decision 2026-10-06)
 - Hypervisors (Xen, KVM, Jailhouse)
 - SPI / CAN / Ethernet interconnects (UART only)
 - TinyML / model inference running on the STM32
