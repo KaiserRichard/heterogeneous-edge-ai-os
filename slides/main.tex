@@ -70,7 +70,7 @@
 
 % \slideimg[<max height>]{<width>}{<V-id>}{<caption for placeholder>}
 % Shows images/<V-id>.jpg or .png if present, otherwise a labelled gray box of the same size.
-\newcommand{\slideimg}[4][0.62\textheight]{%
+\newcommand{\slideimg}[4][0.64\textheight]{%
   \IfFileExists{images/#3.jpg}{%
     \includegraphics[width=#2, height=#1, keepaspectratio]{images/#3.jpg}%
   }{\IfFileExists{images/#3.png}{%
@@ -108,7 +108,8 @@
 
 
 \newcounter{slidefigure}
-\newcommand{\figcap}[1]{\par\smallskip{\captiontype\color{muted}\refstepcounter{slidefigure}Hình \theslidefigure: #1\par}}
+\newcommand{\figcap}[1]{\par\smallskip{\centering\captiontype\color{muted}\refstepcounter{slidefigure}Hình \theslidefigure: #1\par}}
+\newcommand{\figagain}[1]{\par\smallskip{\centering\captiontype\color{muted}Hình~\ref{fig:#1}: \csuse{caption#1}\par}}
 \setbeamerfont{bibliography entry author}{size=\normalsize}
 \setbeamerfont{bibliography entry title}{size=\normalsize}
 \setbeamerfont{bibliography entry location}{size=\normalsize}
@@ -130,7 +131,13 @@
   \ifcsdef{diagram#2}{\sbox{\figurebox}{\csuse{diagram#2}}}{%
     \sbox{\figurebox}{\includegraphics[width=\linewidth,height=#1,keepaspectratio]{images/#2.jpg}}}%
   \par\centering\begin{minipage}{\wd\figurebox}\centering
-  \usebox{\figurebox}\figcap{#3}\end{minipage}\par}
+  \usebox{\figurebox}%
+  \ifcsdef{assetcaption#2}{\csuse{assetcaption#2}}{%
+    \csgdef{assetcaption#2}{\repeatassetcap{#2}}%
+    \csgdef{assettext#2}{#3}\figcap{#3}%
+    \csxdef{assetnumber#2}{\theslidefigure}}\end{minipage}\par}
+\newcommand{\repeatassetcap}[1]{\par\smallskip{\centering\captiontype\color{muted}%
+  \begingroup\renewcommand{\label}[1]{}Hình \csuse{assetnumber#1}: \csuse{assettext#1}\par\endgroup}}
 \makeatletter
 \newcommand{\takeaway}[1]{\global\beamer@framebottomskip=0pt\par\medskip\begin{beamercolorbox}[wd=\linewidth,sep=0pt]{block body}%
   \begin{tabular}{@{}!{\color{teal}\vrule width 3pt}p{\dimexpr\linewidth-22pt\relax}@{}}\normalsize\strut #1\strut\end{tabular}%
@@ -172,7 +179,7 @@
 \draw[faultflow] (c0)--node[lbl,left=5pt,font=\normalsize]{AI bị chậm} (c0|-bus.north);
 \foreach \n in {1,2,3}{\draw[flow,teal] (c\n)--(c\n|-bus.north);}
 \draw[flow] (bus)--(mem);
-\node[font=\normalsize,text=teal!80!black] at (8,-4.6) {Xanh: lưu lượng cạnh tranh từ nhân 1–3};
+\node[font=\normalsize,text=teal!80!black] at (6,-4.6) {Xanh: lưu lượng cạnh tranh từ nhân 1–3};
 \end{tikzpicture}}
 \newcommand{\aoidiagram}{%
 \begin{tikzpicture}[x=1cm,y=.75cm,font=\normalsize]
@@ -186,7 +193,7 @@
 \draw[flow] (10.8,5.2) node[right] {AoI đỉnh}--(9.2,4.8);
 \node[lbl,font=\normalsize,text=fault] (area) at (5.4,5.4) {Vượt ngưỡng};
 \draw[flow,fault] (area.east)--(8.6,3.2);
-\node[font=\normalsize,text=muted] at (6,-.9) {Minh họa; không phải số đo thực nghiệm};
+
 \end{tikzpicture}}
 \newcommand{\architecturediagram}{%
 \begin{tikzpicture}[font=\normalsize,box/.append style={font=\normalsize,minimum height=12mm}]
@@ -203,10 +210,10 @@
 \draw[flow] (rx)--(sup);\draw[faultflow] (sup.west)-|(out.north);
 \draw[flow] (sup)--(status);
 \draw[flow,dashed] (load)--(ai);
-\draw[teal,dashed,thick] (10.3,1)--(10.3,-1.2);
+\draw[teal,dashed,thick] (10.3,-.2)--(10.3,-.8);
 \node[text=navy,font=\normalsize\bfseries] at (4.1,1.4) {Linux / Raspberry Pi 5};
 \node[text=teal,font=\normalsize\bfseries] at (12.5,1.4) {FreeRTOS / STM32};
-\draw[flow,teal,dashed] (bridge.south)--(8.2,-1.1)--node[lbl,below=4pt,font=\normalsize]{GPIO đồng bộ} (11.8,-1.1)--(sup.north west);
+\draw[flow,teal,dashed] (bridge.south)--(9.2,-1)--(9.2,-2.4)--(sup.south west);\node[lbl,font=\normalsize] at (9,-1.25) {GPIO đồng bộ};
 \end{tikzpicture}}
 \newcommand{\pipelinediagram}{%
 \begin{tikzpicture}[font=\normalsize,box/.append style={font=\normalsize,minimum height=16mm,text width=26mm}]
@@ -225,7 +232,7 @@
 \draw[fault,dashed,thick] (0,.7)--(13,.7) node[above right] {Ngưỡng $\tau$};
 \draw[teal,very thick] (0,-.5)--(2,.4)--(2,-.4)--(4,.5)--(4,-.3)--(13,2.55);
 \fill[fault] (7.16,.7) circle (3pt);\draw[flow,fault] (8,1.8) node[above]{Phát hiện dữ liệu cũ}--(7.16,.7);
-\node[text=muted] at (5,-1.5) {Heartbeat tiếp tục; dữ liệu không được cập nhật};
+
 \end{tikzpicture}}
 \newcommand{\reactiondiagram}{%
 \begin{tikzpicture}[x=1cm,y=1cm,font=\normalsize]
@@ -238,7 +245,7 @@
 \node[above] at (3,3.4) {$t_f$: lỗi};\node[above] at (7,3.4) {$t_d$: quyết định};\node[above] at (10.5,3.4) {$t_s$: đầu ra an toàn};
 \draw[flow] (10.5,3.35)--(9,3.35);
 \draw[{Stealth}-{Stealth},thick] (3,-1.2)--node[lbl,below=5pt,font=\normalsize]{Reaction time $=t_s-t_f$} (9,-1.2);
-\node[font=\normalsize,text=muted] at (6,-2.1) {Một quyết định trạng thái; đầu ra an toàn đổi sau đó};
+
 \end{tikzpicture}}
 
 \csdef{diagramV06}{\simplexdiagram}
@@ -259,6 +266,45 @@
         \foreach \y in {-1.4,-2.1} \fill[teal] (3.8,\y) circle (1.5pt);
       \end{tikzpicture}}
 \csdef{diagramV19}{\syncdiagram}
+
+\newcommand{\throughputdiagram}{%
+\begin{tikzpicture}[font=\normalsize]
+\node[inner sep=0pt] (image) {\includegraphics[width=100mm,trim=0 130bp 0 250bp,clip]{images/V02.jpg}};
+\node[anchor=south,font=\normalsize\bfseries] at ([xshift=-25mm,yshift=2mm]image.north) {Throughput};
+\node[anchor=south,font=\normalsize\bfseries] at ([xshift=25mm,yshift=2mm]image.north) {Determinism};
+\end{tikzpicture}}
+\csdef{diagramV02}{\throughputdiagram}
+\newcommand{\bufferdiagram}{%
+\begin{tikzpicture}[font=\normalsize,box/.append style={font=\normalsize,minimum width=12mm,minimum height=10mm}]
+\node[anchor=west,font=\normalsize\bfseries] at (-.7,1.2) {FIFO queue};
+\foreach \x/\n in {0/1,1.6/2,3.2/3,4.8/4}{\node[box,fill=fault!12] at (\x,0) {\n};}
+\draw[flow] (5.5,0)--(7,0) node[right] {Gửi};
+\node[anchor=west,font=\normalsize\bfseries] at (-.7,-1) {Latest value};
+\node[box,fill=teal!15] (one) at (3.2,-2) {4};
+\node[anchor=west] at (-.7,-2) {Mới nhất};\draw[flow] (one)--(7,-2) node[right] {Gửi};
+\end{tikzpicture}}
+\csdef{diagramV14}{\bufferdiagram}
+\newcommand{\wiringdiagram}{%
+\begin{tikzpicture}[font=\normalsize,box/.append style={font=\normalsize,minimum height=12mm}]
+\node[box,minimum width=80mm] (pi) at (3,1.5) {Raspberry Pi 5};
+\node[box,minimum width=80mm,fill=teal!10] (stm) at (3,-4) {STM32F446RE};
+\foreach \x/\tag/\col in {0/TX/fault,2/RX/teal,4/GND/navy,6/SYNC/muted}{
+\draw[\col,very thick] (\x,.9)--(\x,-3.4);
+\node[lbl,font=\normalsize,text=\col] (l\tag) at (\x,-1.25) {\tag};
+\draw[\col,thin] (l\tag.south)--(\x,-2.1);}
+\end{tikzpicture}}
+\csdef{diagramV22}{\wiringdiagram}
+\newcommand{\profilesdiagram}{%
+\begin{tikzpicture}[font=\normalsize,box/.append style={font=\normalsize,minimum width=20mm,minimum height=12mm}]
+\node[box] (p0) at (0,0) {P0};\node[box] (p1) at (0,-2.2) {P1};
+\node[box,fill=teal!12] (p2) at (-2.5,-5.3) {P2};\node[box,fill=navy!10] (p3) at (2.5,-5.3) {P3};
+\draw[flow] (p0)--node[lbl,right=5pt,font=\normalsize] {Tinh chỉnh} (p1);
+\draw[flow] (p1.west)--(-2.5,-2.2)--(p2.north);
+\draw[flow] (p1.east)--(2.5,-2.2)--(p3.north);
+\node[lbl,font=\normalsize,align=center] at (-2.5,-3.65) {Bộ đệm\\mới nhất};
+\node[lbl,font=\normalsize,align=center] at (2.5,-3.65) {Kernel\\PREEMPT\_RT};
+\end{tikzpicture}}
+\csdef{diagramV12}{\profilesdiagram}
 \begin{document}
 \raggedright
 
@@ -268,33 +314,33 @@
 {\centering\Large\color{teal}Heterogeneous Edge-AI Runtime\par}
 \medskip{\color{teal}\hrule height .6pt}\medskip
 \begin{columns}[T,onlytextwidth]
-\begin{column}{.42\textwidth}
-\begin{minipage}[c][.62\textheight][c]{\linewidth}\raggedright
+\begin{column}{.58\textwidth}
+\begin{minipage}[c][.64\textheight][c]{\linewidth}\raggedright\large
 {\large\textbf{Nhóm thực hiện: 3 Stars}\par}
 \medskip
-Nguyễn Quốc Khánh – 20233464 \mbox{(Nhóm trưởng)}\par
+\mbox{Nguyễn Quốc Khánh – 20233464 (Nhóm trưởng)}\par
 Nguyễn Trung Hiếu – 20233398\par
 Nguyễn Quang Vinh – 20233718\par
 \bigskip
-{\large GVHD: TS. Nguyễn Quang Minh\par
-Mã lớp bài tập: 173876\par}
+{\large \textbf{GVHD:} TS. Nguyễn Quang Minh\par
+\textbf{Mã lớp bài tập:} 173876\par}
 \end{minipage}
 \end{column}
-\begin{column}{.54\textwidth}
-\begin{minipage}[c][.62\textheight][c]{\linewidth}\centering
-\slideimg[.62\textheight]{\linewidth}{V01}{}
+\begin{column}{.40\textwidth}
+\begin{minipage}[c][.64\textheight][c]{\linewidth}\centering
+\slideimg[.64\textheight]{\linewidth}{V01}{}
 \end{minipage}
 \end{column}
 \end{columns}
 \note{Ảnh bìa minh họa hai miền, không phải ảnh hệ thống đã lắp.}
 \end{frame}
 \begin{frame}{Mục lục}
-\Large
-\begin{tabular}{@{}L{.46\textwidth}@{\hspace{.06\textwidth}}L{.46\textwidth}@{}}
-1. Giới thiệu & 4. Phương pháp đánh giá\\[3.2em]
-2. Cơ sở lý thuyết & 5. Tiến độ và kế hoạch\\[3.2em]
-3. Thiết kế hệ thống & 6. Kết luận
-\end{tabular}
+\begin{tikzpicture}[font=\Large]
+\foreach \n/\title in {1/Giới thiệu,2/Cơ sở lý thuyết,3/Thiết kế hệ thống,4/Phương pháp đánh giá,5/Tiến độ và kế hoạch,6/Kết luận}{
+\node[fill=navy!6,rounded corners=4pt,minimum width=192mm,minimum height=12mm,anchor=west] at (0,-1.48*\n) {};
+\node[fill=navy,text=white,minimum width=12mm,minimum height=12mm,anchor=west,font=\Large\bfseries] at (0,-1.48*\n) {\n};
+\node[anchor=west,text=navy] at (1.7,-1.48*\n) {\title};}
+\end{tikzpicture}
 \end{frame}
 \section{Giới thiệu}
 \begin{frame}{1.1 Động lực nghiên cứu}
@@ -328,21 +374,11 @@ Hình~\ref{fig:deck-1} cho thấy thời hạn nằm ở đầu ra điều khi�
 \item Tính tất định (determinism): bảo đảm mỗi tác vụ hoàn thành trong thời hạn biết trước, kể cả trường hợp xấu nhất.
 \end{itemize}
 \vfill
+\fig[.40\textheight]{V02}{\label{fig:deck-2}Xa lộ tối ưu lưu lượng; đường ray bảo đảm giờ đến.}
+\medskip
 \begin{columns}[T,onlytextwidth]
-\begin{column}{.48\textwidth}
-\begin{minipage}[t][53mm][t]{\linewidth}
-\begin{itemize}
-\item Hình~\ref{fig:deck-2} (trái): xa lộ tối ưu lưu lượng, không bảo đảm giờ đến.
-\end{itemize}
-\vfill
-\begin{itemize}
-\item Hình~\ref{fig:deck-2} (phải): tín hiệu và đồng hồ bảo đảm từng chuyến đúng giờ.
-\end{itemize}
-\end{minipage}
-\end{column}
-\begin{column}{.48\textwidth}
-\fig[.475\textheight]{V02}{\label{fig:deck-2}Xa lộ tối ưu lưu lượng; đường ray bảo đảm giờ đến.}
-\end{column}
+\begin{column}{.48\textwidth}Hình~\ref{fig:deck-2} (trái): xa lộ tối ưu lưu lượng, không bảo đảm giờ đến.\end{column}
+\begin{column}{.48\textwidth}Hình~\ref{fig:deck-2} (phải): tín hiệu và đồng hồ bảo đảm từng chuyến đúng giờ.\end{column}
 \end{columns}
 \vfill
 \takeaway{Cần kết hợp sức mạnh tính toán của Linux với bộ giám sát thời gian thực bảo đảm an toàn.}
@@ -396,7 +432,7 @@ Hình~\ref{fig:deck-6} đặt câu hỏi nghiên cứu (RQ, Research Question) R
 \node[box,right=of uart] (mcu) {STM32\\RQ3: phản ứng lỗi};
 \draw[flow] (pi)--(uart);\draw[flow] (uart)--(mcu);
 \end{tikzpicture}
-\namedcap{3a}{\label{fig:deck-6}Phạm vi RQ1–RQ3: đo tác động của tải, cấu hình Linux và thời gian phản ứng của STM32.}
+\csgdef{captiondeck-6}{Phạm vi RQ1–RQ3: đo tác động của tải, cấu hình Linux và thời gian phản ứng của STM32.}\namedcap{3a}{\label{fig:deck-6}Phạm vi RQ1–RQ3: đo tác động của tải, cấu hình Linux và thời gian phản ứng của STM32.}
 \end{minipage}
 
 \end{frame}
@@ -410,7 +446,7 @@ Hình~\ref{fig:deck-6} đặt câu hỏi nghiên cứu (RQ, Research Question) R
 \end{itemize}
 \end{itemize}
 \vfill
-Hình~\ref{fig:deck-7} đặt RQ1–RQ2 ở miền tính toán và RQ3 ở bộ giám sát độc lập.
+Hình~\ref{fig:deck-6} đặt RQ1–RQ2 ở miền tính toán và RQ3 ở bộ giám sát độc lập.
 \par\vfill
 \begin{minipage}{\linewidth}\centering
 \begin{tikzpicture}[node distance=18mm,box/.append style={minimum width=35mm,minimum height=25mm}]
@@ -419,7 +455,7 @@ Hình~\ref{fig:deck-7} đặt RQ1–RQ2 ở miền tính toán và RQ3 ở bộ 
 \node[box,right=of uart] (mcu) {STM32\\RQ3: phản ứng lỗi};
 \draw[flow] (pi)--(uart);\draw[flow] (uart)--(mcu);
 \end{tikzpicture}
-\namedcap{3a}{\label{fig:deck-7}Phạm vi RQ1–RQ3: đo tác động của tải, cấu hình Linux và thời gian phản ứng của STM32.}
+\figagain{deck-6}
 \end{minipage}
 
 \end{frame}
@@ -439,8 +475,8 @@ Hình~\ref{fig:deck-8} cho thấy đề xuất đi qua bộ giám sát trước 
 \begin{itemize}\item Biến thể \textbf{System-Level Simplex} đặt hai phần trên hai phần cứng riêng, nên khi thành phần phức tạp bị lỗi hoặc treo, bộ giám sát vẫn hoạt động.
 \item Trong đồ án: Raspberry Pi 5 là thành phần phức tạp, STM32 là bộ giám sát.
 \end{itemize}\medskip
-Hình~\ref{fig:deck-9} cho thấy đề xuất đi qua bộ giám sát trước khi tới đầu ra.\par\medskip
-\fig[.40\textheight]{V06}{\label{fig:deck-9}Simplex: bộ giám sát quyết định đầu ra.}
+Hình~\ref{fig:deck-8} cho thấy đề xuất đi qua bộ giám sát trước khi tới đầu ra.\par\medskip
+\fig[.40\textheight]{V06}{\label{fig:deck-8}Simplex: bộ giám sát quyết định đầu ra.}
 \end{frame}
 \begin{frame}{2.2 Lập lịch thời gian thực trên Linux}
 \begin{itemize}
@@ -452,10 +488,10 @@ Hình~\ref{fig:deck-9} cho thấy đề xuất đi qua bộ giám sát trước 
 \end{frame}
 \begin{frame}{2.2 Lập lịch thời gian thực trên Linux (tiếp): tinh chỉnh}
 \begin{itemize}
-\item \textbf{Hình~\ref{fig:deck-11} (dưới, sau tinh chỉnh):} tác vụ quan trọng dùng chính sách SCHED\_FIFO (ưu tiên cố định) và được ghim riêng một nhân; tác vụ nền bị giới hạn bằng cgroups (control groups, cơ chế giới hạn tài nguyên cho một nhóm tiến trình), nên tác vụ quan trọng chạy đều đặn.
+\item \textbf{Hình~\ref{fig:deck-10} (dưới, sau tinh chỉnh):} tác vụ quan trọng dùng chính sách SCHED\_FIFO (ưu tiên cố định) và được ghim riêng một nhân; tác vụ nền bị giới hạn bằng cgroups (control groups, cơ chế giới hạn tài nguyên cho một nhóm tiến trình), nên tác vụ quan trọng chạy đều đặn.
 \end{itemize}
 \vfill
-\fig[.48\textheight]{V11}{\label{fig:deck-11}Tinh chỉnh: tác vụ quan trọng được ưu tiên và ghim riêng một nhân.}
+\fig[.48\textheight]{V11}{\label{fig:deck-10}Tinh chỉnh: tác vụ quan trọng được ưu tiên và ghim riêng một nhân.}
 \end{frame}
 \begin{frame}{2.2 Lập lịch thời gian thực trên Linux (tiếp): PREEMPT\_RT}
 \normalsize
@@ -535,15 +571,15 @@ RP1 kết nối qua PCIe (Peripheral Component Interconnect Express) 2.0 $\times
 \item Hình~\ref{fig:deck-15}: tuổi tăng giữa hai lần nhận, giảm khi có dữ liệu mới; vùng cam là thời gian vượt ngưỡng $\tau$.
 \end{itemize}
 \vfill
-\fig[.48\textheight]{V20}{\label{fig:deck-15}Tuổi tăng giữa hai lần nhận; vùng cam vượt ngưỡng.}
+\fig[.48\textheight]{V20}{\label{fig:deck-15}AoI minh họa, không phải số đo: tuổi tăng giữa hai lần nhận; vùng cam vượt ngưỡng.}
 \end{frame}
 \begin{frame}{2.4 Tuổi thông tin (Age of Information) (tiếp)}
 \begin{itemize}
-\item Hình~\ref{fig:deck-15-continued}: đo AoI trung bình, AoI đỉnh và tỉ lệ thời gian vượt ngưỡng.
+\item Hình~\ref{fig:deck-15}: đo AoI trung bình, AoI đỉnh và tỉ lệ thời gian vượt ngưỡng.
 \item Ưu tiên dữ liệu mới có thể giảm AoI so với FIFO (First-In, First-Out) \cite{kaul2012queues}; không bảo đảm cận trên cứng.
 \end{itemize}
 \vfill
-\fig[.48\textheight]{V20}{\label{fig:deck-15-continued}Tuổi tăng giữa hai lần nhận; vùng cam vượt ngưỡng.}
+\fig[.48\textheight]{V20}{\label{fig:deck-15}AoI minh họa, không phải số đo: tuổi tăng giữa hai lần nhận; vùng cam vượt ngưỡng.}
 \end{frame}
 \section{Thiết kế hệ thống}
 \begin{frame}{3.1 Kiến trúc tổng thể}
@@ -626,22 +662,13 @@ P3 & P1 trên kernel Real-time Ubuntu (PREEMPT\_RT)\\
 \note{Các cấu hình là dự kiến. P0–P1 đánh giá một gói tinh chỉnh; không tách riêng hiệu quả từng cơ chế trong gói. P2 và P3 là hai nhánh độc lập từ P1.}
 \end{frame}
 \begin{frame}{3.5 Latest-value buffer}
-Latest-value buffer là bộ đệm một ô, giữ kết quả mới nhất chưa gửi.\par\medskip
-\begin{columns}[T,onlytextwidth]
-\begin{column}{.48\textwidth}
-\begin{minipage}[t][53mm][t]{\linewidth}
-\begin{itemize}
-\item Hình~\ref{fig:deck-20} (trên): FIFO giữ thứ tự; khi quá tải, kết quả cũ phải chờ.
-\end{itemize}
+\begin{block}{Bộ đệm giá trị mới nhất}Latest-value buffer là bộ đệm một ô, giữ kết quả mới nhất chưa gửi.\end{block}
 \vfill
-\begin{itemize}
-\item Hình~\ref{fig:deck-20} (dưới): kết quả mới thay kết quả cũ, hạn chế tồn đọng.
-\end{itemize}
-\end{minipage}
-\end{column}
-\begin{column}{.48\textwidth}
-\fig[.54\textheight]{V14}{\label{fig:deck-20}FIFO giữ dữ liệu cũ; bộ đệm một ô giữ kết quả mới nhất chưa gửi.}
-\end{column}
+\fig{V14}{\label{fig:deck-20}FIFO giữ dữ liệu cũ; bộ đệm một ô giữ kết quả mới nhất chưa gửi.}
+\medskip
+\begin{columns}[T,onlytextwidth]
+\begin{column}{.48\textwidth}Hình~\ref{fig:deck-20} (trên): FIFO giữ thứ tự; khi quá tải, kết quả cũ phải chờ.\end{column}
+\begin{column}{.48\textwidth}Hình~\ref{fig:deck-20} (dưới): kết quả mới thay kết quả cũ, hạn chế tồn đọng.\end{column}
 \end{columns}
 \vfill
 \takeaway{Không hủy suy luận hay khung đang truyền; kỳ vọng giảm AoI trung bình, không bảo đảm cận trên cứng.}
@@ -672,6 +699,7 @@ Latest-value buffer là bộ đệm một ô, giữ kết quả mới nhất ch�
 \note{SOF (Start of Frame) là hai byte bắt đầu khung. MCU (Microcontroller Unit) là vi điều khiển. Kết quả kiểm thử phần mềm được brief ghi nhận; chưa đo độ tin cậy đường UART thật.}
 \end{frame}
 \begin{frame}{3.7 Bộ giám sát trên STM32}
+\vfill
 \begin{minipage}{\linewidth}\centering
 \begin{tikzpicture}[
  st/.style={draw=navy,fill=white,rounded corners=3pt,minimum width=24mm,minimum height=11mm,font=\small\bfseries,thick},
@@ -692,8 +720,10 @@ Latest-value buffer là bộ đệm một ô, giữ kết quả mới nhất ch�
 \end{tikzpicture}
 \figcap{\label{fig:deck-22}HOLD khi dữ liệu cũ; FAILSAFE khi mất heartbeat hoặc hết thời gian chờ.}
 \end{minipage}
-\medskip
+\smallskip
+\begin{block}{Chuyển trạng thái}
 INIT nhận dữ liệu hợp lệ; HOLD chờ dữ liệu mới; FAILSAFE giữ chốt đến lệnh khởi động lại tường minh.
+\end{block}
 \vfill
 \takeaway{Vì vậy cần kiểm tra cả hoạt động của bridge và độ mới; supervisor có ưu tiên ứng dụng cao nhất, tần số giám sát dự kiến 1 kHz (chu kỳ 1 ms).}
 \note{Đây là thiết kế cần triển khai; thay nhãn HOLD sang timeout để phân biệt hai cơ chế giám sát thời hạn. Skeleton hiện mới có một bộ định thời; cần kiểm chứng trên phần cứng.}
@@ -760,7 +790,7 @@ Giả thiết trễ hai chiều đối xứng.\par
 \normalsize
 
 \renewcommand{\arraystretch}{1.35}
-\begin{tabular}{@{}L{.20\textwidth} L{.74\textwidth}@{}}
+\begin{tabular}{@{}L{.22\textwidth}@{\hspace{.06\textwidth}}L{.66\textwidth}@{}}
 \toprule
 \textbf{Nhóm} & \textbf{Chỉ số}\\\midrule
 Độ trễ & P50, P99, giá trị lớn nhất (từ lúc lấy mẫu đến lúc STM32 nhận)\\
@@ -805,15 +835,15 @@ Mọi lần chạy ghi nhiệt độ, tần số CPU; loại bỏ lần chạy b
 \item Reaction time $=t_s-t_f$; tách thời gian phát hiện $t_d-t_f$ và kích hoạt $t_s-t_d$.
 \end{itemize}
 \vfill
-\fig[.48\textheight]{V23}{\label{fig:deck-25}Heartbeat dừng; trạng thái và đầu ra đổi sau đó.}
+\fig[.48\textheight]{V23}{\label{fig:deck-25}Heartbeat dừng tại lỗi; một quyết định trạng thái đi trước đầu ra an toàn.}
 \end{frame}
 \begin{frame}{4.3 Đo phản ứng khi có lỗi (tiếp)}
 \begin{itemize}
-\item Hình~\ref{fig:deck-25-continued}: logic analyzer (máy phân tích logic) ghi ba mốc trên cùng đồng hồ ngoài Linux; log Linux không đo được lúc Linux treo.
+\item Hình~\ref{fig:deck-25}: logic analyzer (máy phân tích logic) ghi ba mốc trên cùng đồng hồ ngoài Linux; log Linux không đo được lúc Linux treo.
 \item Ngân sách dự kiến: timeout + chu kỳ giám sát + trễ điều phối + thực thi + trễ đầu ra.
 \end{itemize}
 \vfill
-\fig[.48\textheight]{V23}{\label{fig:deck-25-continued}Heartbeat dừng; trạng thái và đầu ra đổi sau đó.}
+\fig[.48\textheight]{V23}{\label{fig:deck-25}Heartbeat dừng tại lỗi; một quyết định trạng thái đi trước đầu ra an toàn.}
 \end{frame}
 \begin{frame}{4.4 Giả thuyết}
 \relax
@@ -891,10 +921,10 @@ Hình~\ref{fig:deck-26} nhóm sáu bước thành ba giai đoạn có đầu ra 
 \begin{frame}{6.1 Kết luận}
 \begin{itemize}
 \item AI trên thiết bị biên ngày càng điều khiển trực tiếp hệ thống vật lý, nên kết quả phải vừa đúng vừa kịp thời; Linux đơn thuần tối ưu thông lượng và không bảo đảm điều này.
-\item Đồ án đề xuất (Hình~\ref{fig:deck-27}) Linux + FreeRTOS theo Simplex, với latest-value buffer, bộ giám sát hai bộ định thời và đồng bộ đồng hồ; dùng cơ chế sẵn có của hệ điều hành.
+\item Đồ án đề xuất (Hình~\ref{fig:deck-16}) Linux + FreeRTOS theo Simplex, với latest-value buffer, bộ giám sát hai bộ định thời và đồng bộ đồng hồ; dùng cơ chế sẵn có của hệ điều hành.
 \end{itemize}
 \vfill
-\fig[.48\textheight]{V08}{\label{fig:deck-27}Linux đề xuất; STM32 quyết định đầu ra.}
+\fig[.48\textheight]{V08}{\label{fig:deck-16}Linux đề xuất; STM32 quyết định đầu ra.}
 \end{frame}
 \begin{frame}{6.1 Kết luận (tiếp)}
 \begin{itemize}
@@ -915,70 +945,55 @@ Hình~\ref{fig:deck-26} nhóm sáu bước thành ba giai đoạn có đầu ra 
 \vfill
 \takeaway{Phép đo dùng đồng hồ ngoài Linux để quan sát cả lúc Linux ngừng phản hồi. Nền tảng chi phí thấp, có thể tái lập; phù hợp giảng dạy cơ chế hệ điều hành và đo hệ thống Edge-AI.}
 \end{frame}
-\begin{frame}{Tài liệu tham khảo (1/4)}
-\normalsize
+\begin{frame}{Tài liệu tham khảo}
+\setbeamerfont{bibliography entry author}{size=\footnotesize}
+\setbeamerfont{bibliography entry title}{size=\footnotesize}
+\setbeamerfont{bibliography entry location}{size=\footnotesize}
+\setbeamerfont{bibliography entry note}{size=\footnotesize}
+\vfill
+\begin{columns}[T,onlytextwidth]
+\begin{column}{.48\textwidth}
+\footnotesize
 \begin{thebibliography}{9}
 \setcounter{enumiv}{0}
-\setlength{\itemsep}{1.2em}
+\setlength{\itemsep}{.75em}
 \bibitem{bak2009}Stanley Bak, Deepti K. Chivukula, Olugbemiga Adekunle,
-      Mu Sun, Marco Caccamo, Lui Sha.\par
-      The System-Level Simplex Architecture for Improved Real-Time Embedded System Safety.\par
+      Mu Sun, Marco Caccamo, Lui Sha.
+      The System-Level Simplex Architecture for Improved Real-Time Embedded System Safety.
       \emph{IEEE RTAS},
       2009, pp.~99--107.
-      \href{https://dblp.org/rec/conf/rtas/BakCASCS09}{[DBLP]}
-\bibitem{kaul2012infocom}Sanjit Krishnan Kaul, Roy D. Yates, Marco Gruteser.\par
-      Real-time status: How often should one update?\par
+\bibitem{kaul2012infocom}Sanjit Krishnan Kaul, Roy D. Yates, Marco Gruteser.
+      Real-time status: How often should one update?
       \emph{IEEE INFOCOM}, 2012, pp.~2731--2735.
-      \href{https://dblp.org/rec/conf/infocom/KaulYG12.html}{[DBLP]}
-\end{thebibliography}
-\end{frame}
-\begin{frame}{Tài liệu tham khảo (2/4)}
-\normalsize
-\begin{thebibliography}{9}
-\setcounter{enumiv}{2}
-\setlength{\itemsep}{1.2em}
-\bibitem{kaul2012queues}Sanjit Krishnan Kaul, Roy D. Yates, Marco Gruteser.\par
-      Status updates through queues.\par
+\bibitem{kaul2012queues}Sanjit Krishnan Kaul, Roy D. Yates, Marco Gruteser.
+      Status updates through queues.
       \emph{CISS}, 2012, pp.~1--6.
-      \href{https://dblp.org/rec/conf/ciss/KaulYG12}{[DBLP]}
-\bibitem{yun2013memguard}Heechul Yun, Gang Yao, Rodolfo Pellizzoni, Marco Caccamo, Lui Sha.\par
+\bibitem{yun2013memguard}Heechul Yun, Gang Yao, Rodolfo Pellizzoni, Marco Caccamo, Lui Sha.
       MemGuard: Memory bandwidth reservation system for efficient performance isolation
-      in multi-core platforms.\par
+      in multi-core platforms.
       \emph{IEEE RTAS},
       2013, pp.~55--64.
-      \href{https://dblp.org/rec/conf/rtas/YunYPCS13.html}{[DBLP]}
 \end{thebibliography}
-\end{frame}
-\begin{frame}{Tài liệu tham khảo (3/4)}
-\normalsize
+\end{column}
+\begin{column}{.48\textwidth}
+\footnotesize
 \begin{thebibliography}{9}
 \setcounter{enumiv}{4}
-\setlength{\itemsep}{1.2em}
-\bibitem{bechtel2018deeppicar}Michael Garrett Bechtel, Elise McEllhiney, Minje Kim, Heechul Yun.\par
-      DeepPicar: A Low-Cost Deep Neural Network-Based Autonomous Car.\par
+\setlength{\itemsep}{.75em}
+\bibitem{bechtel2018deeppicar}Michael Garrett Bechtel, Elise McEllhiney, Minje Kim, Heechul Yun.
+      DeepPicar: A Low-Cost Deep Neural Network-Based Autonomous Car.
       \emph{IEEE RTCSA}, 2018, pp.~11--21.
-      \href{https://dblp.org/rec/conf/rtcsa/BechtelMKY18.html}{[DBLP]}
 \bibitem{arxiv2604}Luiz Giacomossi, Håkan Forsberg, Ivan Tomasic, Baran Çürüklü,
-      Tommaso Cucinotta.\par
+      Tommaso Cucinotta.
       Scheduling Analysis of UAV Flight Control Workloads on PREEMPT\_RT Linux
-      Using a Raspberry Pi~5.\par
+      Using a Raspberry Pi~5.
       \emph{arXiv:2604.19275}, 2026 (v2).
-      \href{https://arxiv.org/abs/2604.19275}{[arXiv]}
+\bibitem{bcm2712}Raspberry Pi Ltd. BCM2712 và RP1 Peripherals. Raspberry Pi Documentation, 2026.
+\bibitem{rfc4330}D. Mills. Simple Network Time Protocol (SNTP). RFC 4330, mục 5, 2006.
 \end{thebibliography}
-\end{frame}
-\begin{frame}{Tài liệu tham khảo (4/4)}
-\normalsize
-\begin{thebibliography}{9}
-\setcounter{enumiv}{6}
-\setlength{\itemsep}{1.2em}
-\bibitem{bcm2712}Raspberry Pi Ltd.\par
-BCM2712: cấu trúc bộ xử lý và hệ thống bộ nhớ.\par
-\href{https://www.raspberrypi.com/documentation/computers/processors.html\#bcm2712}{Raspberry Pi Documentation};
-\href{https://datasheets.raspberrypi.com/rp1/rp1-peripherals.pdf}{RP1 Peripherals: PCIe 2.0 $\times$4}. Truy cập 07/10/2026.
-\bibitem{rfc4330}D. Mills.\par
-Simple Network Time Protocol (SNTP), RFC 4330, mục 5, 2006.\par
-\href{https://www.rfc-editor.org/rfc/rfc4330\#section-5}{Trao đổi bốn mốc thời gian và ước lượng độ lệch.}
-\end{thebibliography}
+\end{column}
+\end{columns}
+\vfill
 \end{frame}
 \begin{frame}[c]
 \relax
