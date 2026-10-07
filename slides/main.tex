@@ -181,39 +181,42 @@
 \draw[flow] (bus)--(mem);
 \node[font=\normalsize,text=teal!80!black] at (6,-4.6) {Xanh: lưu lượng cạnh tranh từ nhân 1–3};
 \end{tikzpicture}}
+% Linear axes: every rise has slope 1; area 29.425 / duration 12.3.
 \newcommand{\aoidiagram}{%
 \begin{tikzpicture}[x=1cm,y=.75cm,font=\normalsize]
-\foreach \xa/\xb/\peak in {2.1/2.3/3,3.35/4.4/4.2,6.305/6.4/2.9,7.503/9.2/4.8,11/12.3/4.1}{
+\foreach \xa/\xb/\peak in {2.1/2.3/3,3.7/4.4/3.5,6.2/6.4/3,7.7/9.2/4.3,11/12.3/4.1}{
 \fill[fault!15] (\xa,2.8)--(\xb,\peak)--(\xb,2.8)--cycle;}
 \draw[flow] (0,0)--(14,0) node[right] {Thời gian $t$};
 \draw[flow] (0,0)--(0,5.6) node[above] {Tuổi $\Delta(t)$};
 \draw[fault,dashed,thick] (0,2.8)--(13,2.8) node[above right] {Ngưỡng $\tau$};
-\draw[muted,dashed] (0,2.485)--(13,2.485) node[below right] {AoI trung bình};
-\draw[navy,very thick] (0,.7)--(2.3,3)--(2.3,1.4)--(4.4,4.2)--(4.4,.8)--(6.4,2.9)--(6.4,1.5)--(9.2,4.8)--(9.2,1)--(12.3,4.1);
-\draw[flow] (10.8,5.2) node[right] {AoI đỉnh}--(9.2,4.8);
+\draw[muted,dashed] (0,2.39228)--(13,2.39228) node[below right] {AoI trung bình};
+\draw[navy,very thick] (0,.7)--(2.3,3)--(2.3,1.4)--(4.4,3.5)--(4.4,1)--(6.4,3)--(6.4,1.5)--(9.2,4.3)--(9.2,1)--(12.3,4.1);
+\draw[flow] (10.8,5.2) node[right] {AoI đỉnh}--(9.2,4.3);
 \node[lbl,font=\normalsize,text=fault] (area) at (5.4,5.4) {Vượt ngưỡng};
 \draw[flow,fault] (area.east)--(8.6,3.2);
-
 \end{tikzpicture}}
 \newcommand{\architecturediagram}{%
-\begin{tikzpicture}[font=\normalsize,box/.append style={font=\normalsize,minimum height=12mm}]
-\node[box,text width=30mm] (input) at (0,0) {Nguồn dữ liệu};
-\node[box,text width=30mm] (ai) at (4.1,0) {Suy luận};
-\node[box,text width=30mm] (bridge) at (8.2,0) {Bridge};
-\node[box,text width=30mm] (rx) at (12.5,0) {Nhận UART};
-\node[box,text width=34mm,fill=teal!12] (sup) at (12.5,-2) {Supervisor};
-\node[box,text width=34mm,fill=fault!12] (out) at (7.2,-3.4) {Failsafe / Output};
-\node[box,text width=34mm] (status) at (12.5,-3.4) {Báo trạng thái};
-\node[box,text width=33mm,fill=navy!6] (load) at (4.1,-2) {Tác vụ gây tải};
+\begin{tikzpicture}[x=.98cm,font=\normalsize,box/.append style={font=\normalsize,minimum height=12mm}]
+\draw[navy,rounded corners,fill=navy!3] (-1.9,1.6) rectangle (8.5,-4.3);
+\draw[teal,rounded corners,fill=teal!4] (9.5,1.6) rectangle (17.9,-4.3);
+\node[box,text width=28mm] (input) at (0,0) {Nguồn dữ liệu};
+\node[box,text width=28mm] (ai) at (3.4,0) {Suy luận};
+\node[box,text width=28mm] (bridge) at (6.8,0) {Bridge};
+\node[box,text width=32mm] (rx) at (13.7,0) {Nhận UART};
+\node[box,text width=32mm,fill=teal!12] (sup) at (13.7,-1.8) {Supervisor};
+\node[box,text width=32mm,fill=fault!12] (out) at (11.5,-3.5) {Failsafe / Output};
+\node[box,text width=32mm] (status) at (15.9,-3.5) {Báo trạng thái};
+\node[box,text width=32mm,fill=navy!6] (load) at (3.4,-2) {Tác vụ gây tải};
 \draw[flow] (input)--(ai);\draw[flow] (ai)--(bridge);
-\draw[flow] (bridge)--node[lbl,above=19pt,font=\normalsize]{UART} (rx);
-\draw[flow] (rx)--(sup);\draw[faultflow] (sup.west)-|(out.north);
-\draw[flow] (sup)--(status);
+\draw[flow] (bridge)--node[lbl,above=6pt,font=\normalsize]{UART} (rx);
+\draw[flow] (rx)--(sup);
+\draw[faultflow] (sup.west)-|(out.north);
+\draw[flow] (sup.east)-|(status.north);
 \draw[flow,dashed] (load)--(ai);
-\draw[teal,dashed,thick] (10.3,-.2)--(10.3,-.8);
-\node[text=navy,font=\normalsize\bfseries] at (4.1,1.4) {Linux / Raspberry Pi 5};
-\node[text=teal,font=\normalsize\bfseries] at (12.5,1.4) {FreeRTOS / STM32};
-\draw[flow,teal,dashed] (bridge.south)--(9.2,-1)--(9.2,-2.4)--(sup.south west);\node[lbl,font=\normalsize] at (9,-1.25) {GPIO đồng bộ};
+\node[text=navy,font=\normalsize\bfseries] at (3.3,1) {Linux / Raspberry Pi 5};
+\node[text=teal,font=\normalsize\bfseries] at (13.7,1) {FreeRTOS / STM32};
+\draw[flow,teal,dashed] (bridge.south)--(6.8,-1)--(11.8,-1)--(sup.north west);
+\node[lbl,font=\normalsize,anchor=east] at (8.1,-1.7) {GPIO đồng bộ};
 \end{tikzpicture}}
 \newcommand{\pipelinediagram}{%
 \begin{tikzpicture}[font=\normalsize,box/.append style={font=\normalsize,minimum height=16mm,text width=26mm}]
@@ -260,8 +263,8 @@
 \begin{tikzpicture}[x=1.35cm,y=1.3cm,font=\small]
         \draw[navy,thick] (0,0) node[above,align=center] {\textbf{Linux}\\Đồng hồ monotonic}--(0,-3.8);
         \draw[teal,thick] (3.8,0) node[above,align=center] {\textbf{STM32}\\Bộ định thời}--(3.8,-3.8);
-        \draw[flow] (0,-.5) node[left] {$T_1$}--node[lbl,above=5pt] {ECHO\_REQ} (3.8,-1.4) node[right] {$T_2$};
-        \draw[flow,teal] (3.8,-2.1) node[right] {$T_3$}--node[lbl,above=5pt] {ECHO\_RESP} (0,-3.1) node[left] {$T_4$};
+        \draw[flow] (0,-.5) node[left] {$T_1$}--node[lbl,above=22pt] {ECHO\_REQ} (3.8,-1.4) node[right] {$T_2$};
+        \draw[flow,teal] (3.8,-2.1) node[right] {$T_3$}--node[lbl,above=22pt] {ECHO\_RESP} (0,-3.1) node[left] {$T_4$};
         \foreach \y in {-.5,-3.1} \fill[navy] (0,\y) circle (1.5pt);
         \foreach \y in {-1.4,-2.1} \fill[teal] (3.8,\y) circle (1.5pt);
       \end{tikzpicture}}
@@ -276,16 +279,17 @@
 \csdef{diagramV02}{\throughputdiagram}
 \newcommand{\bufferdiagram}{%
 \begin{tikzpicture}[font=\normalsize,box/.append style={font=\normalsize,minimum width=12mm,minimum height=10mm}]
-\node[anchor=west,font=\normalsize\bfseries] at (-.7,1.2) {FIFO queue};
-\foreach \x/\n in {0/1,1.6/2,3.2/3,4.8/4}{\node[box,fill=fault!12] at (\x,0) {\n};}
-\draw[flow] (5.5,0)--(7,0) node[right] {Gửi};
+\node[anchor=west,font=\normalsize\bfseries] at (-.7,1.65) {FIFO queue};
+\node[anchor=east] at (10.8,.95) {Thứ tự đến: 1, 2, 3, 4};
+\foreach \x/\n in {0/4,1.6/3,3.2/2,4.8/1}{\node[box,fill=fault!12] at (\x,0) {\n};}
+\draw[flow] (5.5,0)--(7,0) node[right] {Gửi cũ nhất};
 \node[anchor=west,font=\normalsize\bfseries] at (-.7,-1) {Latest value};
 \node[box,fill=teal!15] (one) at (3.2,-2) {4};
 \node[anchor=west] at (-.7,-2) {Mới nhất};\draw[flow] (one)--(7,-2) node[right] {Gửi};
 \end{tikzpicture}}
 \csdef{diagramV14}{\bufferdiagram}
 \newcommand{\wiringdiagram}{%
-\begin{tikzpicture}[font=\normalsize,box/.append style={font=\normalsize,minimum height=12mm}]
+\begin{tikzpicture}[y=.7cm,font=\normalsize,box/.append style={font=\normalsize,minimum height=12mm}]
 \node[box,minimum width=80mm] (pi) at (3,1.5) {Raspberry Pi 5};
 \node[box,minimum width=80mm,fill=teal!10] (stm) at (3,-4) {STM32F446RE};
 \foreach \x/\tag/\col in {0/TX/fault,2/RX/teal,4/GND/navy,6/SYNC/muted}{
@@ -297,12 +301,12 @@
 \newcommand{\profilesdiagram}{%
 \begin{tikzpicture}[font=\normalsize,box/.append style={font=\normalsize,minimum width=20mm,minimum height=12mm}]
 \node[box] (p0) at (0,0) {P0};\node[box] (p1) at (0,-2.2) {P1};
-\node[box,fill=teal!12] (p2) at (-2.5,-5.3) {P2};\node[box,fill=navy!10] (p3) at (2.5,-5.3) {P3};
+\node[box,fill=teal!12] (p2) at (-1.2,-5.3) {P2};\node[box,fill=navy!10] (p3) at (1.2,-5.3) {P3};
 \draw[flow] (p0)--node[lbl,right=5pt,font=\normalsize] {Tinh chỉnh} (p1);
-\draw[flow] (p1.west)--(-2.5,-2.2)--(p2.north);
-\draw[flow] (p1.east)--(2.5,-2.2)--(p3.north);
-\node[lbl,font=\normalsize,align=center] at (-2.5,-3.65) {Bộ đệm\\mới nhất};
-\node[lbl,font=\normalsize,align=center] at (2.5,-3.65) {Kernel\\PREEMPT\_RT};
+\draw[flow] (p1.west)--(-1.2,-2.2)--(p2.north);
+\draw[flow] (p1.east)--(1.2,-2.2)--(p3.north);
+\node[lbl,font=\normalsize,align=center,anchor=east] at (-1.5,-3.65) {Bộ đệm\\mới nhất};
+\node[lbl,font=\normalsize,align=center,anchor=west] at (1.5,-3.65) {Kernel\\PREEMPT\_RT};
 \end{tikzpicture}}
 \csdef{diagramV12}{\profilesdiagram}
 \begin{document}
@@ -374,19 +378,19 @@ Hình~\ref{fig:deck-1} cho thấy thời hạn nằm ở đầu ra điều khi�
 \item Tính tất định (determinism): bảo đảm mỗi tác vụ hoàn thành trong thời hạn biết trước, kể cả trường hợp xấu nhất.
 \end{itemize}
 \vfill
-\fig[.40\textheight]{V02}{\label{fig:deck-2}Xa lộ tối ưu lưu lượng; đường ray bảo đảm giờ đến.}
-\medskip
+\fig[.40\textheight]{V02}{\label{fig:deck-2}Thông lượng và tính tất định.}
+\vspace{.8em}
 \begin{columns}[T,onlytextwidth]
-\begin{column}{.48\textwidth}Hình~\ref{fig:deck-2} (trái): xa lộ tối ưu lưu lượng, không bảo đảm giờ đến.\end{column}
-\begin{column}{.48\textwidth}Hình~\ref{fig:deck-2} (phải): tín hiệu và đồng hồ bảo đảm từng chuyến đúng giờ.\end{column}
+\begin{column}{.48\textwidth}Hình~\ref{fig:deck-2} (trái): tối ưu lưu lượng, không hẹn giờ.\end{column}
+\begin{column}{.48\textwidth}Hình~\ref{fig:deck-2} (phải): tín hiệu bảo đảm đúng giờ.\end{column}
 \end{columns}
 \vfill
 \takeaway{Cần kết hợp sức mạnh tính toán của Linux với bộ giám sát thời gian thực bảo đảm an toàn.}
 \end{frame}
 \begin{frame}{1.1 Động lực nghiên cứu (tiếp): hai miền thực thi}
 \begin{itemize}
-\item Hình~\ref{fig:deck-3}: Linux gửi đề xuất sang RTOS; bộ giám sát giữ quyền quyết định đầu ra cuối cùng.
-\item Xu hướng này đã có trong công nghiệp: nhiều SoC (System on Chip) tích hợp cả nhân chạy Linux và nhân vi điều khiển chạy RTOS (Real-Time Operating System), ví dụ STM32MP1, NXP i.MX 8M.
+\item Hình~\ref{fig:deck-3}: Linux gửi đề xuất sang RTOS (Real-Time Operating System); bộ giám sát giữ quyền quyết định đầu ra cuối cùng.
+\item Xu hướng này đã có trong công nghiệp: nhiều SoC (System on Chip) tích hợp cả nhân chạy Linux và nhân vi điều khiển chạy RTOS, ví dụ STM32MP1, NXP i.MX 8M.
 \end{itemize}
 \vfill
 \begin{minipage}{\linewidth}\centering
@@ -488,7 +492,7 @@ Hình~\ref{fig:deck-8} cho thấy đề xuất đi qua bộ giám sát trước 
 \end{frame}
 \begin{frame}{2.2 Lập lịch thời gian thực trên Linux (tiếp): tinh chỉnh}
 \begin{itemize}
-\item \textbf{Hình~\ref{fig:deck-10} (dưới, sau tinh chỉnh):} tác vụ quan trọng dùng chính sách SCHED\_FIFO (ưu tiên cố định) và được ghim riêng một nhân; tác vụ nền bị giới hạn bằng cgroups (control groups, cơ chế giới hạn tài nguyên cho một nhóm tiến trình), nên tác vụ quan trọng chạy đều đặn.
+\item \textbf{Hình~\ref{fig:deck-10} (dưới, sau tinh chỉnh):} tác vụ quan trọng dùng chính sách SCHED\_FIFO (ưu tiên cố định) và được ghim riêng một nhân; tác vụ nền bị giới hạn bằng cgroups, nên tác vụ quan trọng chạy đều đặn.
 \end{itemize}
 \vfill
 \fig[.48\textheight]{V11}{\label{fig:deck-10}Tinh chỉnh: tác vụ quan trọng được ưu tiên và ghim riêng một nhân.}
@@ -525,8 +529,8 @@ Hình~\ref{fig:deck-12} so sánh hai giá trị xấu nhất đã công bố tro
 \vfill
 \begin{columns}[T,onlytextwidth]
 \begin{column}{.48\textwidth}
-\begin{minipage}[t][53mm][t]{\linewidth}\centering
-\begin{tikzpicture}[font=\normalsize,box/.append style={font=\normalsize,minimum width=17mm}]
+\begin{minipage}[t][38mm][t]{\linewidth}\centering
+\begin{tikzpicture}[y=.7cm,font=\normalsize,box/.append style={font=\normalsize,minimum width=17mm}]
 \foreach \x/\n in {0/0,2.2/1,4.4/2,6.6/3}{\node[box,minimum height=11mm] (c\n) at (\x,0) {Nhân \n};}
 \node[box,fill=fault!12,minimum width=80mm] (bus) at (3.3,-1.8) {Đường truyền chung};
 \draw[faultflow] (c0)--(c0|-bus.north);
@@ -539,23 +543,25 @@ Hình~\ref{fig:deck-12} so sánh hai giá trị xấu nhất đã công bố tro
 \figcap{\label{fig:deck-13}Lưu lượng cạnh tranh làm nhân 0 chậm.}
 \end{column}
 \begin{column}{.48\textwidth}
-\begin{minipage}[t][53mm][t]{\linewidth}\centering
-\begin{tikzpicture}[font=\normalsize,box/.append style={font=\normalsize,minimum width=20mm}]
+\begin{minipage}[t][38mm][t]{\linewidth}\centering
+\begin{tikzpicture}[y=.7cm,font=\normalsize,box/.append style={font=\normalsize,minimum width=20mm}]
 \foreach \x/\n in {0/0,2.2/1,4.4/2,6.6/3}{\node[box] (c\n) at (\x,0) {\n\\L2};}
 \node[box,minimum width=78mm,fill=teal!10] (l3) at (3.3,-1.5) {L3 2 MB dùng chung};
 \foreach \n in {0,1,2,3}{\draw[flow] (c\n)--(c\n|-l3.north);}
-\node[box,minimum width=70mm] (mc) at (3.3,-2.5) {Bộ điều khiển bộ nhớ};\draw[flow] (l3)--(mc);
-\node[box] (mem) at (1.5,-3.8) {LPDDR4X};\draw[flow] (mc)--(mem);
-\node[box] (rp) at (6,-3.8) {RP1};
-\draw[flow] (c3.east)--(7.9,0)--(7.9,-3.8)--(rp.east);
-\node[lbl,rotate=0] at (6.9,-3.1) {PCIe};
+\node[box,minimum width=70mm] (mc) at (3.3,-2.9) {Bộ điều khiển bộ nhớ};\draw[flow] (l3)--(mc);
+\node[box] (mem) at (1.5,-4.5) {LPDDR4X};\draw[flow] (mc)--(mem);
+\node[box] (rp) at (6,-4.5) {RP1};
+\draw[flow] (c3.east)--(7.9,0)--(7.9,-4.5)--(rp.east);
+\node[lbl,rotate=0] at (6.9,-3.7) {PCIe};
 \end{tikzpicture}
 \end{minipage}
 \figcap{\label{fig:deck-14}BCM2712: L2 riêng, L3 và bộ nhớ chung.}
+\par\smallskip\raggedright\textbf{Chi tiết Hình~\ref{fig:deck-14}.}
+RP1 kết nối qua PCIe (Peripheral Component Interconnect Express) 2.0 $\times$4 để xử lý I/O (Input/Output). L2 mỗi nhân: 512 KB.
+
 \end{column}
 \end{columns}
-\medskip
-RP1 kết nối qua PCIe (Peripheral Component Interconnect Express) 2.0 $\times$4 để xử lý I/O (Input/Output). L2 mỗi nhân: 512 KB.
+
 \end{frame}
 \begin{frame}{2.3 Tranh chấp tài nguyên trên vi xử lý đa nhân (tiếp)}
 \begin{itemize}
@@ -600,11 +606,15 @@ RP1 kết nối qua PCIe (Peripheral Component Interconnect Express) 2.0 $\times
 \begin{column}{.48\textwidth}
 \normalsize
 \fig[.48\textheight]{V22}{\label{fig:deck-17}Bốn đường nối dự kiến: TX, RX, GND và GPIO đồng bộ.}
+\par\smallskip\raggedright\textbf{Nền tảng phần cứng.} Pi 5 4 GB, Ubuntu 24.04; Nucleo-F446RE, Cortex-M4F 180 MHz, FreeRTOS.
 \end{column}
 \begin{column}{.48\textwidth}
 \normalsize
-TX (Transmit): phát; RX (Receive): nhận; GND (Ground): đất chung. Hình~\ref{fig:deck-17} minh họa bốn đường nối; cần xác nhận trên bo thật.\par\normalsize\textbf{Đấu nối dự kiến}\par
-\renewcommand{\arraystretch}{1.35}
+\textbf{Ký hiệu đường nối.}
+TX (Transmit): phát; RX (Receive): nhận; GND (Ground): đất chung.
+\par\medskip
+\textbf{Đấu nối dự kiến}\par
+\renewcommand{\arraystretch}{1.12}
 \begin{tabular}{@{}L{.49\linewidth} L{.45\linewidth}@{}}
 \toprule
 \textbf{Raspberry Pi 5} & \textbf{STM32}\\\midrule
@@ -616,7 +626,7 @@ GPIO17 (chân 11) & $\rightarrow$ PA0 (TIM2\_CH1, đồng bộ)\\
 \end{tabular}\par
 \end{column}
 \end{columns}
-\vfill Raspberry Pi 5 4 GB, Ubuntu Server 24.04; Nucleo-F446RE (Cortex-M4F, 180 MHz), FreeRTOS.\par
+
 
 
 \note{TX là Transmit, RX là Receive, GND là Ground. Xác nhận pin, UART controller, device node, baud và timer clock trên bo thật; vị trí jumper trong ảnh không phải sơ đồ chân đã xác minh.}
@@ -664,11 +674,11 @@ P3 & P1 trên kernel Real-time Ubuntu (PREEMPT\_RT)\\
 \begin{frame}{3.5 Latest-value buffer}
 \begin{block}{Bộ đệm giá trị mới nhất}Latest-value buffer là bộ đệm một ô, giữ kết quả mới nhất chưa gửi.\end{block}
 \vfill
-\fig{V14}{\label{fig:deck-20}FIFO giữ dữ liệu cũ; bộ đệm một ô giữ kết quả mới nhất chưa gửi.}
-\medskip
+\fig{V14}{\label{fig:deck-20}FIFO và bộ đệm giá trị mới nhất.}
+\vspace{.8em}
 \begin{columns}[T,onlytextwidth]
-\begin{column}{.48\textwidth}Hình~\ref{fig:deck-20} (trên): FIFO giữ thứ tự; khi quá tải, kết quả cũ phải chờ.\end{column}
-\begin{column}{.48\textwidth}Hình~\ref{fig:deck-20} (dưới): kết quả mới thay kết quả cũ, hạn chế tồn đọng.\end{column}
+\begin{column}{.48\textwidth}Hình~\ref{fig:deck-20} (trên): FIFO gửi kết quả cũ nhất.\end{column}
+\begin{column}{.48\textwidth}Hình~\ref{fig:deck-20} (dưới): chỉ giữ kết quả mới nhất.\end{column}
 \end{columns}
 \vfill
 \takeaway{Không hủy suy luận hay khung đang truyền; kỳ vọng giảm AoI trung bình, không bảo đảm cận trên cứng.}
@@ -801,10 +811,10 @@ Phản ứng lỗi & Thời gian phát hiện, thời gian kích hoạt, tổng 
 \end{tabular}\par
 
 \note{P50 và P99 là phân vị 50 và 99 phần trăm. Tính tỉ lệ lỡ deadline trên toàn bộ chu kỳ đầu vào, kể cả kết quả bị thay thế. AoI gồm khoảng chưa có cập nhật mới.}
-\vfill
+\vspace{.8em}
 \begin{itemize}
 \item P50/P99 là phân vị 50/99\%: phân biệt hành vi thường gặp và các mẫu chậm ở đuôi phân bố.
-\item Tỉ lệ vượt ngưỡng đo khoảng hệ thống dùng dữ liệu quá cũ:\[V(\tau)=\dfrac{\text{thời gian AoI vượt }\tau}{\text{tổng thời gian quan sát}}.\]
+\item Tỉ lệ thời gian dùng dữ liệu quá cũ: $V(\tau)=\frac{\text{thời gian AoI vượt }\tau}{\text{tổng thời gian quan sát}}$.
 \item Deadline là hạn hoàn thành; mẫu bị thay trong bộ đệm vẫn được tính trong tổng số chu kỳ đầu vào.
 \item Giá trị lớn nhất quan sát là kết quả của lần đo, chưa chứng minh cận trên cho mọi trường hợp.
 \end{itemize}
@@ -813,7 +823,7 @@ Phản ứng lỗi & Thời gian phát hiện, thời gian kích hoạt, tổng 
 \relax
 \normalsize
 
-\renewcommand{\arraystretch}{1.35}
+\renewcommand{\arraystretch}{1.9}
 \begin{tabular}{@{}L{.18\textwidth} L{.43\textwidth} L{.32\textwidth}@{}}
 \toprule
 \textbf{Thí nghiệm} & \textbf{So sánh} & \textbf{Mục đích}\\\midrule
@@ -823,7 +833,7 @@ E3 & P1 với P2 khi tải tăng & Hiệu quả của latest-value buffer\\
 E4 & Dừng bridge, treo tiến trình, chiếm CPU & Độ trễ chuyển sang failsafe\\
 \bottomrule
 \end{tabular}\par
-\medskip
+\vfill
 \begin{block}{Kiểm soát lần chạy}
 Mọi lần chạy ghi nhiệt độ, tần số CPU; loại bỏ lần chạy bị giảm xung (throttling).
 \end{block}
@@ -897,6 +907,7 @@ Firmware, bridge, thí nghiệm & Chưa thực hiện\\
 \normalsize
 
 \begin{enumerate}
+\setlength{\itemsep}{.65em}
 \item Lắp đặt và kiểm tra phần cứng.
 \item Bộ giám sát hai bộ định thời và đồng bộ đồng hồ.
 \item Bridge trên Linux và firmware FreeRTOS.
@@ -906,7 +917,7 @@ Firmware, bridge, thí nghiệm & Chưa thực hiện\\
 \end{enumerate}
 \vfill
 Hình~\ref{fig:deck-26} nhóm sáu bước thành ba giai đoạn có đầu ra kiểm chứng được.
-\par\vfill
+\par\medskip
 \begin{minipage}{\linewidth}\centering
 \begin{tikzpicture}[node distance=10mm,box/.append style={minimum width=45mm,minimum height=15mm}]
 \node[box] (a) {Bước 1–3\\Lắp ráp và triển khai};

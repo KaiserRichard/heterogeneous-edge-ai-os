@@ -21,7 +21,7 @@ run_codex() { # $1 = role, $2 = prompt; tries accounts in rotation until one wor
     CODEX_HOME="$HOME/.codex-$acc" codex exec --sandbox workspace-write --skip-git-repo-check \
       -C "$PWD" "$prompt" </dev/null >"$out" 2>&1
     local rc=$?
-    if grep -qiE 'usage limit|rate limit|quota|exceeded your' "$out"; then
+    if grep -q 'hit your usage limit' "$out" && ! grep -q 'tokens used' "$out"; then
       log "$role: account $acc out of quota, trying next"; continue
     fi
     cat "$out" >> "slides/review/codex-$role.log"
