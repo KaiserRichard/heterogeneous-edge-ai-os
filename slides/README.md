@@ -6,7 +6,7 @@ Source of content: `docs/SLIDES_OVERVIEW.md` (18 slides + notes) and `docs/SYSTE
 
 ```sh
 cd slides
-latexmk -xelatex main.tex      # -> main.pdf (ignored by git)
+latexmk -xelatex -interaction=nonstopmode main.tex  # -> main.pdf (ignored by git)
 latexmk -c                     # remove aux files
 ```
 
@@ -47,3 +47,23 @@ profile ladder are TikZ drawings, not images.
 
 No number in the deck is a measurement on our rig. Each is tagged as DESIGN, CALCULATED,
 HOST-TEST (unit tests on the host) or PUBLISHED (other setups, cited).
+
+## Presentation review
+
+The deck has 18 talk slides, two bibliography pages in the appendix, and one supporting-illustrations page.
+Sentence titles carry each slide's message; secondary details stay in speaker notes. Diagram labels and
+bibliography text are kept readable, and orange is reserved for fault paths and FAILSAFE.
+The V01–V24 mapping and missing-image placeholders are unchanged.
+
+Presentation guidance consulted:
+- [Michael Alley, assertion-evidence tutorial](https://www.craftscicom.org/ae_tutorial.html): message titles, visual evidence, readable callouts, secondary details in notes.
+- [Carnegie Mellon, slide-design handout](https://www.cmu.edu/student-success/other-resources/handouts/comm-supp-pdfs/designing-powerpoint-slides.pdf): one distinct point and essential text per slide.
+- [Carnegie Mellon, presentation guidance](https://www.stat.cmu.edu/cmsac/sure/2022/materials/lectures/slides/08-Presentations.html): references beside claims and in backup material for sharing.
+
+Bibliography metadata was checked against DBLP and arXiv; each entry links to its primary record.
+The CISS authors/pages are also confirmed by [Marco Gruteser's DBLP bibliography](https://dblp.org/pid/87/88.html).
+DeepPicar's published venue is IEEE RTCSA 2018, pp. 11–21. The scheduling paper is cited as an arXiv preprint.
+
+PDF previews: `swift render.swift main.pdf preview` (macOS PDFKit; pdftoppm not needed). If Swift's default cache is blocked,
+pass `-module-cache-path .swift-module-cache` so its cache stays within `slides/`. Remove that generated
+cache after rendering. Previews live in `preview/` and are ignored by Git.

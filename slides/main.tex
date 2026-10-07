@@ -9,7 +9,7 @@
 % \setbeameroption{show notes on second screen=right}  % dual-screen (pdfpc)
 % \setbeameroption{show only notes}                     % notes handout
 
-\usetheme[progressbar=frametitle, numbering=fraction, sectionpage=progressbar]{moloch}
+\usetheme[progressbar=frametitle, sectionpage=progressbar]{moloch}
 
 % ---------- fonts ----------
 \usepackage{fontspec}
@@ -33,11 +33,20 @@
 \setbeamercolor{structure}{fg=navy}
 \setbeamercolor{title separator}{fg=teal}
 \setbeamercolor{footline}{fg=muted}
+% Beamer otherwise inherits the fault/alert color for in-slide citations.
+\setbeamercolor{bibliography entry author}{fg=navy}
+\setbeamercolor{bibliography entry title}{fg=ink}
+\setbeamercolor{bibliography entry location}{fg=muted}
+\setbeamercolor{bibliography entry note}{fg=muted}
 \setbeamercolor{block title}{fg=paper, bg=navy}
 \setbeamercolor{block body}{bg=navy!6}
 \setbeamerfont{frametitle}{size=\large, series=\bfseries}
 \setbeamertemplate{itemize items}{\color{teal}\rule[0.25ex]{0.45em}{0.45em}}
 \setbeamertemplate{bibliography item}[text]
+\setbeamertemplate{page number in head/foot}[totalframenumber]
+\hypersetup{colorlinks=true, linkcolor=navy, urlcolor=navy, citecolor=navy}
+% Keep the appendix bookmark free of Beamer translation commands.
+\pdfstringdefDisableCommands{\def\translate#1{#1}}
 \AtBeginSection{}  % no separate section-divider pages; progress bar shows position
 \setbeamertemplate{itemize subitem}{\color{muted}--}
 
@@ -110,13 +119,13 @@
 % ======================================================================
 \section{Problem}
 
-\begin{frame}{Under load, Linux delivers results late, and the receiver cannot tell}
+\begin{frame}{Late Linux results need a freshness check at the receiver}
   \begin{columns}[T]
     \begin{column}{0.42\textwidth}
       \begin{itemize}
-        \item Linux: high throughput, \alert{no timing guarantee}
-        \item Late results look exactly like fresh ones
-        \item If Linux hangs, nothing on Linux can be trusted to notice
+        \item Linux: high throughput; \textbf{no timing guarantee}
+        \item A result alone does not reveal its age
+        \item A Linux hang needs an independent monitor
       \end{itemize}
     \end{column}
     \begin{column}{0.56\textwidth}
@@ -126,19 +135,18 @@
       \slideimg[0.2\textheight]{0.48\linewidth}{V04}{Linux hang}
     \end{column}
   \end{columns}
-  \note{Example: the Pi runs a neural network every 100 ms and sends ``obstacle / no
-  obstacle'' to a microcontroller that drives a motor. A late or frozen answer is a safety
-  problem, not just a performance one.}
+  \note{Example: the Pi generates a classification every 100 ms. The MCU must check its age
+  before applying it to the simulated output. A live bridge can still send stale classifications.}
 \end{frame}
 
-\begin{frame}{We ask three measurable questions, using only stock OS mechanisms}
+\begin{frame}{We measure contention, OS tuning and independent supervision}
   \begin{columns}[c]
     \begin{column}{0.55\textwidth}
       \begin{enumerate}
         \setlength{\itemsep}{6pt}
-        \item How much does Linux \textbf{resource contention} delay a time-sensitive data path?
-        \item Which \textbf{stock OS mechanisms} recover that delay, and which cannot?
-        \item Can an \textbf{independent real-time supervisor} bound the reaction to Linux failures?
+        \item How much delay does \textbf{contention} add?
+        \item How much does \textbf{OS tuning} recover?
+        \item Can \textbf{independent supervision} bound fault reaction?
       \end{enumerate}
       \vspace{6pt}
       \muted{\footnotesize No new OS, no kernel patches: we combine, configure and measure.}
@@ -147,32 +155,32 @@
       \centering\slideimg[0.62\textheight]{\linewidth}{V07}{Three research questions}
     \end{column}
   \end{columns}
-  \note{We do not write a new OS or patch the kernel; we combine and configure existing OS
-  mechanisms and measure the effect.}
+  \note{The full questions are how resource contention delays the data path, which stock OS mechanisms
+  recover that delay and which cannot, and whether independent supervision can bound reaction to Linux
+  failures. We combine and configure existing OS mechanisms and measure the effect.}
 \end{frame}
 
 % ======================================================================
 \section{Background}
 
-\begin{frame}{The pattern is known; its failsafe latency on commodity Linux is not measured}
+\begin{frame}{Prior work motivates a separate supervisor and freshness checks}
   \begin{columns}[T]
     \begin{column}{0.64\textwidth}
       \footnotesize
       \begin{itemize}
-        \setlength{\itemsep}{3pt}
-        \item \textbf{System-Level Simplex} \cite{bak2009}: untrusted complex subsystem + simple
-              safety subsystem on separate hardware
-        \item \textbf{Age of Information} \cite{kaul2012queues,kaul2012infocom}: newest-first
-              delivery keeps data freshest
-        \item \textbf{Multicore interference} \cite{yun2013memguard,bechtel2018deeppicar}: dedicated
-              cores do not isolate memory bandwidth
-        \item \textbf{Pi~5 + PREEMPT\_RT} \cite{arxiv2604}: SCHED\_FIFO 99 worst case
-              \SI{1.8}{ms} stock vs \SI{0.22}{ms} RT kernel, stressed \evid{PUBLISHED}
+        \setlength{\itemsep}{4pt}
+        \item \textbf{System-Level Simplex} \cite{bak2009}: separate complex and
+              safety subsystems
+        \item \textbf{Age of Information} \cite{kaul2012queues,kaul2012infocom}: freshness depends on
+              queue discipline
+        \item \textbf{Multicore interference} \cite{yun2013memguard,bechtel2018deeppicar}: separate cores
+              still share memory bandwidth
+        \item \textbf{Pi~5 + PREEMPT\_RT} \cite{arxiv2604}: stressed scheduling latency,
+              FIFO priority 99: max \SI{1.8}{ms} stock / \SI{0.22}{ms} RT \evid{PUBLISHED}
       \end{itemize}
       \vspace{4pt}
-      \begin{block}{Gap}
-        \footnotesize Simplex papers report no failsafe-latency numbers. We measure them end to end
-        on Linux + FreeRTOS.
+      \begin{block}{Our evaluation}
+        \footnotesize Measure fault-to-safe-output latency end to end on Linux + FreeRTOS.
       \end{block}
     \end{column}
     \begin{column}{0.34\textwidth}
@@ -188,12 +196,13 @@
     \begin{column}{0.44\textwidth}
       \begin{itemize}
         \setlength{\itemsep}{5pt}
-        \item 4 $\times$ Cortex-A76, \SI{512}{KB} private L2 each
+        \item 4 $\times$ Cortex-A76\\ \SI{512}{KB} private L2 per core
         \item \SI{2}{MB} shared L3, shared LPDDR4X
-        \item Pinning a core isolates CPU time,\\ \alert{not} L3 or DRAM bandwidth
+        \item Pinning a core isolates CPU time,\\ \textbf{not} L3 or DRAM bandwidth
       \end{itemize}
       \vspace{4pt}
-      \muted{\footnotesize Leads to hypothesis H2.}
+      \muted{\footnotesize Leads to hypothesis H2.}\par
+      \muted{\scriptsize Memory contention:} \cite{yun2013memguard,bechtel2018deeppicar}
     \end{column}
     \begin{column}{0.54\textwidth}
       \centering\slideimg[0.66\textheight]{\linewidth}{V05}{BCM2712: private L2, shared L3 and DRAM}
@@ -255,7 +264,7 @@
   \begin{columns}[c]
     \begin{column}{0.40\textwidth}
       \footnotesize
-      capture $\rightarrow$ inference $\rightarrow$ buffer $\rightarrow$ UART $\rightarrow$ supervisor $\rightarrow$ action
+      \textbf{Age of Information:} age of the newest input available at the MCU
       \vspace{6pt}
       \[ \Delta(t) = t - u(t), \quad u(t)=\max\{g_i : r_i \le t\} \]
       \muted{$g_i$: input time, $r_i$: arrival at MCU}
@@ -263,6 +272,7 @@
       \begin{itemize}
         \item grows linearly between deliveries
         \item drops at each fresh delivery
+        \item definition: \cite{kaul2012infocom}
       \end{itemize}
     \end{column}
     \begin{column}{0.58\textwidth}
@@ -271,7 +281,8 @@
       \slideimg[0.3\textheight]{\linewidth}{V20}{AoI sawtooth}
     \end{column}
   \end{columns}
-  \note{AoI grows linearly between deliveries and drops at each fresh delivery. Average AoI and
+  \note{The path is capture, inference, buffer, UART, supervisor, action.
+  AoI grows linearly between deliveries and drops at each fresh delivery. Average AoI and
   the fraction of time above a threshold are our freshness metrics. Definition follows Kaul et al.}
 \end{frame}
 
@@ -281,9 +292,9 @@
       \begin{itemize}
         \setlength{\itemsep}{6pt}
         \item MobileNetV2 (ONNX, FP32, batch~1) on ONNX Runtime CPU
-        \item Published Pi~5 range: \SIrange{20}{50}{ms} per inference, 1--4 threads \evid{PUBLISHED, other setups}
+        \item Published Pi~5 planning range: \SIrange{20}{50}{ms} per inference, 1--4 threads \evid{PUBLISHED, other setups}
         \item Input period \SI{100}{ms} \evid{DESIGN, provisional}
-        \item Realistic: compute- and memory-heavy, variable
+        \item Compute- and memory-heavy; variable latency
       \end{itemize}
     \end{column}
     \begin{column}{0.38\textwidth}
@@ -292,8 +303,9 @@
         \draw[rule] (0,0) -- (4.6,0);
         \foreach \x/\l in {0/0, 2.3/50, 4.6/100} {\draw[muted] (\x,0.08)--(\x,-0.08) node[below, muted] {\l};}
         \fill[teal!70] (0.92,0.15) rectangle (2.3,0.55);
-        \node[above, align=center] at (1.6,0.55) {inference\\ \scriptsize 20--50 ms};
+        \node[above, align=center] at (1.6,0.55) {inference\\ \scriptsize 20--50 ms [PUBLISHED]};
         \draw[navy, thick, |-|] (0,1.45) -- (4.6,1.45) node[midway, above] {input period 100 ms};
+        \node[muted, font=\scriptsize] at (2.3,2.05) {[DESIGN, provisional]};
         \node[muted, below] at (2.3,-0.4) {time [ms]};
       \end{tikzpicture}
     \end{column}
@@ -302,7 +314,7 @@
   variable. The 100 ms period is provisional and is calibrated on our Pi first.}
 \end{frame}
 
-\begin{frame}{Four runtime profiles: each step changes exactly one thing}
+\begin{frame}{Profiles separate OS tuning, buffering and the RT kernel}
   \begin{columns}[c]
     \begin{column}{0.58\textwidth}
       \centering
@@ -311,13 +323,14 @@
           stp/.style={flow},
           dl/.style={lbl, font=\scriptsize\itshape, text=teal}]
         \node[prof] (p0) at (0,0)    {\textbf{P0 stock}\\ \scriptsize Linux defaults};
-        \node[prof] (p1) at (0,1.75) {\textbf{P1 tuned}\\ \scriptsize FIFO 50, pinning,\\ cgroups, mlockall};
+        \node[prof] (p1) at (0,1.75) {\textbf{P1 tuned}\\ \scriptsize bridge FIFO 50, pinning,\\ cgroups, mlockall};
         \node[prof] (p2) at (-1.7,3.75) {\textbf{P2}\\ \scriptsize P1 + latest value};
         \node[prof] (p3) at (1.7,3.75)  {\textbf{P3}\\ \scriptsize P1 on RT kernel};
         \draw[stp] (p0) -- node[dl, right=2pt] {+ OS tuning} (p1);
         \draw[stp] (p1.north) -- ++(0,0.3) -| node[dl, pos=0.75, left=1pt] {+ buffer} (p2.south);
         \draw[stp] (p1.north) -- ++(0,0.3) -| node[dl, pos=0.75, right=1pt] {+ PREEMPT\_RT} (p3.south);
-      \end{tikzpicture}
+      \end{tikzpicture}\par
+      \evid{DESIGN}
     \end{column}
     \begin{column}{0.4\textwidth}
       \centering
@@ -325,7 +338,9 @@
       \slideimg[0.28\textheight]{\linewidth}{V11}{Stock vs tuned scheduling}
     \end{column}
   \end{columns}
-  \note{Each comparison changes one thing: P0 to P1 tuning, P1 to P2 buffering, P1 to P3 kernel.
+  \note{P0 to P1 changes the tuning package (bridge priority, affinity, cgroups and locked memory).
+  P1 to P2 changes buffering; P1 to P3 changes the kernel. These comparisons separate treatments;
+  P0 to P1 does not isolate the effect of each tuning knob.
   P3 uses the packaged Real-time Ubuntu 24.04 kernel; no kernel build. FIFO priority 50 is a
   design value.}
 \end{frame}
@@ -337,7 +352,7 @@
         \setlength{\itemsep}{6pt}
         \item \textbf{FIFO queue}: under overload, results wait and arrive old
         \item \textbf{Latest value}: an unsent old result is overwritten
-        \item Theory \cite{kaul2012queues}: lower average age; \alert{no hard bound}
+        \item Theory \cite{kaul2012queues}: lower average age; \textbf{no hard bound}
       \end{itemize}
     \end{column}
     \begin{column}{0.58\textwidth}
@@ -348,7 +363,7 @@
   memoryless arrivals and service. We measure how much it helps on real hardware (E3).}
 \end{frame}
 
-\begin{frame}{One byte-wise frame parser runs unchanged on Linux and on the STM32}
+\begin{frame}{Linux and STM32 share the same byte-wise frame parser}
   \centering
   \begin{tikzpicture}[
       f/.style={draw=navy, fill=white, minimum height=9mm, align=center, font=\footnotesize, inner sep=2pt},
@@ -368,7 +383,7 @@
   \begin{columns}[T]
     \begin{column}{0.47\textwidth}
       \footnotesize
-      \textbf{Messages}
+      \textbf{Messages} \evid{DESIGN}
       \begin{itemize}
         \item HEARTBEAT, INFERENCE
         \item ECHO\_REQ / ECHO\_RESP (clock sync)
@@ -380,11 +395,12 @@
       \textbf{Host unit tests} \evid{HOST-TEST}
       \begin{itemize}
         \item every single-bit error detected
-        \item \SI{99.99}{\percent} frame recovery under random noise
-        \item $\approx$\SI{0.34}{ms} per frame at 921\,600 baud \evid{CALCULATED}
+        \item \SI{99.99}{\percent} recovery under random noise
       \end{itemize}
     \end{column}
   \end{columns}
+  \vspace{4pt}
+  {\footnotesize UART wire time: $\approx$\SI{0.34}{ms} per frame at 921\,600 baud \evid{CALCULATED}\par}
   \note{The byte-wise parser runs unchanged on Linux and on the STM32. Test numbers are host
   unit-test results, not link measurements; the real UART error rate is measured later.
   Image V15 can go in backup.}
@@ -397,28 +413,28 @@
       \begin{tikzpicture}[
           st/.style={draw=navy, fill=white, rounded corners=3pt, minimum width=20mm,
                      minimum height=9mm, font=\footnotesize\bfseries, thick},
-          lb/.style={lbl, font=\scriptsize}]
+          lb/.style={lbl, font=\footnotesize, inner sep=2pt}]
         \node[st] (init) at (0,0)      {INIT};
         \node[st, fill=teal!15] (fresh) at (3.1,0) {FRESH};
         \node[st, fill=navy!10] (hold) at (3.1,-2.6) {HOLD};
         \node[st, draw=fault, fill=fault!15, text=fault] (fs) at (6.2,-1.3) {FAILSAFE};
         \node[font=\scriptsize\itshape, muted, below=0pt of fs] {latched};
-        \draw[flow] (init) -- node[lb, above] {valid data} (fresh);
+        \draw[flow] (init) -- node[lb, above=16pt] {valid data} (fresh);
         \draw[flow] (fresh.250) -- node[lb, left] {data stale} (hold.110);
         \draw[flow] (hold.70) -- node[lb, right] {fresh data} (fresh.290);
-        \draw[faultflow] (fresh.east) -- node[lb, above, sloped] {heartbeat lost} (fs.north west);
-        \draw[faultflow] (hold.east) -- node[lb, below, sloped] {timeout} (fs.south west);
+        \draw[faultflow] (fresh.east) -- node[lb, above=12pt, sloped, pos=0.55] {heartbeat lost} (fs.north west);
+        \draw[faultflow] (hold.east) -- node[lb, below=4pt, sloped] {timeout} (fs.south west);
         \draw[flow, dashed] (fs.north) -- (fs.north |- 0,1.15) -- node[lb, above] {explicit rearm} (init.north |- 0,1.15) -- (init.north);
       \end{tikzpicture}
     \end{column}
     \begin{column}{0.36\textwidth}
-      \scriptsize
+      \footnotesize
       \begin{itemize}
-        \setlength{\itemsep}{2pt}
-        \item Timers: heartbeat liveness, result freshness
-        \item Duplicates and corrupt frames never refresh a timer
-        \item Highest app priority, \SI{1}{kHz}, absolute release \evid{DESIGN}
-        \item Thresholds set after measuring inference latency
+        \setlength{\itemsep}{3pt}
+        \item Separate liveness and freshness timers
+        \item Duplicate / corrupt frames do not refresh timers
+        \item Highest app priority;\\ \SI{1}{kHz}, absolute release \evid{DESIGN}
+        \item Calibrate thresholds on the rig
       \end{itemize}
       \vspace{2pt}
       \centering\slideimg[0.2\textheight]{0.48\linewidth}{V16}{Supervisor}\hfill
@@ -431,7 +447,7 @@
   inference latency. V18 can go in backup.}
 \end{frame}
 
-\begin{frame}{Two clocks are mapped by a T1--T4 exchange and checked by a GPIO edge}
+\begin{frame}{A GPIO edge checks the UART clock mapping}
   \begin{columns}[c]
     \begin{column}{0.52\textwidth}
       \centering
@@ -453,7 +469,7 @@
       \begin{itemize}
         \item Drift: linear fit over many exchanges, min-delay filter
         \item Ground truth: GPIO17 edge $\rightarrow$ PA0 input capture
-        \item Target: sub-millisecond \evid{to be measured}
+        \item Target: sub-millisecond \evid{DESIGN, to be measured}
       \end{itemize}
     \end{column}
   \end{columns}
@@ -465,7 +481,7 @@
 % ======================================================================
 \section{Evaluation plan}
 
-\begin{frame}{Four experiments, one variable each}
+\begin{frame}{Four experiments separate delay, freshness and fault reaction}
   \footnotesize
   \begin{tabular}{@{}l L{0.36\textwidth} L{0.38\textwidth}@{}}
     \toprule
@@ -517,11 +533,11 @@
   Detection, activation and total latency are reported separately.}
 \end{frame}
 
-\begin{frame}{Hypotheses: predictions to be tested, not results}
+\begin{frame}{Each hypothesis maps to a planned experiment}
   \begin{enumerate}
     \setlength{\itemsep}{7pt}
     \item[\textbf{H1}] Contention inflates P99 far more than P50
-    \item[\textbf{H2}] Tuning recovers CPU-contention tails, \alert{not} memory-contention tails
+    \item[\textbf{H2}] Tuning recovers CPU-contention tails, \textbf{not} memory-contention tails
     \item[\textbf{H3}] Latest value lowers average AoI and violation time (no hard bound)
     \item[\textbf{H4}] STM32 failsafe latency stays within its budget for every fault type
   \end{enumerate}
@@ -534,15 +550,15 @@
 % ======================================================================
 \section{Status}
 
-\begin{frame}{Design and host-tested core are done; hardware experiments are next}
+\begin{frame}{Host tests are complete; hardware evaluation is next}
   \begin{columns}[c]
     \begin{column}{0.48\textwidth}
       \footnotesize
       \textbf{\color{teal}Done}
       \begin{itemize}
         \item Design and research pass (8 cited notes)
-        \item Protocol library + host tests
-        \item Supervisor state machine + tests (113 assertions)
+        \item Protocol library + tests \evid{HOST-TEST}
+        \item Supervisor skeleton + tests\\ (113 assertions) \evid{HOST-TEST}
         \item CI, Pi provisioning scripts
       \end{itemize}
       \vspace{4pt}
@@ -556,35 +572,70 @@
       \centering\slideimg[0.7\textheight]{\linewidth}{V24}{Progress timeline}
     \end{column}
   \end{columns}
-  \note{Update before presenting. The supervisor tests cover the one-timer skeleton; the two-timer
+  \note{Design and research pass are done (8 cited notes); CI and Pi provisioning scripts are present.
+  Rig setup, firmware and bridge daemon precede E1--E4. Update before presenting. The supervisor tests cover the one-timer skeleton; the two-timer
   version with latched FAILSAFE is in progress.}
 \end{frame}
 
 % ======================================================================
-\begin{frame}{References}
-  \scriptsize
+% References are backup material, so the talk closes on its next steps.
+\appendix
+\setbeamerfont{bibliography entry author}{size=\footnotesize}
+\setbeamerfont{bibliography entry title}{size=\footnotesize}
+\setbeamerfont{bibliography entry location}{size=\footnotesize}
+\setbeamerfont{bibliography entry note}{size=\footnotesize}
+
+\begin{frame}{References: supervision and freshness}
+  \footnotesize\raggedright
   \begin{thebibliography}{9}
-    \bibitem{bak2009} S.~Bak, D.~K. Chivukula, O.~Adekunle, M.~Sun, M.~Caccamo, L.~Sha.
-      The System-Level Simplex Architecture for Improved Real-Time Embedded System Safety.
-      \emph{IEEE RTAS}, 2009, pp.~99--107.
-    \bibitem{kaul2012infocom} S.~Kaul, R.~Yates, M.~Gruteser.
-      Real-Time Status: How Often Should One Update? \emph{IEEE INFOCOM}, 2012.
-    \bibitem{kaul2012queues} S.~Kaul, R.~Yates, M.~Gruteser.
-      Status Updates Through Queues. \emph{Conf.\ on Information Sciences and Systems (CISS)}, 2012.
-    \bibitem{yun2013memguard} H.~Yun, G.~Yao, R.~Pellizzoni, M.~Caccamo, L.~Sha.
-      MemGuard: Memory Bandwidth Reservation System for Efficient Performance Isolation in
-      Multi-core Platforms. \emph{IEEE RTAS}, 2013.
-    \bibitem{bechtel2018deeppicar} M.~G. Bechtel, E.~McEllhiney, M.~Kim, H.~Yun.
-      DeepPicar: A Low-cost Deep Neural Network-based Autonomous Car.
-      arXiv:1712.08644, 2018.
-    \bibitem{arxiv2604} Scheduling Analysis of UAV Flight Control Workloads on PREEMPT\_RT Linux
-      Using a Raspberry Pi~5. arXiv:2604.19275, 2026.
+    \setlength{\itemsep}{9pt}
+    \bibitem{bak2009} Stanley Bak, Deepti K. Chivukula, Olugbemiga Adekunle,
+      Mu Sun, Marco Caccamo, Lui Sha.\par
+      The System-Level Simplex Architecture for Improved Real-Time Embedded System Safety.\par
+      \emph{IEEE Real-Time and Embedded Technology and Applications Symposium (RTAS)},
+      2009, pp.~99--107.
+      \href{https://dblp.org/rec/conf/rtas/BakCASCS09}{[DBLP]}
+    \bibitem{kaul2012infocom} Sanjit Krishnan Kaul, Roy D. Yates, Marco Gruteser.\par
+      Real-time status: How often should one update?\par
+      \emph{IEEE INFOCOM}, 2012, pp.~2731--2735.
+      \href{https://dblp.org/rec/conf/infocom/KaulYG12.html}{[DBLP]}
+    \bibitem{kaul2012queues} Sanjit Krishnan Kaul, Roy D. Yates, Marco Gruteser.\par
+      Status updates through queues.\par
+      \emph{Conference on Information Sciences and Systems (CISS)}, 2012, pp.~1--6.
+      \href{https://dblp.org/rec/conf/ciss/KaulYG12}{[DBLP]}
   \end{thebibliography}
+  \note{Primary bibliographic metadata checked against DBLP. Links in the PDF lead to the records.
+  Keep references available for questions and for readers of the shared deck.}
+\end{frame}
+
+\begin{frame}{References: contention and Linux scheduling}
+  \footnotesize\raggedright
+  \begin{thebibliography}{9}
+    \setcounter{enumiv}{3}
+    \setlength{\itemsep}{9pt}
+    \bibitem{yun2013memguard} Heechul Yun, Gang Yao, Rodolfo Pellizzoni, Marco Caccamo, Lui Sha.\par
+      MemGuard: Memory bandwidth reservation system for efficient performance isolation
+      in multi-core platforms.\par
+      \emph{IEEE Real-Time and Embedded Technology and Applications Symposium (RTAS)},
+      2013, pp.~55--64.
+      \href{https://dblp.org/rec/conf/rtas/YunYPCS13.html}{[DBLP]}
+    \bibitem{bechtel2018deeppicar} Michael Garrett Bechtel, Elise McEllhiney, Minje Kim, Heechul Yun.\par
+      DeepPicar: A Low-Cost Deep Neural Network-Based Autonomous Car.\par
+      \emph{IEEE International Conference on Embedded and Real-Time Computing Systems
+      and Applications (RTCSA)}, 2018, pp.~11--21.
+      \href{https://dblp.org/rec/conf/rtcsa/BechtelMKY18.html}{[DBLP]}
+    \bibitem{arxiv2604} Luiz Giacomossi, Håkan Forsberg, Ivan Tomasic, Baran Çürüklü,
+      Tommaso Cucinotta.\par
+      Scheduling Analysis of UAV Flight Control Workloads on PREEMPT\_RT Linux
+      Using a Raspberry Pi~5.\par
+      \emph{arXiv:2604.19275}, 2026 (v2).
+      \href{https://arxiv.org/abs/2604.19275}{[arXiv]}
+  \end{thebibliography}
+  \note{DeepPicar's published venue is RTCSA 2018, not just its arXiv preprint.
+  The scheduling paper is identified as an arXiv preprint; no publication venue is inferred.}
 \end{frame}
 
 % ======================================================================
-\appendix
-
 \begin{frame}{Backup: supporting illustrations}
   \centering
   \slideimg[0.38\textheight]{0.3\linewidth}{V13}{Profiles detail}\hfill
