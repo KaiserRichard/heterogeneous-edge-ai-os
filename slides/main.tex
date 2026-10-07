@@ -3,18 +3,18 @@
 % Content source: docs/SLIDES_OVERVIEW.md, docs/SYSTEM_GUIDE.md, docs/research/.
 % Number policy: every number is a DESIGN value, a CALCULATED value, a HOST-TEST
 % result, or a PUBLISHED figure from another setup. Nothing here is a Pi/STM32 measurement.
-\documentclass[aspectratio=169,11pt]{beamer}
+\documentclass[aspectratio=169,12pt]{beamer}
 
 % Speaker notes: uncomment ONE line to see them.
 % \setbeameroption{show notes on second screen=right}  % dual-screen (pdfpc)
 % \setbeameroption{show only notes}                     % notes handout
 
-\usetheme[progressbar=frametitle, sectionpage=progressbar]{moloch}
+\usetheme[progressbar=frametitle, sectionpage=none]{moloch}
 
 % ---------- fonts ----------
 \usepackage{fontspec}
 \setsansfont{Avenir Next}[BoldFont={Avenir Next Demi Bold}]
-\setmonofont{Menlo}[Scale=0.85]
+\setmonofont{Menlo}[Scale=1.0]
 
 % ---------- palette ----------
 \definecolor{navy}{HTML}{1F3A5F}
@@ -62,21 +62,23 @@
 
 % ---------- helpers ----------
 \newcommand{\muted}[1]{{\color{muted}#1}}
-\newcommand{\evid}[1]{{\scriptsize\color{muted}[#1]}}   % evidence tag: DESIGN, PUBLISHED, ...
-\newcommand{\src}[1]{\par\vfill{\scriptsize\color{muted}#1}}
+\newcommand{\evid}[1]{{\footnotesize\color{muted}[#1]}}   % evidence tag: DESIGN, PUBLISHED, ...
+\newcommand{\src}[1]{\par\vfill{\footnotesize\color{muted}#1}}
 
 % \slideimg[<max height>]{<width>}{<V-id>}{<caption for placeholder>}
-% Shows images/<V-id>.png if present, otherwise a labelled gray box of the same size.
+% Shows images/<V-id>.jpg or .png if present, otherwise a labelled gray box of the same size.
 \newcommand{\slideimg}[4][0.62\textheight]{%
-  \IfFileExists{images/#3.png}{%
+  \IfFileExists{images/#3.jpg}{%
+    \includegraphics[width=#2, height=#1, keepaspectratio]{images/#3.jpg}%
+  }{\IfFileExists{images/#3.png}{%
     \includegraphics[width=#2, height=#1, keepaspectratio]{images/#3.png}%
   }{%
     \begin{tikzpicture}
       \node[draw=rule, fill=black!6, rounded corners=2pt, minimum width=\dimexpr#2-1pt\relax, outer sep=0pt,
             minimum height=#1, align=center, text width=\dimexpr#2-8mm\relax, font=\footnotesize, text=muted]
-        {\textbf{#3}\\[2pt]#4\\[2pt]\scriptsize image pending};
+        {\textbf{#3}\\[2pt]#4\\[2pt]\footnotesize ảnh chờ bổ sung};
     \end{tikzpicture}%
-  }%
+  }}%
 }
 
 \tikzset{
@@ -84,511 +86,681 @@
               minimum height=7mm, inner sep=3pt},
   flow/.style={-{Stealth[length=2mm]}, thick, color=navy},
   faultflow/.style={-{Stealth[length=2mm]}, thick, color=fault},
-  lbl/.style={font=\scriptsize, color=ink, fill=paper, inner sep=1pt},
+  lbl/.style={font=\footnotesize, color=ink, fill=paper, inner sep=1pt},
 }
 
-\title{Heterogeneous Edge-AI Runtime}
-\subtitle{Linux + FreeRTOS on Raspberry Pi~5 and STM32: measuring timing and failure behaviour}
-\author{Team names}
-\institute{Course name \quad\textbullet\quad Progress report}
-\date{\today}
+% Tên mục hiện trên mọi trang; không có trang chuyển mục tự động.
+\setbeamerfont{footline}{size=\footnotesize}
+\setbeamertemplate{footline}{%
+  \leavevmode\hbox{\begin{beamercolorbox}[wd=\paperwidth,ht=4mm,dp=1mm,leftskip=6mm,rightskip=6mm]{footline}%
+  \footnotesize\raisebox{1mm}{\insertsectionhead}\hfill
+  \ifnum\value{framenumber}>25 Phụ lục \number\numexpr\value{framenumber}-25\relax/4%
+  \else\insertframenumber/25\fi
+  \end{beamercolorbox}}}
+\setbeamertemplate{navigation symbols}{}
+\setbeamersize{text margin left=6mm,text margin right=6mm}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.02}
+\newcommand{\design}{\evid{THIẾT KẾ}}
+\newcommand{\calc}{\evid{TÍNH TOÁN}}
+\newcommand{\host}{\evid{KIỂM THỬ HOST}}
+\newcommand{\published}{\evid{CÔNG BỐ}}
+\title{Nền tảng thực thi Edge-AI không đồng nhất}
+\subtitle{Heterogeneous Edge-AI Runtime}
+\author{Nhóm 3 Stars}
+\institute{Giảng viên hướng dẫn: TS. Nguyễn Quang Minh}
+\date{07/10/2026}
 
 \begin{document}
+\raggedright
+\section{Giới thiệu}
+\subsection{Bối cảnh và câu hỏi nghiên cứu}
 
-% ======================================================================
-\begin{frame}[plain]
+% 01 — Bìa
+\begin{frame}
+  \leavevmode
+  {\Large\bfseries\color{navy}Nền tảng thực thi Edge-AI không đồng nhất\par}
+  {\large\color{navy}Linux + FreeRTOS trên Raspberry Pi 5 và STM32\par}
+  \vspace{3pt}
+  {\color{teal}Heterogeneous Edge-AI Runtime\par}
+  \vspace{5pt}\textcolor{teal}{\rule{\linewidth}{1pt}}\vspace{4pt}
+  \begin{columns}[c]
+    \begin{column}{0.69\textwidth}
+      \textbf{Nhóm 3 Stars}\par\vspace{3pt}
+      {\small Nguyễn Quốc Khánh – 20233464 (Nhóm trưởng)\\
+      Nguyễn Trung Hiếu – 20233398\\
+      Nguyễn Quang Vinh – 20233718\par}
+      \vspace{6pt}
+      {\small Giảng viên hướng dẫn (GVHD):\\
+      Tiến sĩ (TS.) Nguyễn Quang Minh\\
+      Mã lớp bài tập: 173876\par}
+    \end{column}
+    \begin{column}{0.29\textwidth}
+      \centering\slideimg[0.44\textheight]{\linewidth}{V01}{Title visual: Pi~5 (green) + Nucleo (white) on one link}
+    \end{column}
+  \end{columns}
+  \vspace{6pt}
+  {\footnotesize AI (Artificial Intelligence): trí tuệ nhân tạo; RTOS (Real-Time Operating System): hệ điều hành thời gian thực. FreeRTOS: Free RTOS.\par}
+  \note{Báo cáo tiến độ nghiên cứu lập lịch, tranh chấp tài nguyên, độ mới dữ liệu và giám sát độc lập. AI là workload trên Linux. Danh sách thành viên theo yêu cầu nhóm; không suy diễn phân công. Các trang sau tách thiết kế và kiểm thử host khỏi số đo phần cứng.}
+\end{frame}
+
+% 02 — Mục lục và chú giải
+\begin{frame}{Mục lục dẫn từ vấn đề đến thiết kế và kiểm chứng}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
+  \begin{columns}[T]
+    \begin{column}{0.49\textwidth}
+      {\small\tableofcontents[hideallsubsections]}
+    \end{column}
+    \begin{column}{0.49\textwidth}
+      \textbf{Cách đọc bằng chứng}\par\vspace{5pt}
+      {\footnotesize
+      \design\ Giá trị hoặc chính sách đề xuất; cần kiểm chứng.\par\vspace{5pt}
+      \calc\ Suy ra từ công thức và giả thiết đã nêu.\par\vspace{5pt}
+      \host\ Kết quả kiểm thử phần mềm trên máy phát triển.\par\vspace{5pt}
+      \published\ Thông số hoặc kết quả từ nguồn khác; không phải số đo của nhóm.\par}
+      \vspace{8pt}
+      \textbf{Chưa có kết quả đo trên bộ Pi–STM32.}
+    \end{column}
+  \end{columns}
+  \note{Con số định lượng đều có nhãn bằng chứng. Số trang, mã ảnh V01–V24, cấu hình P0–P3, thí nghiệm E1–E4, tên linh kiện và thông tin hành chính là định danh. Tiến độ theo SYSTEM\_GUIDE ngày 06/10/2026; bản thiết kế không đồng nghĩa triển khai xong.}
+\end{frame}
+
+% 03
+\begin{frame}{Dữ liệu cũ và Linux ngừng phản hồi là hai vấn đề riêng}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
+  \begin{columns}[c]
+    \begin{column}{0.50\textwidth}
+      \begin{itemize}
+        \item Linux xử lý tải biến động; thời điểm có kết quả có thể trễ khi tranh chấp tài nguyên.
+        \item Kết quả hợp lệ vẫn có thể quá cũ để sử dụng.
+        \item Bộ kiểm tra trên Linux có thể ngừng theo hệ thống được kiểm tra.
+      \end{itemize}
+      \vspace{4pt}
+      {\footnotesize MCU (Microcontroller Unit): vi điều khiển STM32; nhận kết quả qua UART (Universal Asynchronous Receiver-Transmitter).\par}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \centering
+      \slideimg[0.29\textheight]{\linewidth}{V02}{Late result under load}\\[4pt]
+      \slideimg[0.25\textheight]{0.48\linewidth}{V03}{Delay invisible to receiver}\hfill
+      \slideimg[0.25\textheight]{0.48\linewidth}{V04}{Linux hang}
+    \end{column}
+  \end{columns}
+  \src{Nguồn: SYSTEM\_OVERVIEW §1; SYSTEM\_GUIDE, phần 1.}
+  \note{Giá trị đúng và thời điểm kịp là hai điều kiện khác nhau. Timestamp nguồn cho biết dữ liệu mô tả thời điểm nào. Heartbeat cho thấy bridge hoạt động nhưng không chứng minh suy luận có kết quả mới. Đầu ra trong đồ án là mô phỏng bằng trạng thái và chỉ báo, chưa phải một hệ vật lý được xác nhận an toàn.}
+\end{frame}
+
+% 04
+\begin{frame}{Đồ án đo cơ chế hệ điều hành trong phạm vi gọn}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
+  \begin{columns}[T]
+    \begin{column}{0.59\textwidth}
+      \textbf{Câu hỏi nghiên cứu}\par
+      \begin{itemize}
+        \item Tranh chấp làm trễ đường đi dữ liệu đến mức nào?
+        \item Tinh chỉnh lập lịch và tài nguyên khôi phục được phần nào?
+        \item STM32 phát hiện lỗi và đưa đầu ra về failsafe nhanh đến đâu?
+      \end{itemize}
+      {\footnotesize CPU (Central Processing Unit): bộ xử lý trung tâm. Đóng góp là phép đo, cấu hình tái lập và phân tích; AI chỉ là workload.\par}
+    \end{column}
+    \begin{column}{0.39\textwidth}
+      \centering\slideimg[0.31\textheight]{\linewidth}{V07}{Three research questions}\par
+      \vspace{5pt}
+      {\footnotesize\raggedright\textbf{Ngoài phạm vi:} ROS 2/micro-ROS (Robot Operating System); containers; Yocto/Buildroot; sửa hoặc tự biên dịch kernel; hypervisors; liên kết khác UART; TinyML (Tiny Machine Learning) trên STM32.\par}
+    \end{column}
+  \end{columns}
+  \src{Nguồn: PROJECT §§4–7. Kernel Real-time Ubuntu đóng gói chỉ dùng cho P3.}
+  \note{Mục tiêu là quan sát lập lịch, tranh chấp, giao tiếp liên tiến trình và giám sát deadline trên hệ điều hành sẵn có, không tạo kernel hoặc thuật toán AI mới. SPI (Serial Peripheral Interface), CAN (Controller Area Network) và Ethernet không thuộc liên kết đồ án. P3 chỉ dùng kernel đóng gói theo quyết định đã có; không patch hay tự build.}
+\end{frame}
+
+\section{Cơ sở lý thuyết và nghiên cứu liên quan}
+\subsection{Simplex, độ mới và giới hạn của lập lịch}
+% 05
+\begin{frame}{Nghiên cứu trước định hướng cách giám sát và đo độ mới}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
+  \begin{columns}[T]
+    \begin{column}{0.66\textwidth}
+      {\small
+      \textbf{Simplex:} tách hệ phức tạp khỏi bộ giám sát tin cậy trên phần cứng riêng \cite{bak2009}.\par\vspace{4pt}
+      \textbf{Age of Information (AoI):} tuổi dữ liệu mới nhất tại nơi nhận; khác độ trễ riêng gói đã giao \cite{kaul2012queues,kaul2012infocom}.\par\vspace{4pt}
+      \textbf{PREEMPT\_RT:} Preemption for Real-Time (RT); kernel hỗ trợ preemption, giảm một số độ trễ chờ lập lịch.\par}
+      \vspace{4pt}
+      {\footnotesize SCHED\_FIFO (Scheduling – First-In, First-Out), viết tắt FIFO. Với ưu tiên 99, cực đại công bố khi có tải: 1,8 ms stock $\rightarrow$ 0,22 ms RT \published\ \cite{arxiv2604}.\par}
+    \end{column}
+    \begin{column}{0.32\textwidth}
+      \centering\slideimg[0.53\textheight]{\linewidth}{V06}{Related work map}
+    \end{column}
+  \end{columns}
+  \src{Khoảng trống đồ án: đo từ lỗi đến đầu ra failsafe trên Linux + FreeRTOS. Nguồn: R1–R3.}
+  \note{R1 không tìm thấy phân bố định lượng fault-to-output trong bài Simplex đã đọc; không suy rộng thành cả lĩnh vực thiếu kết quả. Nhóm áp dụng giám sát lấy cảm hứng từ Simplex, không có bộ điều khiển dự phòng đã chứng minh ổn định. Số 1,8/0,22 ms làm tròn từ bảng 4 của bài arXiv, cấu hình FIFO 99 [CÔNG BỐ]. Bài dùng nền tảng và RT budget khác nhóm, không đo UART; không dự báo AoI hoặc failsafe.}
+\end{frame}
+
+% 06
+\begin{frame}{CPU affinity vẫn để chung cache và băng thông nhớ}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
   \begin{columns}[c]
     \begin{column}{0.52\textwidth}
-      {\Large\bfseries\color{navy} Heterogeneous Edge-AI Runtime\par}
-      \vspace{4pt}
-      {\color{teal}\rule{0.6\linewidth}{1.2pt}\par}
-      \vspace{6pt}
-      {\small Linux + FreeRTOS on Raspberry Pi~5 and STM32: measuring how a
-       general-purpose OS and a real-time OS share a time-sensitive AI data path\par}
-      \vspace{14pt}
-      {\footnotesize Team names\\ Course name \textbullet\ Progress report \textbullet\ \today\par}
+      {\small SoC (System-on-Chip) BCM2712 có L2 (Level 2) riêng và L3 (Level 3) chung. LLC (Last-Level Cache) ở đây là L3.\par}
+      \begin{itemize}
+        \item Bốn lõi Cortex-A76; L2 512 KB (kilobyte)/lõi và L3 2 MB (megabyte) \published.
+        \item DRAM (Dynamic Random-Access Memory) chung: LPDDR4X (Low-Power Double Data Rate 4X).
+        \item Pinning tách thời gian CPU; tải lõi khác vẫn có thể làm chậm truy cập nhớ.
+      \end{itemize}
     \end{column}
     \begin{column}{0.46\textwidth}
-      \centering\slideimg[0.8\textheight]{\linewidth}{V01}{Title visual: Pi~5 (green) + Nucleo (white) on one link}
+      \centering\slideimg[0.61\textheight]{\linewidth}{V05}{BCM2712: private L2, shared L3 and DRAM}
     \end{column}
   \end{columns}
-  \note{One sentence: we study how a general-purpose OS and a real-time OS can share an AI
-  workload safely, and we measure it.}
+  \src{Nguồn: R5, tài liệu BCM2712; MemGuard và DeepPicar \cite{yun2013memguard,bechtel2018deeppicar}.}
+  \note{Nghiên cứu trước trên nền tảng khác hỗ trợ cơ chế interference, không cho số đo Pi 5. Cache stress lớn đồng thời tạo DRAM traffic, nên gọi tải hướng cache hoặc băng thông thay vì khẳng định cô lập tuyệt đối. Không cài giải pháp sửa kernel. E1 tách cạnh tranh CPU cùng lõi khỏi tranh chấp nhớ từ lõi lân cận.}
 \end{frame}
 
-% ======================================================================
-\section{Problem}
-
-\begin{frame}{Late Linux results need a freshness check at the receiver}
-  \begin{columns}[T]
-    \begin{column}{0.42\textwidth}
-      \begin{itemize}
-        \item Linux: high throughput; \textbf{no timing guarantee}
-        \item A result alone does not reveal its age
-        \item A Linux hang needs an independent monitor
-      \end{itemize}
+\section{Thiết kế hệ thống}
+\subsection{Kiến trúc và tổ chức thực thi}
+% 07
+\begin{frame}{Linux đề xuất; STM32 quyết định đầu ra mô phỏng}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
+  \begin{columns}[c]
+    \begin{column}{0.49\textwidth}
+      \textbf{Miền Linux: Raspberry Pi 5}\par
+      {\small Source $\rightarrow$ suy luận $\rightarrow$ bridge; stress-ng tạo tranh chấp; runner lưu phép đo.\par}
+      \vspace{8pt}
+      \textbf{Miền FreeRTOS: STM32F446RE}\par
+      {\small Nhận UART $\rightarrow$ kiểm tra $\rightarrow$ supervisor $\rightarrow$ đầu ra; status phản hồi trạng thái.\par}
+      \vspace{8pt}
+      {\footnotesize GPIO (General-Purpose Input/Output): chân tín hiệu đa dụng. Đèn LED (Light-Emitting Diode) và GPIO biểu diễn trạng thái; thêm GPIO kiểm tra đồng hồ. \design\par}
     \end{column}
+    \begin{column}{0.49\textwidth}
+      \centering\slideimg[0.62\textheight]{\linewidth}{V08}{System architecture: two domains}
+    \end{column}
+  \end{columns}
+  \src{Nguồn: SYSTEM\_GUIDE, phần 2; R1.}
+  \note{STM32 kích hoạt failsafe độc lập, không chờ Linux xác nhận. UART là hợp đồng dữ liệu liên miền; GPIO chỉ kiểm tra thời gian. STM32 không chạy suy luận. Nguồn điện, firmware giám sát và đầu ra vẫn là giả thiết tin cậy; đầu ra an toàn được biểu diễn bằng tín hiệu mô phỏng.}
+\end{frame}
+
+% 08
+\begin{frame}{Đấu nối đề xuất cần được xác nhận trên bo thật}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
+  \begin{columns}[c]
+    \begin{column}{0.53\textwidth}
+      {\small
+      \textbf{Pi 5:} 4 GB (gigabyte), tản nhiệt chủ động, PSU (Power Supply Unit) 27 W. \design\par\vspace{5pt}
+      \textbf{Nucleo-F446RE:} Cortex-M4F, 180 MHz; RAM (Random-Access Memory) 128 KB, Flash 512 KB. \published\par\vspace{5pt}
+      \textbf{UART:} TX (Transmit) GPIO14 $\rightarrow$ PA10; RX (Receive) GPIO15 $\leftarrow$ PA9. Mức 3,3 V; GND (Ground) chung. \design\par\vspace{5pt}
+      \textbf{Kiểm tra đồng hồ:} GPIO17 $\rightarrow$ PA0 timer input capture. \design\par}
+      \vspace{5pt}
+      {\footnotesize Chốt UART controller, device node, baud và xung đột định tuyến trước nghiệm thu.\par}
+    \end{column}
+    \begin{column}{0.45\textwidth}
+      \centering
+      \slideimg[0.36\textheight]{\linewidth}{V09}{Hardware rig photo/illustration}\\[4pt]
+      \slideimg[0.22\textheight]{\linewidth}{V22}{Wiring detail}
+    \end{column}
+  \end{columns}
+  \src{Nguồn: PROJECT §2; SYSTEM\_GUIDE, kế hoạch kết nối phần cứng; R8.}
+  \note{PROJECT để chi tiết UART mở; guide cho sơ đồ đề xuất. Đây chưa là wiring đã xác nhận. Bắt đầu kiểm tra Nucleo qua cổng ST-LINK, rồi chuyển UART trực tiếp. Xác nhận PA9/PA10, PA0, timer clock và controller Pi. Bộ nhớ và tần số MCU là thông số nền tảng, không phải benchmark.}
+\end{frame}
+
+% 09
+\begin{frame}{Timestamp nguồn theo kết quả qua toàn bộ chuỗi}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
+  \begin{columns}[c]
     \begin{column}{0.56\textwidth}
-      \centering
-      \slideimg[0.36\textheight]{\linewidth}{V02}{Late result under load}\\[3pt]
-      \slideimg[0.2\textheight]{0.48\linewidth}{V03}{Delay invisible to receiver}\hfill
-      \slideimg[0.2\textheight]{0.48\linewidth}{V04}{Linux hang}
+      {\small
+      \textbf{Tạo dữ liệu:} source đóng dấu \texttt{t\_input} bằng \texttt{CLOCK\_MONOTONIC\_RAW}.\par\vspace{4pt}
+      \textbf{Tính toán:} workload tạo kết quả và \texttt{t\_done}; gửi sang bridge bằng Unix domain socket.\par\vspace{4pt}
+      \textbf{Truyền:} bridge chọn kết quả, đóng frame, ghi UART và lưu \texttt{t\_sent}.\par\vspace{4pt}
+      \textbf{Tiếp nhận:} STM32 kiểm tra frame; supervisor chấp nhận dữ liệu đủ mới rồi cập nhật đầu ra.\par\vspace{4pt}
+      \textbf{Phản hồi:} MCU\_STATUS về bridge để ghép log theo số thứ tự.\par}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+      \centering\slideimg[0.60\textheight]{\linewidth}{V10}{End-to-end data path}
     \end{column}
   \end{columns}
-  \note{Example: the Pi generates a classification every 100 ms. The MCU must check its age
-  before applying it to the simulated output. A live bridge can still send stale classifications.}
+  \src{Nguồn: SYSTEM\_GUIDE, phần 2a. Giữ t\_input, không thay bằng thời điểm suy luận xong.}
+  \note{Bridge đồng thời gửi heartbeat và trao đổi đồng hồ, độc lập với kết quả. AoI phải chọn điểm cuối nhất quán: kết quả sẵn cho supervisor hoặc lúc áp dụng đầu ra. Timestamp ghi UART Linux chưa là bit cuối ra dây. Số thứ tự ghép sự kiện và đếm thay thế. IPC (Inter-Process Communication) là giao tiếp liên tiến trình qua Unix domain socket.}
 \end{frame}
 
-\begin{frame}{We measure contention, OS tuning and independent supervision}
+% 10
+\begin{frame}{Tiến trình Linux tách tải nặng khỏi đường truyền ngắn}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
+  {\footnotesize IPC (Inter-Process Communication): giao tiếp liên tiến trình; I/O (Input/Output): vào/ra; CSV (Comma-Separated Values): bảng log.\par}
+  \vspace{5pt}
+  {\footnotesize
+  \begin{tabular}{@{}L{0.16\textwidth} L{0.49\textwidth} L{0.29\textwidth}@{}}
+    \toprule
+    \textbf{Tiến trình} & \textbf{Trách nhiệm} & \textbf{Cơ chế quan sát}\\\midrule
+    source & Tạo đầu vào định kỳ; giữ timestamp gốc & Chu kỳ, release jitter\\
+    workload & Suy luận; đóng dấu bắt đầu/kết thúc & CPU, cache, băng thông\\
+    bridge & IPC vào; UART ra; heartbeat, đồng hồ, status & Ưu tiên, buffer, I/O\\
+    stressors & Tạo tải CPU, nhớ, cache hoặc I/O & Resource contention\\
+    runner / logger & Khởi chạy; lưu CSV, cấu hình, validity & Tái lập thí nghiệm\\\bottomrule
+  \end{tabular}}
+  \vspace{6pt}
+  {\small P1 ưu tiên bridge bằng SCHED\_FIFO. CPU affinity và cgroups (control groups) giới hạn nơi chạy và phần tài nguyên. \design\par}
+  \src{Nguồn: SYSTEM\_GUIDE §2.1; SYSTEM\_OVERVIEW §3.}
+  \note{Bridge ngắn, cấp phát trước và tránh chờ I/O vô hạn. Runner ghi cả lỗi khởi chạy, không chỉ mẫu thành công. Khi thay affinity phải kiểm tra mọi worker runtime, không chỉ luồng gọi. Các chức năng là kế hoạch chưa có benchmark Pi xác nhận. I/O xuất hiện ở bảng này được mở rộng ngay trước bảng.}
+\end{frame}
+
+% 11
+\begin{frame}{Supervisor FreeRTOS có ưu tiên cao hơn UART và status}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
   \begin{columns}[c]
-    \begin{column}{0.55\textwidth}
-      \begin{enumerate}
-        \setlength{\itemsep}{6pt}
-        \item How much delay does \textbf{contention} add?
-        \item How much does \textbf{OS tuning} recover?
-        \item Can \textbf{independent supervision} bound fault reaction?
-      \end{enumerate}
-      \vspace{6pt}
-      \muted{\footnotesize No new OS, no kernel patches: we combine, configure and measure.}
-    \end{column}
-    \begin{column}{0.43\textwidth}
-      \centering\slideimg[0.62\textheight]{\linewidth}{V07}{Three research questions}
-    \end{column}
-  \end{columns}
-  \note{The full questions are how resource contention delays the data path, which stock OS mechanisms
-  recover that delay and which cannot, and whether independent supervision can bound reaction to Linux
-  failures. We combine and configure existing OS mechanisms and measure the effect.}
-\end{frame}
-
-% ======================================================================
-\section{Background}
-
-\begin{frame}{Prior work motivates a separate supervisor and freshness checks}
-  \begin{columns}[T]
-    \begin{column}{0.64\textwidth}
-      \footnotesize
-      \begin{itemize}
-        \setlength{\itemsep}{4pt}
-        \item \textbf{System-Level Simplex} \cite{bak2009}: separate complex and
-              safety subsystems
-        \item \textbf{Age of Information} \cite{kaul2012queues,kaul2012infocom}: freshness depends on
-              queue discipline
-        \item \textbf{Multicore interference} \cite{yun2013memguard,bechtel2018deeppicar}: separate cores
-              still share memory bandwidth
-        \item \textbf{Pi~5 + PREEMPT\_RT} \cite{arxiv2604}: stressed scheduling latency,
-              FIFO priority 99: max \SI{1.8}{ms} stock / \SI{0.22}{ms} RT \evid{PUBLISHED}
-      \end{itemize}
+    \begin{column}{0.71\textwidth}
+      {\footnotesize ISR (Interrupt Service Routine): hàm xử lý ngắt.\par}
       \vspace{4pt}
-      \begin{block}{Our evaluation}
-        \footnotesize Measure fault-to-safe-output latency end to end on Linux + FreeRTOS.
-      \end{block}
+      {\footnotesize
+      \begin{tabular}{@{}L{0.22\linewidth} L{0.21\linewidth} L{0.51\linewidth}@{}}
+        \toprule
+        \textbf{Thành phần} & \textbf{Ưu tiên} & \textbf{Công việc}\\\midrule
+        UART ISR & Ngắt & Thu byte; đánh thức RX task\\
+        RX task & Cao & Phân tích frame; kiểm tra toàn vẹn, thứ tự\\
+        Supervisor & Cao nhất & Theo dõi heartbeat, độ mới; quyết định trạng thái\\
+        Status task & Thấp & Gửi MCU\_STATUS về Linux\\
+        Đầu ra & Do supervisor & GPIO/LED và mốc đo failsafe\\\bottomrule
+      \end{tabular}}
     \end{column}
-    \begin{column}{0.34\textwidth}
-      \centering\slideimg[0.66\textheight]{\linewidth}{V06}{Related work map}
-    \end{column}
-  \end{columns}
-  \note{Sources in docs/research/RELATED\_WORK.md. Say clearly that these are their results,
-  not ours. The 1.8 / 0.22 ms figures are Table 4 of arXiv:2604.19275 (4 ms loop, stressed).}
-\end{frame}
-
-\begin{frame}{CPU scheduling decides who runs, not who uses memory bandwidth}
-  \begin{columns}[c]
-    \begin{column}{0.44\textwidth}
-      \begin{itemize}
-        \setlength{\itemsep}{5pt}
-        \item 4 $\times$ Cortex-A76\\ \SI{512}{KB} private L2 per core
-        \item \SI{2}{MB} shared L3, shared LPDDR4X
-        \item Pinning a core isolates CPU time,\\ \textbf{not} L3 or DRAM bandwidth
-      \end{itemize}
-      \vspace{4pt}
-      \muted{\footnotesize Leads to hypothesis H2.}\par
-      \muted{\scriptsize Memory contention:} \cite{yun2013memguard,bechtel2018deeppicar}
-    \end{column}
-    \begin{column}{0.54\textwidth}
-      \centering\slideimg[0.66\textheight]{\linewidth}{V05}{BCM2712: private L2, shared L3 and DRAM}
+    \begin{column}{0.27\textwidth}
+      \centering\slideimg[0.41\textheight]{\linewidth}{V16}{Supervisor}
     \end{column}
   \end{columns}
-  \note{This is why we expect tuning to fix CPU contention but not memory contention
-  (hypothesis H2).}
+  \vspace{5pt}
+  {\footnotesize Supervisor: chu kỳ 1 ms, release tuyệt đối; status: 100 ms. \design\ ISR ngắn, buffer cố định; failsafe không chờ UART.\par}
+  \src{Nguồn: SYSTEM\_GUIDE §2.4; R1, R6.}
+  \note{FreeRTOS ưu tiên cố định có preemption; task sẵn sàng ưu tiên cao nhất chạy trước. Supervisor cao hơn parser để lưu lượng UART không trì hoãn timeout. ISR không phân tích frame hay bận chờ. Release tuyệt đối tránh cộng thời gian xử lý vào chu kỳ. Cần đo execution time, stack, buffer trên F446RE trước chốt các giá trị. CRC (Cyclic Redundancy Check) được giới thiệu khi mô tả giao thức.}
 \end{frame}
 
-% ======================================================================
-\section{System design}
-
-\begin{frame}{Linux proposes; the STM32 has final authority over the output}
+% 12
+\begin{frame}{MobileNetV2 tạo tải để đo thời gian thực thi}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
   \begin{columns}[c]
-    \begin{column}{0.40\textwidth}
-      \footnotesize
-      \textbf{\color{navy}Linux domain} \muted{(Pi~5, Ubuntu 24.04)}
+    \begin{column}{0.56\textwidth}
+      {\small ONNX (Open Neural Network Exchange), FP32 (32-bit Floating Point): định dạng mô hình và độ chính xác. Chạy bằng ONNX Runtime trên CPU.\par}
       \begin{itemize}
-        \item source, inference, bridge, stressors
-      \end{itemize}
-      \vspace{3pt}
-      \textbf{\color{teal}Real-time domain} \muted{(STM32F446RE, FreeRTOS)}
-      \begin{itemize}
-        \item UART RX, supervisor, status, failsafe output
-      \end{itemize}
-      \vspace{3pt}
-      One UART link + one GPIO sync line
-    \end{column}
-    \begin{column}{0.58\textwidth}
-      \centering\slideimg[0.7\textheight]{\linewidth}{V08}{System architecture: two domains}
-    \end{column}
-  \end{columns}
-  \note{The STM32 has final authority over the (simulated) actuator; Pi outputs are proposals.
-  This is the System-Level Simplex split.}
-\end{frame}
-
-\begin{frame}{The rig uses two boards, one UART and one timing wire}
-  \begin{columns}[c]
-    \begin{column}{0.40\textwidth}
-      \footnotesize
-      \begin{itemize}
-        \setlength{\itemsep}{4pt}
-        \item Raspberry Pi~5 (4~GB), active cooler, \SI{27}{W} PSU
-        \item STM32 Nucleo-F446RE\\ (Cortex-M4F, \SI{180}{MHz})
-        \item UART: GPIO14/15 $\leftrightarrow$ PA10/PA9
-        \item GPIO17 $\rightarrow$ PA0 timer capture; shared GND
+        \item Batch 1; intra-op 1/2/4 threads; inter-op 1, đồ thị tuần tự. \design
+        \item Trung bình tham khảo: 20–50 ms/lần \published; khác thiết lập nhóm.
+        \item Source khởi đầu 100 ms \design; hiệu chỉnh sau baseline Pi.
       \end{itemize}
     \end{column}
-    \begin{column}{0.58\textwidth}
-      \centering
-      \slideimg[0.42\textheight]{\linewidth}{V09}{Hardware rig photo/illustration}\\[3pt]
-      \slideimg[0.24\textheight]{\linewidth}{V22}{Wiring detail}
-    \end{column}
-  \end{columns}
-  \note{The STM32 is flashed from the Pi over ST-LINK, so the rig runs unattended.}
-\end{frame}
-
-\begin{frame}{Freshness is measured as Age of Information at the MCU}
-  \begin{columns}[c]
-    \begin{column}{0.40\textwidth}
-      \footnotesize
-      \textbf{Age of Information:} age of the newest input available at the MCU
-      \vspace{6pt}
-      \[ \Delta(t) = t - u(t), \quad u(t)=\max\{g_i : r_i \le t\} \]
-      \muted{$g_i$: input time, $r_i$: arrival at MCU}
-      \vspace{4pt}
-      \begin{itemize}
-        \item grows linearly between deliveries
-        \item drops at each fresh delivery
-        \item definition: \cite{kaul2012infocom}
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.58\textwidth}
-      \centering
-      \slideimg[0.36\textheight]{\linewidth}{V10}{End-to-end data path}\\[3pt]
-      \slideimg[0.3\textheight]{\linewidth}{V20}{AoI sawtooth}
-    \end{column}
-  \end{columns}
-  \note{The path is capture, inference, buffer, UART, supervisor, action.
-  AoI grows linearly between deliveries and drops at each fresh delivery. Average AoI and
-  the fraction of time above a threshold are our freshness metrics. Definition follows Kaul et al.}
-\end{frame}
-
-\begin{frame}{The AI model is the workload, not the contribution}
-  \begin{columns}[c]
-    \begin{column}{0.6\textwidth}
-      \begin{itemize}
-        \setlength{\itemsep}{6pt}
-        \item MobileNetV2 (ONNX, FP32, batch~1) on ONNX Runtime CPU
-        \item Published Pi~5 planning range: \SIrange{20}{50}{ms} per inference, 1--4 threads \evid{PUBLISHED, other setups}
-        \item Input period \SI{100}{ms} \evid{DESIGN, provisional}
-        \item Compute- and memory-heavy; variable latency
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.38\textwidth}
+    \begin{column}{0.42\textwidth}
       \centering
       \begin{tikzpicture}[font=\footnotesize]
-        \draw[rule] (0,0) -- (4.6,0);
-        \foreach \x/\l in {0/0, 2.3/50, 4.6/100} {\draw[muted] (\x,0.08)--(\x,-0.08) node[below, muted] {\l};}
-        \fill[teal!70] (0.92,0.15) rectangle (2.3,0.55);
-        \node[above, align=center] at (1.6,0.55) {inference\\ \scriptsize 20--50 ms [PUBLISHED]};
-        \draw[navy, thick, |-|] (0,1.45) -- (4.6,1.45) node[midway, above] {input period 100 ms};
-        \node[muted, font=\scriptsize] at (2.3,2.05) {[DESIGN, provisional]};
-        \node[muted, below] at (2.3,-0.4) {time [ms]};
+        \draw[rule] (0,0)--(5.1,0);
+        \foreach \x/\l in {0/0,2.55/50,5.1/100}
+          \draw[muted] (\x,.08)--(\x,-.08) node[below] {\l};
+        \fill[teal!65] (1.02,.35) rectangle (2.55,.8);
+        \node[above,align=center] at (1.8,.8) {Suy luận 20–50 ms\\{[CÔNG BỐ]}};
+        \draw[navy,thick,|-|] (0,2.1)--(5.1,2.1);
+        \node[above,align=center] at (2.55,2.1) {Chu kỳ 100 ms\\{[THIẾT KẾ]}};
+        \node[below] at (2.55,-.5) {Thời gian (ms)};
       \end{tikzpicture}
     \end{column}
   \end{columns}
-  \note{AI is the workload, not the contribution. It is realistic, compute- and memory-heavy, and
-  variable. The 100 ms period is provisional and is calibrated on our Pi first.}
+  \src{Nguồn: R7. Đo cold start, tiền xử lý và suy luận riêng; giữ mọi mẫu trễ.}
+  \note{Dải 20–50 ms làm tròn từ trung bình ONNX Runtime ở thiết lập khác [CÔNG BỐ]; không phải khoảng percentile hay deadline. Cố định runtime, mô hình, đầu vào, tiền xử lý, thread count; một session và một inference đang chạy [THIẾT KẾ]. Workload tổng hợp dự phòng kiểm tra chuỗi trước. Không dùng số ncnn thay ONNX Runtime. Không đánh giá hay cải tiến độ chính xác mô hình.}
 \end{frame}
 
-\begin{frame}{Profiles separate OS tuning, buffering and the RT kernel}
+\subsection{Cấu hình runtime và hợp đồng liên miền}
+% 13
+\begin{frame}{P1–P2 tách buffer; P1–P3 tách tác động của kernel}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
   \begin{columns}[c]
-    \begin{column}{0.58\textwidth}
+    \begin{column}{0.61\textwidth}
       \centering
       \begin{tikzpicture}[
-          prof/.style={box, minimum width=27mm, minimum height=9mm, text width=25mm},
-          stp/.style={flow},
-          dl/.style={lbl, font=\scriptsize\itshape, text=teal}]
-        \node[prof] (p0) at (0,0)    {\textbf{P0 stock}\\ \scriptsize Linux defaults};
-        \node[prof] (p1) at (0,1.75) {\textbf{P1 tuned}\\ \scriptsize bridge FIFO 50, pinning,\\ cgroups, mlockall};
-        \node[prof] (p2) at (-1.7,3.75) {\textbf{P2}\\ \scriptsize P1 + latest value};
-        \node[prof] (p3) at (1.7,3.75)  {\textbf{P3}\\ \scriptsize P1 on RT kernel};
-        \draw[stp] (p0) -- node[dl, right=2pt] {+ OS tuning} (p1);
-        \draw[stp] (p1.north) -- ++(0,0.3) -| node[dl, pos=0.75, left=1pt] {+ buffer} (p2.south);
-        \draw[stp] (p1.north) -- ++(0,0.3) -| node[dl, pos=0.75, right=1pt] {+ PREEMPT\_RT} (p3.south);
+        prof/.style={box,minimum width=28mm,text width=27mm,minimum height=12mm},
+        dl/.style={lbl,text=teal}]
+        \node[prof] (p0) at (0,0) {\textbf{P0 stock}\\Mặc định Linux};
+        \node[prof,text width=54mm] (p1) at (0,1.65) {\textbf{P1 tuned}\\FIFO 50; affinity;\\cgroups; mlockall};
+        \node[prof] (p2) at (-2.2,3.45) {\textbf{P2}\\P1 + latest value};
+        \node[prof] (p3) at (2.2,3.45) {\textbf{P3}\\P1 + kernel RT};
+        \draw[flow] (p0)--node[dl,right] {Tinh chỉnh OS} (p1);
+        \draw[flow] (p1.north)--++(0,.3)-| (p2.south);
+        \draw[flow] (p1.north)--++(0,.3)-| (p3.south);
       \end{tikzpicture}\par
-      \evid{DESIGN}
+      {\footnotesize OS (Operating System): hệ điều hành. \design}
     \end{column}
-    \begin{column}{0.4\textwidth}
+    \begin{column}{0.37\textwidth}
       \centering
-      \slideimg[0.34\textheight]{\linewidth}{V12}{Profile ladder illustration}\\[3pt]
-      \slideimg[0.28\textheight]{\linewidth}{V11}{Stock vs tuned scheduling}
+      \slideimg[0.26\textheight]{\linewidth}{V12}{Profile ladder illustration}\\[4pt]
+      \slideimg[0.23\textheight]{\linewidth}{V11}{Stock vs tuned scheduling}
     \end{column}
   \end{columns}
-  \note{P0 to P1 changes the tuning package (bridge priority, affinity, cgroups and locked memory).
-  P1 to P2 changes buffering; P1 to P3 changes the kernel. These comparisons separate treatments;
-  P0 to P1 does not isolate the effect of each tuning knob.
-  P3 uses the packaged Real-time Ubuntu 24.04 kernel; no kernel build. FIFO priority 50 is a
-  design value.}
+  \vspace{3pt}
+  {\footnotesize P0/P1/P3 giữ cùng FIFO queue; P2 dùng latest-value buffer. Giữ RT throttling mặc định 95\% \design. P0–P1 đo cả gói tinh chỉnh.\par}
+  \src{Nguồn: DESIGN\_CHANGES, mục 5 và 12; SYSTEM\_GUIDE §2.2.}
+  \note{P3 là P1 trên kernel Real-time Ubuntu đóng gói, không phải P2 cộng kernel. R3/R4 có cách gọi cũ; DESIGN\_CHANGES và SYSTEM\_GUIDE đã chốt lại. FIFO 50 là giá trị thiết kế. mlockall và cấp phát trước giảm nhiễu bộ nhớ. P0–P1 không xác định tác động từng núm; cần thử riêng nếu muốn kết luận chi tiết. SCHED\_OTHER là lớp lập lịch thông thường Linux. Không tắt RT throttling hoặc tự đưa boot isolation vào profile nhóm.}
 \end{frame}
 
-\begin{frame}{A latest-value buffer drops stale results instead of queueing them}
+% 14
+\begin{frame}{Latest-value buffer thay dữ liệu cũ đang chờ gửi}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
   \begin{columns}[c]
-    \begin{column}{0.40\textwidth}
+    \begin{column}{0.53\textwidth}
       \begin{itemize}
-        \setlength{\itemsep}{6pt}
-        \item \textbf{FIFO queue}: under overload, results wait and arrive old
-        \item \textbf{Latest value}: an unsent old result is overwritten
-        \item Theory \cite{kaul2012queues}: lower average age; \textbf{no hard bound}
+        \item FIFO queue giữ thứ tự; quá tải làm dữ liệu chờ lâu trước UART.
+        \item P2 giữ một slot \design: ghi đè kết quả cũ \textbf{chưa gửi}.
+        \item Không hủy suy luận đang chạy hoặc frame đang truyền.
+        \item Kỳ vọng giảm AoI trung bình; không tạo giới hạn tuổi cứng.
       \end{itemize}
+      {\footnotesize LCFS (Last-Come, First-Served): phục vụ mới đến trước. Thay gói đang chờ khác preemption gói đang phục vụ.\par}
     \end{column}
-    \begin{column}{0.58\textwidth}
-      \centering\slideimg[0.7\textheight]{\linewidth}{V14}{FIFO queue vs 1-slot latest value}
+    \begin{column}{0.45\textwidth}
+      \centering\slideimg[0.61\textheight]{\linewidth}{V14}{FIFO queue vs 1-slot latest value}
     \end{column}
   \end{columns}
-  \note{Theory predicts lower average age, but no hard bound; the queueing results assume
-  memoryless arrivals and service. We measure how much it helps on real hardware (E3).}
+  \src{Nguồn: R2; \cite{kaul2012queues}. E3 đo tuổi, số lần thay thế và tỷ lệ giao.}
+  \note{Không đồng nhất buffer bridge với mô hình LCFS hủy dịch vụ tức thì. P2 chỉ thay phần chờ, dữ liệu có thể đã trễ upstream. Buffer nhỏ không giải quyết suy luận ngừng hoàn toàn. CPU preemption tạm dừng task, không loại bỏ input. P1/P2 giữ period, tải, thời gian chạy và threshold; đếm cả input bị thay thế, không chỉ đã giao.}
 \end{frame}
 
-\begin{frame}{Linux and STM32 share the same byte-wise frame parser}
+% 15
+\begin{frame}{Giao thức kiểm tra toàn vẹn trước khi cập nhật}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
+  {\footnotesize SOF (Start of Frame); CRC (Cyclic Redundancy Check); B: byte. \design\par}
+  \vspace{1pt}
   \centering
   \begin{tikzpicture}[
-      f/.style={draw=navy, fill=white, minimum height=9mm, align=center, font=\footnotesize, inner sep=2pt},
-      w/.style={font=\scriptsize, color=muted}]
-    \node[f, fill=navy!10, minimum width=20mm] (sof) {SOF\\ \ttfamily A5 5A};
-    \node[f, minimum width=11mm, right=0pt of sof] (ver) {ver};
-    \node[f, minimum width=11mm, right=0pt of ver] (typ) {type};
-    \node[f, minimum width=11mm, right=0pt of typ] (seq) {seq};
-    \node[f, minimum width=11mm, right=0pt of seq] (len) {len};
-    \node[f, fill=teal!12, minimum width=44mm, right=0pt of len] (pay) {payload\\ \scriptsize 0--64 B};
-    \node[f, fill=navy!10, minimum width=20mm, right=0pt of pay] (crc) {CRC-16};
-    \foreach \n/\b in {sof/2 B, ver/1 B, typ/1 B, seq/1 B, len/1 B, pay/$\le$64 B, crc/2 B}
-      \node[w, below=1pt of \n] {\b};
-    \draw[decorate, decoration={brace, amplitude=4pt}, muted] (ver.north west) -- node[above=4pt, w] {header, covered by CRC} (pay.north east);
+    f/.style={draw=navy,fill=white,minimum height=10mm,align=center,font=\footnotesize,inner sep=2pt},
+    w/.style={font=\footnotesize,text=muted}]
+    \node[f,fill=navy!10,minimum width=20mm] (sof) {SOF\\\texttt{A5 5A}};
+    \node[f,minimum width=12mm,right=0pt of sof] (ver) {ver};
+    \node[f,minimum width=12mm,right=0pt of ver] (typ) {type};
+    \node[f,minimum width=12mm,right=0pt of typ] (seq) {seq};
+    \node[f,minimum width=12mm,right=0pt of seq] (len) {len};
+    \node[f,fill=teal!12,minimum width=43mm,right=0pt of len] (pay) {payload};
+    \node[f,fill=navy!10,minimum width=20mm,right=0pt of pay] (crc) {CRC-16};
+    \foreach \n/\b in {sof/2 B,ver/1 B,typ/1 B,seq/1 B,len/1 B,pay/$\le$64 B,crc/2 B}
+      \node[w,below=2pt of \n] {\b};
+    \draw[decorate,decoration={brace,amplitude=4pt},muted] (ver.north west)--node[above=5pt,w] {CRC bao phủ từ ver đến payload} (pay.north east);
   \end{tikzpicture}
-  \vspace{8pt}
+  \vspace{1pt}
   \begin{columns}[T]
-    \begin{column}{0.47\textwidth}
-      \footnotesize
-      \textbf{Messages} \evid{DESIGN}
-      \begin{itemize}
-        \item HEARTBEAT, INFERENCE
-        \item ECHO\_REQ / ECHO\_RESP (clock sync)
-        \item MCU\_STATUS
-      \end{itemize}
+    \begin{column}{0.48\textwidth}
+      {\footnotesize\textbf{Loại bản tin}\par HEARTBEAT: còn hoạt động.\\INFERENCE: kết quả + t\_input.\\ECHO\_REQ/RESP: đồng hồ.\\MCU\_STATUS: trạng thái.\par}
     \end{column}
-    \begin{column}{0.47\textwidth}
-      \footnotesize
-      \textbf{Host unit tests} \evid{HOST-TEST}
-      \begin{itemize}
-        \item every single-bit error detected
-        \item \SI{99.99}{\percent} recovery under random noise
-      \end{itemize}
+    \begin{column}{0.48\textwidth}
+      {\footnotesize\textbf{Kiểm thử host}\par Phát hiện mọi lỗi một bit; phục hồi 99,99\% dưới nhiễu ngẫu nhiên \host.\par
+      Parser chung; chưa đo lỗi dây thật.\par}
     \end{column}
   \end{columns}
-  \vspace{4pt}
-  {\footnotesize UART wire time: $\approx$\SI{0.34}{ms} per frame at 921\,600 baud \evid{CALCULATED}\par}
-  \note{The byte-wise parser runs unchanged on Linux and on the STM32. Test numbers are host
-  unit-test results, not link measurements; the real UART error rate is measured later.
-  Image V15 can go in backup.}
+  \src{Thời gian dây tham khảo: ≈ 0,34 ms/frame ở 921\,600 baud \calc. Nguồn: deck gốc.}
+  \note{Con số phục hồi là kiểm thử đã được deck gốc ghi nhận, không chạy lại test giao thức khi sửa slide. Thời gian dây tính cho frame minh họa, không cho mọi payload: với tám bit dữ liệu, không parity và một stop bit, t\_wire = 10L/b, L là byte toàn frame và b là baud. SOF nằm ngoài vùng CRC; ver đến payload nằm trong vùng kiểm tra. CRC và sequence không xác thực nguồn gửi có chủ ý giả mạo.}
 \end{frame}
 
-\begin{frame}{Two independent timers separate stale data from a dead bridge}
+% 16
+\begin{frame}{Heartbeat còn sống không có nghĩa kết quả còn mới}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
   \begin{columns}[c]
-    \begin{column}{0.62\textwidth}
+    \begin{column}{0.65\textwidth}
       \centering
       \begin{tikzpicture}[
-          st/.style={draw=navy, fill=white, rounded corners=3pt, minimum width=20mm,
-                     minimum height=9mm, font=\footnotesize\bfseries, thick},
-          lb/.style={lbl, font=\footnotesize, inner sep=2pt}]
-        \node[st] (init) at (0,0)      {INIT};
-        \node[st, fill=teal!15] (fresh) at (3.1,0) {FRESH};
-        \node[st, fill=navy!10] (hold) at (3.1,-2.6) {HOLD};
-        \node[st, draw=fault, fill=fault!15, text=fault] (fs) at (6.2,-1.3) {FAILSAFE};
-        \node[font=\scriptsize\itshape, muted, below=0pt of fs] {latched};
-        \draw[flow] (init) -- node[lb, above=16pt] {valid data} (fresh);
-        \draw[flow] (fresh.250) -- node[lb, left] {data stale} (hold.110);
-        \draw[flow] (hold.70) -- node[lb, right] {fresh data} (fresh.290);
-        \draw[faultflow] (fresh.east) -- node[lb, above=12pt, sloped, pos=0.55] {heartbeat lost} (fs.north west);
-        \draw[faultflow] (hold.east) -- node[lb, below=4pt, sloped] {timeout} (fs.south west);
-        \draw[flow, dashed] (fs.north) -- (fs.north |- 0,1.15) -- node[lb, above] {explicit rearm} (init.north |- 0,1.15) -- (init.north);
+        st/.style={draw=navy,fill=white,rounded corners=3pt,minimum width=20mm,minimum height=10mm,font=\footnotesize\bfseries,thick},
+        lb/.style={lbl,font=\footnotesize,inner sep=2pt}]
+        \node[st] (init) at (0,0) {INIT};
+        \node[st,fill=teal!15] (fresh) at (3.1,0) {FRESH};
+        \node[st,fill=navy!10] (hold) at (3.1,-2.7) {HOLD};
+        \node[st,draw=fault,fill=fault!15,text=fault] (fs) at (6.2,-1.35) {FAILSAFE};
+        \node[font=\footnotesize,text=fault,below=1pt of fs] {Giữ chốt};
+        \draw[flow] (init)--node[lb,above=10pt] {Dữ liệu hợp lệ} (fresh);
+        \draw[flow] (fresh.250)--node[lb,left] {Quá cũ} (hold.110);
+        \draw[flow] (hold.70)--node[lb,right] {Mới lại} (fresh.290);
+        \draw[faultflow] (fresh.east)--node[lb,above=8pt,sloped] {Mất heartbeat} (fs.north west);
+        \draw[faultflow] (hold.east)--node[lb,below=5pt,sloped] {Hết hạn} (fs.south west);
+        \draw[flow,dashed] (fs.north)--(6.2,1.25)--node[lb,above] {Rearm rõ ràng sau giai đoạn khỏe} (0,1.25)--(init.north);
       \end{tikzpicture}
     \end{column}
-    \begin{column}{0.36\textwidth}
-      \footnotesize
-      \begin{itemize}
-        \setlength{\itemsep}{3pt}
-        \item Separate liveness and freshness timers
-        \item Duplicate / corrupt frames do not refresh timers
-        \item Highest app priority;\\ \SI{1}{kHz}, absolute release \evid{DESIGN}
-        \item Calibrate thresholds on the rig
-      \end{itemize}
-      \vspace{2pt}
-      \centering\slideimg[0.2\textheight]{0.48\linewidth}{V16}{Supervisor}\hfill
-      \slideimg[0.2\textheight]{0.48\linewidth}{V17}{Two timers}
+    \begin{column}{0.33\textwidth}
+      {\small Hai bộ đếm riêng: \textbf{liveness} của bridge và \textbf{freshness} của kết quả.\par\vspace{5pt}
+      Frame trùng, cũ hoặc sai CRC không làm mới bộ đếm.\par}
+      \vspace{5pt}
+      \centering\slideimg[0.24\textheight]{\linewidth}{V17}{Two timers}
     \end{column}
   \end{columns}
-  \note{Why two timers: a live bridge can keep forwarding stale results. Stale data moves FRESH to
-  HOLD; a lost heartbeat goes straight to FAILSAFE. FAILSAFE is latched until an explicit rearm, so
-  there is no flapping. This is the proposed transition table; thresholds are set after measuring
-  inference latency. V18 can go in backup.}
+  \vspace{5pt}
+  {\footnotesize Heartbeat mỗi 20 ms \design. Ngưỡng HOLD/FAILSAFE hiệu chỉnh sau baseline; chưa phải kết quả đo.\par}
+  \src{Nguồn: SYSTEM\_GUIDE §2.4; DESIGN\_CHANGES, mục 1–3. Chính sách đề xuất.}
+  \note{INIT chưa cho áp dụng đề xuất Pi. FRESH chấp nhận dữ liệu đủ mới. HOLD ngừng tin quyết định mới khi dữ liệu quá cũ, dùng trạng thái dự phòng STM32. FAILSAFE giữ chốt, chỉ rời bằng rearm sau khoảng khỏe đã quy định. Heartbeat timeout dùng đồng hồ MCU; freshness cần ánh xạ đồng hồ và biên sai số. Skeleton hiện chỉ một bộ đếm và hồi phục sau một gói; chưa hiện thực sơ đồ này.}
 \end{frame}
 
-\begin{frame}{A GPIO edge checks the UART clock mapping}
+% 17
+\begin{frame}{UART ánh xạ đồng hồ; GPIO kiểm tra sai số}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
   \begin{columns}[c]
-    \begin{column}{0.52\textwidth}
+    \begin{column}{0.47\textwidth}
       \centering
       \begin{tikzpicture}[font=\footnotesize]
-        \draw[navy, thick] (0,0) node[above, align=center] {\textbf{Pi~5}\\ \scriptsize CLOCK\_MONOTONIC\_RAW} -- (0,-3.4);
-        \draw[teal, thick] (4,0) node[above, align=center] {\textbf{STM32}\\ \scriptsize timer, \si{\micro s}} -- (4,-3.4);
-        \draw[flow] (0,-0.5) node[left] {$T_1$} -- node[lbl, above, sloped] {ECHO\_REQ} (4,-1.3) node[right] {$T_2$};
-        \draw[flow, teal] (4,-1.9) node[right] {$T_3$} -- node[lbl, above, sloped] {ECHO\_RESP} (0,-2.8) node[left] {$T_4$};
-        \foreach \y in {-0.5,-2.8} \fill[navy] (0,\y) circle (1.5pt);
-        \foreach \y in {-1.3,-1.9} \fill[teal] (4,\y) circle (1.5pt);
+        \draw[navy,thick] (0,0) node[above,align=center] {\textbf{Linux}\\Đồng hồ monotonic}--(0,-3.8);
+        \draw[teal,thick] (3.8,0) node[above,align=center] {\textbf{STM32}\\Bộ định thời}--(3.8,-3.8);
+        \draw[flow] (0,-.5) node[left] {$T_1$}--node[lbl,above,sloped] {ECHO\_REQ} (3.8,-1.4) node[right] {$T_2$};
+        \draw[flow,teal] (3.8,-2.1) node[right] {$T_3$}--node[lbl,above,sloped] {ECHO\_RESP} (0,-3.1) node[left] {$T_4$};
+        \foreach \y in {-.5,-3.1} \fill[navy] (0,\y) circle (1.5pt);
+        \foreach \y in {-1.4,-2.1} \fill[teal] (3.8,\y) circle (1.5pt);
       \end{tikzpicture}
     \end{column}
-    \begin{column}{0.46\textwidth}
-      \footnotesize
-      \[ \theta = \frac{(T_2 - T_1) + (T_3 - T_4)}{2} \]
-      \[ \delta = (T_4 - T_1) - (T_3 - T_2) \]
-      \muted{$\theta$: clock offset, $\delta$: round-trip link delay;\\ assumes symmetric delay (as in NTP)}
-      \vspace{4pt}
-      \begin{itemize}
-        \item Drift: linear fit over many exchanges, min-delay filter
-        \item Ground truth: GPIO17 edge $\rightarrow$ PA0 input capture
-        \item Target: sub-millisecond \evid{DESIGN, to be measured}
-      \end{itemize}
+    \begin{column}{0.51\textwidth}
+      {\small Trao đổi bốn timestamp theo NTP (Network Time Protocol):\par}
+      {\small\[\theta=\frac{(T_2-T_1)+(T_3-T_4)}{2}\]
+      \[\delta=(T_4-T_1)-(T_3-T_2)\]}
+      {\footnotesize $\theta$: offset; $\delta$: độ trễ khứ hồi. Cùng đơn vị, giả thiết trễ hai chiều đối xứng.\par}
+      {\small Lọc mẫu trễ thấp, ước lượng drift; kiểm tra độc lập bằng GPIO input capture.\par}\vspace{4pt}
+      {\footnotesize Mục tiêu sai số dưới 1 ms \design; phải đo trên bo thật.\par}
     \end{column}
   \end{columns}
-  \note{Never subtract timestamps from different clocks without this mapping. Asymmetric UART
-  delay biases theta by half the asymmetry; the GPIO edge checks this independently. Image V19 can
-  go in backup.}
+  \src{Nguồn: R8; ECHO\_RESP đã bổ sung timestamp RX và TX trong giao thức.}
+  \note{Không trừ trực tiếp timestamp khác miền. Quy đổi cùng đơn vị rồi ánh xạ offset và tỷ lệ tốc độ sau nhiều trao đổi. Công thức không loại bỏ bất đối xứng UART hay chờ read/write Linux. Timestamp gọi GPIO userspace không phải cạnh điện; input capture và analyzer kiểm tra sai số. Không chỉnh wall clock. Báo phân bố residual, delay, drift khi idle và có tải.}
 \end{frame}
 
-% ======================================================================
-\section{Evaluation plan}
+\section{Phương pháp đánh giá}
+\subsection{Metrics và thí nghiệm}
+% 18
+\begin{frame}{AoI tính cả khoảng chưa có kết quả mới}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
+  \begin{columns}[c]
+    \begin{column}{0.60\textwidth}
+      {\footnotesize $g_i$: lúc tạo input; $r_i$: lúc kết quả dùng được tại supervisor, cùng miền đồng hồ.\par}
+      \[\Delta(t)=t-u(t),\quad u(t)=\max\{g_i:r_i\leq t\}\]
+      {\small
+      \textbf{Độ trễ và jitter:} P50/P95/P99: phân vị 50/95/99\%; tách suy luận, bridge, đầu-cuối.\par\vspace{4pt}
+      \textbf{AoI trung bình:} diện tích dưới $\Delta(t)$ chia thời gian; \textbf{peak}: tuổi ngay trước cập nhật.\par\vspace{4pt}
+      \textbf{$V(\tau)$:} tỷ lệ thời gian AoI vượt ngưỡng $\tau$.\par\vspace{4pt}
+      \textbf{Deadline miss:} input thiếu kết quả đúng hạn, kể cả bị thay thế.\par}
+    \end{column}
+    \begin{column}{0.38\textwidth}
+      \centering\slideimg[0.53\textheight]{\linewidth}{V20}{AoI sawtooth}
+    \end{column}
+  \end{columns}
+  \src{Nguồn: R2; \cite{kaul2012infocom}. Phân vị là định nghĩa, không phải số đo hiệu năng.}
+  \note{Tái dựng sawtooth từ cập nhật làm tăng u(t); heartbeat, bản trùng và dữ liệu cũ không reset AoI. Tích phân trên cửa sổ H gồm đoạn cuối sau lần giao cuối. Peak là thống kê sự kiện, khác phân vị theo thời gian. Deadline miss có mẫu số là input sinh ra có deadline trong cửa sổ, không chỉ gói đã nhận. Không có dữ liệu ban đầu thì báo khoảng thiếu, không khởi tạo tuổi bằng không.}
+\end{frame}
 
-\begin{frame}{Four experiments separate delay, freshness and fault reaction}
-  \footnotesize
-  \begin{tabular}{@{}l L{0.36\textwidth} L{0.38\textwidth}@{}}
+% 19
+\begin{frame}{E1–E4 tách độ trễ, độ mới và phản ứng lỗi}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
+  {\footnotesize
+  \begin{tabular}{@{}L{0.10\textwidth} L{0.44\textwidth} L{0.40\textwidth}@{}}
     \toprule
-    & \textbf{Compare} & \textbf{Metric} \\
-    \midrule
-    \textbf{E1} contention   & P0 idle vs CPU / memory-bandwidth / cache / I/O stressors & P50/P95/P99 end-to-end latency \\
-    \textbf{E2} tuning, kernel & P0 vs P1;\; P1 vs P3 & same + dispatch jitter \\
-    \textbf{E3} freshness    & P1 vs P2 at rising load & average AoI, peak AoI, violation fraction \\
-    \textbf{E4} faults       & kill bridge, stop process, CPU hog & failsafe latency on STM32 \\
-    \bottomrule
-  \end{tabular}
-  \vspace{8pt}
+    \textbf{Thử} & \textbf{So sánh có kiểm soát} & \textbf{Đại lượng chính}\\\midrule
+    E1 & P0 idle với tải CPU, nhớ, cache, I/O & P50/P95/P99 suy luận và đường dữ liệu\\
+    E2 & P0–P1; P1–P3, cùng tải & Độ trễ và dispatch jitter bridge\\
+    E3 & P1–P2 khi tải tăng; cùng source period & AoI trung bình, peak, $V(\tau)$, deadline miss\\
+    E4 & Kill bridge, SIGSTOP (tín hiệu dừng), FIFO CPU hog & Phát hiện, kích hoạt và tổng failsafe latency\\\bottomrule
+  \end{tabular}}
+  \vspace{7pt}
   \begin{columns}[c]
-    \begin{column}{0.55\textwidth}
-      \footnotesize Every run logs temperature, frequency, throttling;\\ throttled runs are excluded.
+    \begin{column}{0.58\textwidth}
+      {\footnotesize stress-ng: \texttt{--stream} tải băng thông; \texttt{--cache} quét 256 KB–8 MB \design; \texttt{--memrate} quét tốc độ yêu cầu.\par}
     \end{column}
-    \begin{column}{0.4\textwidth}
-      \centering\slideimg[0.3\textheight]{\linewidth}{V21}{Experiment matrix}
+    \begin{column}{0.38\textwidth}
+      \centering\slideimg[0.22\textheight]{\linewidth}{V21}{Experiment matrix}
     \end{column}
   \end{columns}
-  \note{Every run logs temperature, frequency and throttling; throttled runs are excluded. Stressor
-  choices follow the R5 note (stress-ng stream, cache, memrate).}
+  \src{Nguồn: SYSTEM\_GUIDE §2.6; R3, R5. Các phép thử là kế hoạch.}
+  \note{E1 thử từng tải trước khi tổ hợp; tách cùng lõi/khác lõi. Dải cache không đảm bảo residency. memrate là tốc độ yêu cầu, phải log tốc độ đạt. E2 giữ code và queue P1/P3. E3 giữ period, deadline. SIGSTOP dừng tiến trình, không chứng minh kernel freeze. Ghi command, worker count, affinity và phiên bản.}
 \end{frame}
 
-\begin{frame}{Failsafe latency is timed on one external clock, not by Linux}
+% 20
+\begin{frame}{Failsafe latency cần đo trên đồng hồ ngoài}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
   \begin{columns}[c]
-    \begin{column}{0.56\textwidth}
+    \begin{column}{0.60\textwidth}
       \centering
       \begin{tikzpicture}[font=\footnotesize]
-        \draw[-{Stealth}, muted] (0,0) -- (6.4,0) node[right] {$t$};
-        \foreach \x/\n/\c in {0.5/t_f/fault, 3.2/t_d/navy, 5.4/t_s/teal}
-          {\draw[\c, thick] (\x,-0.15) -- (\x,0.9); \node[\c, above] at (\x,0.9) {$\n$};}
-        \draw[|-|, navy] (0.5,-0.45) -- node[lbl, below=1pt] {detection} (3.2,-0.45);
-        \draw[|-|, teal] (3.2,-0.45) -- node[lbl, below=1pt] {activation} (5.4,-0.45);
-        \draw[|-|, ink] (0.5,-1.15) -- node[lbl, below=1pt] {total} (5.4,-1.15);
-        \node[font=\scriptsize, muted, align=left, anchor=west] at (0,-2.05)
-          {$t_f$ fault onset \quad $t_d$ decision \quad $t_s$ safe output};
-      \end{tikzpicture}
+        \draw[-{Stealth},muted] (0,0)--(6.5,0) node[right] {$t$};
+        \foreach \x/\n/\c in {.5/t_f/fault,3.2/t_d/navy,5.5/t_s/teal}
+          {\draw[\c,thick] (\x,-.15)--(\x,.8);\node[\c,above] at (\x,.8) {$\n$};}
+        \draw[|-|,navy] (.5,-.5)--node[lbl,below] {Phát hiện} (3.2,-.5);
+        \draw[|-|,teal] (3.2,-.5)--node[lbl,below] {Kích hoạt} (5.5,-.5);
+        \draw[|-|,ink] (.5,-1.2)--node[lbl,below] {Tổng thời gian} (5.5,-1.2);
+      \end{tikzpicture}\par
       \vspace{6pt}
-      \begin{minipage}{\linewidth}\raggedright\scriptsize
-        \textbf{Budget} \evid{DESIGN}: timeout + supervisor period + dispatch delay + execution + output delay
-      \end{minipage}
+      {\footnotesize\raggedright $t_f$: lỗi bắt đầu; $t_d$: quyết định supervisor; $t_s$: đầu ra failsafe quan sát được.\par}
     \end{column}
-    \begin{column}{0.42\textwidth}
-      \centering\slideimg[0.66\textheight]{\linewidth}{V23}{Logic analyzer on fault, decision, output pins}
+    \begin{column}{0.38\textwidth}
+      \centering\slideimg[0.37\textheight]{\linewidth}{V23}{Logic analyzer on fault, decision, output pins}
     \end{column}
   \end{columns}
-  \note{Linux logs cannot time a freeze; that is why the STM32 and the logic analyzer observe it.
-  Detection, activation and total latency are reported separately.}
+  \vspace{2pt}
+  {\footnotesize Ngân sách từ lần nhận hợp lệ cuối, có điều kiện:\par}
+  {\small\centering \(t_s-t_{\mathrm{last}}\leq W+T+J+C+A\) \design\par}
+  {\footnotesize $W$: timeout; $T$: chu kỳ; $J$: trễ dispatch; $C$: thực thi quyết định; $A$: trễ đầu ra. Frame tồn và pha tiêm lỗi ảnh hưởng $t_s-t_f$.\par}
+  \src{Nguồn: R1. Log Linux không đo được thời điểm khi Linux ngừng phản hồi.}
+  \note{Một analyzer ghi marker tiêm lỗi, quyết định và pin output, có thể thêm UART. Không lấy shell-command launch làm onset; bracket sự kiện thực. Báo detection, activation, total theo loại lỗi, pha và tải. Ngân sách chỉ có nghĩa khi J,C,A đã đo hoặc chặn; timeout cộng một tick chưa đủ. Queued valid frame sau onset đẩy lùi mốc cuối. Maximum quan sát chưa chứng minh worst case.}
 \end{frame}
 
-\begin{frame}{Each hypothesis maps to a planned experiment}
-  \begin{enumerate}
-    \setlength{\itemsep}{7pt}
-    \item[\textbf{H1}] Contention inflates P99 far more than P50
-    \item[\textbf{H2}] Tuning recovers CPU-contention tails, \textbf{not} memory-contention tails
-    \item[\textbf{H3}] Latest value lowers average AoI and violation time (no hard bound)
-    \item[\textbf{H4}] STM32 failsafe latency stays within its budget for every fault type
-  \end{enumerate}
-  \vspace{8pt}
-  \muted{\footnotesize Each hypothesis maps to one experiment: H1--E1, H2--E2, H3--E3, H4--E4.}
-  \note{These are predictions; results slides come after the experiments. H2 is supported by prior
-  work (MemGuard, DeepPicar) on other platforms, not yet on the Pi~5.}
+% 21
+\begin{frame}{H1–H4 là dự đoán cần kiểm chứng bằng thí nghiệm}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
+  {\footnotesize
+  \begin{tabular}{@{}L{0.09\textwidth} L{0.50\textwidth} L{0.35\textwidth}@{}}
+    \toprule
+    \textbf{Giả thuyết} & \textbf{Dự đoán} & \textbf{Cách kiểm chứng}\\\midrule
+    H1 & Tranh chấp làm P99 tăng mạnh hơn P50 & E1: so tail và median theo tải\\
+    H2 & P1 cải thiện tail CPU nhiều hơn tail nhớ/cache & E2: mức phục hồi theo stressor\\
+    H3 & P2 giảm AoI trung bình và $V(\tau)$ khi quá tải & E3: cùng tải, period, threshold\\
+    H4 & STM32 phản ứng trong ngân sách với từng lỗi & E4: so $W+T+J+C+A$ và mốc lỗi thật\\\bottomrule
+  \end{tabular}}
+  \vspace{10pt}
+  \begin{block}{Tiêu chí diễn giải}
+    {\small Kết quả không ủng hộ giả thuyết vẫn có giá trị: chỉ ra giới hạn cấu hình OS. Latest-value buffer không tạo bảo đảm AoI cứng.}
+  \end{block}
+  \src{Nguồn: SYSTEM\_OVERVIEW §4; R1, R2, R5.}
+  \note{H2 chưa xác nhận trên Pi nhóm. H3 giảm tuổi có thể giảm tỷ lệ giao. H4 trong overview nói timeout cộng tick; phép thử dùng budget đầy đủ R1 và xử lý queued frames. Báo false trips và failures to transition. Cần lặp độc lập thay vì coi các mẫu tương quan là các lượt độc lập.}
 \end{frame}
 
-% ======================================================================
-\section{Status}
+\subsection{Kiểm soát sai lệch và khả năng tái lập}
+% 22
+\begin{frame}{Kiểm soát nhiệt và sai số trước khi kết luận về OS}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
+  \begin{columns}[T]
+    \begin{column}{0.49\textwidth}
+      \textbf{Giữ điều kiện tương đương}\par
+      \begin{itemize}
+        \item Cùng PSU, tản nhiệt, fan, governor và warm-up giữa các cặp cấu hình.
+        \item Log nhiệt độ, tần số, throttling, swap, kernel.
+        \item Tách lượt throttled khỏi so sánh sạch; vẫn lưu dấu vết.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.49\textwidth}
+      \textbf{Nguy cơ sai lệch kết luận}\par
+      \begin{itemize}
+        \item Offset, drift và bất đối xứng UART làm sai AoI.
+        \item Logging, tracing, worker runtime tạo nhiễu đo.
+        \item Phần cứng, workload và số lượt giới hạn khả năng khái quát.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \vspace{5pt}
+  {\footnotesize R5 đề xuất warm-up 10 s, đo 60 s, ít nhất 5 lượt/điều kiện, xáo thứ tự \design. Lưu dữ liệu thô; không loại mẫu trễ trong lượt hợp lệ.\par}
+  \src{Nguồn: R3–R5, R7–R8. Tần số yêu cầu chưa chắc là tần số thực tế.}
+  \note{Chọn mức tối thiểu năm lượt của R5 cho chiến dịch stress, không mô tả như số lượt đã chạy. Log lý do validity không đạt, số lượt loại và dữ liệu thô. Cold start đo riêng. Cùng governor P1/P3; P0 giữ defaults đã ghi nhận. Đo sai số đồng hồ khi có tải. Báo uncertainty giữa lượt và sample count. Maximum một lượt ngắn không phải worst-case bound.}
+\end{frame}
 
-\begin{frame}{Host tests are complete; hardware evaluation is next}
+\section{Tiến độ và kế hoạch}
+\subsection{Trạng thái và điều kiện nghiệm thu}
+% 23
+\begin{frame}{Giao thức đã kiểm thử host; chuỗi trên bo chưa hoàn tất}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
+  {\footnotesize CI (Continuous Integration): tích hợp liên tục. Trạng thái theo SYSTEM\_GUIDE.\par}
+  \vspace{5pt}
+  {\footnotesize
+  \begin{tabular}{@{}L{0.38\textwidth} L{0.17\textwidth} L{0.39\textwidth}@{}}
+    \toprule
+    \textbf{Hạng mục} & \textbf{Trạng thái} & \textbf{Giới hạn bằng chứng}\\\midrule
+    Thiết kế, ghi chú R1–R8 & Hoàn thành & 8 ghi chú \design\\
+    Thư viện UART, tests & Hoàn thành & \host\\
+    Supervisor skeleton & Một phần & Một bộ đếm; 113 assertions \host\\
+    CI host, compile STM32 & Hoàn thành & Không thay cho chạy bo thật\\
+    Provisioning/runner Pi & Một phần & Đã viết script; chưa chạy Pi\\
+    Workload/bridge/firmware, E1–E4 & Chưa làm & Chưa có số đo Pi–STM32\\\bottomrule
+  \end{tabular}}
+  \vspace{6pt}
+  {\footnotesize Tiếp theo: hợp nhất skeleton; supervisor hai bộ đếm, FAILSAFE giữ chốt; test clock-sync.\par}
+  \src{Nguồn: SYSTEM\_GUIDE, bảng hạng mục công việc; DESIGN\_CHANGES.}
+  \note{113 assertions thuộc skeleton trên feat/software-skeleton-wip [KIỂM THỬ HOST], không xác nhận supervisor mới. Khi merge, bỏ protocol.c trùng để dùng hea\_proto, sửa lỗi format Linux guide ghi nhận. CI compile không thay chạy bo. Không suy diễn provisioning đã thực thi. Analysis, E1–E4, báo cáo và demo còn phụ thuộc bring-up.}
+\end{frame}
+
+% 24
+\begin{frame}{Kế hoạch đi theo phụ thuộc và tiêu chí nghiệm thu}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
   \begin{columns}[c]
-    \begin{column}{0.48\textwidth}
-      \footnotesize
-      \textbf{\color{teal}Done}
-      \begin{itemize}
-        \item Design and research pass (8 cited notes)
-        \item Protocol library + tests \evid{HOST-TEST}
-        \item Supervisor skeleton + tests\\ (113 assertions) \evid{HOST-TEST}
-        \item CI, Pi provisioning scripts
-      \end{itemize}
-      \vspace{4pt}
-      \textbf{\color{navy}Next}
-      \begin{itemize}
-        \item Rig setup, firmware, bridge daemon
-        \item Then E1--E4
-      \end{itemize}
+    \begin{column}{0.67\textwidth}
+      {\small
+      \textbf{Phần mềm $\rightarrow$}\par
+      Hợp nhất skeleton; supervisor và clock-sync có test; source/workload/bridge mô phỏng; firmware cross-compile.\par\vspace{7pt}
+      \textbf{Kết nối phần cứng $\rightarrow$}\par
+      Baseline Pi; heartbeat trên Nucleo; UART trực tiếp; đo CRC, offset và chuỗi AoI.\par\vspace{7pt}
+      \textbf{Thí nghiệm và báo cáo $\rightarrow$}\par
+      Chạy E1–E4; phân tích phân bố, dữ liệu thô, validity; hoàn thiện báo cáo, slides và demo.\par}
     \end{column}
-    \begin{column}{0.5\textwidth}
-      \centering\slideimg[0.7\textheight]{\linewidth}{V24}{Progress timeline}
+    \begin{column}{0.31\textwidth}
+      \centering\slideimg[0.55\textheight]{\linewidth}{V24}{Progress timeline}
     \end{column}
   \end{columns}
-  \note{Design and research pass are done (8 cited notes); CI and Pi provisioning scripts are present.
-  Rig setup, firmware and bridge daemon precede E1--E4. Update before presenting. The supervisor tests cover the one-timer skeleton; the two-timer
-  version with latched FAILSAFE is in progress.}
+  \vspace{6pt}
+  {\footnotesize Nghiệm thu: host tests đạt $\rightarrow$ firmware compile $\rightarrow$ mất heartbeat kích hoạt failsafe $\rightarrow$ đồng hồ kiểm chứng $\rightarrow$ dataset tái lập. Lộ trình theo mốc; chưa chốt ngày.\par}
+  \src{Nguồn: SYSTEM\_GUIDE, kế hoạch theo thứ tự và cột “Done when”.}
+  \note{Mac kiểm thử thuần C, toán đồng hồ và mô phỏng protocol; không chạy binary Linux hoặc giả định Linux headers/devices trên host. Linux runtime kiểm chứng Pi; firmware cross-compile bằng arm-none-eabi-gcc rồi chạy Nucleo. Bridge dùng đầu nối giả và MCU giả trước wiring. Bring-up ghi metadata, heartbeat loss, CRC, residual clock và AoI đối chiếu analyzer nếu có. E4 cần analyzer cho mốc ngoài Linux. Guide không có deadline ngày cụ thể; timeline theo phụ thuộc và không gán vai trò thành viên.}
 \end{frame}
 
-% ======================================================================
-% References are backup material, so the talk closes on its next steps.
+\section{Kết luận}
+% 25
+\begin{frame}{Đồ án tạo phép đo tái lập và nêu rõ giới hạn}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
+  \begin{columns}[T]
+    \begin{column}{0.49\textwidth}
+      \textbf{Thiết kế cần kiểm chứng}\par
+      \begin{itemize}
+        \item Linux xử lý workload, tinh chỉnh đường truyền bằng cơ chế stock.
+        \item STM32 giám sát liveness, freshness và tự kích hoạt failsafe.
+        \item P0–P3 và E1–E4 tạo so sánh có kiểm soát.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.49\textwidth}
+      \textbf{Sản phẩm bàn giao}\par
+      \begin{itemize}
+        \item Mã nguồn, cấu hình build/run rõ môi trường.
+        \item Dataset, metadata, latency/AoI và phân bố failsafe latency.
+        \item Mức ủng hộ giả thuyết và các giới hạn.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \vspace{8pt}
+  \begin{block}{Bước kế tiếp quyết định giá trị thực nghiệm}
+    {\small Hoàn tất supervisor và bridge, kiểm chứng thời gian Pi–STM32 rồi mới kết luận về cải thiện độ trễ hoặc an toàn.}
+  \end{block}
+  \note{Có hướng thiết kế và nền tảng kiểm thử giao thức, chưa có kết luận định lượng phần cứng. Không chứng minh tính đúng AI hoặc an toàn hệ vật lý; đo OS, dữ liệu và phản ứng lỗi trong demonstrator đã định nghĩa. Phụ lục phục vụ tra cứu.}
+\end{frame}
+
 \appendix
+\section*{Phụ lục}
 \setbeamerfont{bibliography entry author}{size=\footnotesize}
 \setbeamerfont{bibliography entry title}{size=\footnotesize}
 \setbeamerfont{bibliography entry location}{size=\footnotesize}
 \setbeamerfont{bibliography entry note}{size=\footnotesize}
-
-\begin{frame}{References: supervision and freshness}
+\begin{frame}{Tài liệu tham khảo về giám sát và độ mới}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
   \footnotesize\raggedright
   \begin{thebibliography}{9}
-    \setlength{\itemsep}{9pt}
+    \setlength{\itemsep}{2pt}
     \bibitem{bak2009} Stanley Bak, Deepti K. Chivukula, Olugbemiga Adekunle,
       Mu Sun, Marco Caccamo, Lui Sha.\par
       The System-Level Simplex Architecture for Improved Real-Time Embedded System Safety.\par
@@ -604,15 +776,15 @@
       \emph{Conference on Information Sciences and Systems (CISS)}, 2012, pp.~1--6.
       \href{https://dblp.org/rec/conf/ciss/KaulYG12}{[DBLP]}
   \end{thebibliography}
-  \note{Primary bibliographic metadata checked against DBLP. Links in the PDF lead to the records.
-  Keep references available for questions and for readers of the shared deck.}
+  \note{Giữ nguyên thư mục đã kiểm chứng. Nhan đề và tên hội nghị giữ ngôn ngữ xuất bản. IEEE: Institute of Electrical and Electronics Engineers; RTAS: Real-Time and Embedded Technology and Applications Symposium; INFOCOM: International Conference on Computer Communications; CISS: Conference on Information Sciences and Systems; DBLP: Digital Bibliography and Library Project.}
 \end{frame}
 
-\begin{frame}{References: contention and Linux scheduling}
+\begin{frame}{Tài liệu tham khảo về tranh chấp và lập lịch}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
   \footnotesize\raggedright
   \begin{thebibliography}{9}
     \setcounter{enumiv}{3}
-    \setlength{\itemsep}{9pt}
+    \setlength{\itemsep}{2pt}
     \bibitem{yun2013memguard} Heechul Yun, Gang Yao, Rodolfo Pellizzoni, Marco Caccamo, Lui Sha.\par
       MemGuard: Memory bandwidth reservation system for efficient performance isolation
       in multi-core platforms.\par
@@ -631,17 +803,79 @@
       \emph{arXiv:2604.19275}, 2026 (v2).
       \href{https://arxiv.org/abs/2604.19275}{[arXiv]}
   \end{thebibliography}
-  \note{DeepPicar's published venue is RTCSA 2018, not just its arXiv preprint.
-  The scheduling paper is identified as an arXiv preprint; no publication venue is inferred.}
+  \note{DeepPicar được dẫn theo ấn bản hội nghị đã kiểm chứng. Bài lập lịch ghi rõ bản thảo arXiv. RTCSA: International Conference on Embedded and Real-Time Computing Systems and Applications; UAV: Unmanned Aerial Vehicle.}
 \end{frame}
 
-% ======================================================================
-\begin{frame}{Backup: supporting illustrations}
-  \centering
-  \slideimg[0.38\textheight]{0.3\linewidth}{V13}{Profiles detail}\hfill
-  \slideimg[0.38\textheight]{0.3\linewidth}{V15}{UART frame illustration}\hfill
-  \slideimg[0.38\textheight]{0.3\linewidth}{V18}{Supervisor detail}\\[6pt]
-  \slideimg[0.38\textheight]{0.3\linewidth}{V19}{Clock sync illustration}
+% 28 — Thuật ngữ
+\begin{frame}{Bảng thuật ngữ và viết tắt hỗ trợ đọc độc lập}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
+  \setlength{\parskip}{0pt}
+  \begin{columns}[T]
+    \begin{column}{0.32\textwidth}
+      {\footnotesize\setlength{\parskip}{0pt}\setlength{\baselineskip}{11.5pt}
+      \textbf{Nền tảng}\par\vspace{1pt}
+      AI: Artificial Intelligence.\par
+      OS: Operating System.\par
+      RTOS: Real-Time Operating System.\par
+      CPU: Central Processing Unit.\par
+      SoC: System-on-Chip.\par
+      MCU: Microcontroller Unit.\par
+      RAM: Random-Access Memory.\par
+      DRAM: Dynamic Random-Access Memory.\par
+      L2/L3: Level 2/3.\par
+      LLC: Last-Level Cache.\par
+      PSU: Power Supply Unit.\par}
+    \end{column}
+    \begin{column}{0.32\textwidth}
+      {\footnotesize\setlength{\parskip}{0pt}\setlength{\baselineskip}{11.5pt}
+      \textbf{Giao tiếp}\par\vspace{1pt}
+      UART: Universal Asynchronous Receiver-Transmitter.\par
+      GPIO: General-Purpose Input/Output.\par
+      TX/RX: Transmit/Receive.\par
+      I/O: Input/Output.\par
+      ISR: Interrupt Service Routine.\par
+      IPC: Inter-Process Communication.\par
+      SOF: Start of Frame.\par
+      CRC: Cyclic Redundancy Check.\par
+      NTP: Network Time Protocol.\par}
+    \end{column}
+    \begin{column}{0.32\textwidth}
+      {\footnotesize\setlength{\parskip}{0pt}\setlength{\baselineskip}{11.5pt}
+      \textbf{Workload và phép đo}\par\vspace{1pt}
+      ONNX: Open Neural Network Exchange.\par
+      FP32: 32-bit Floating Point.\par
+      FIFO: First-In, First-Out.\par
+      LCFS: Last-Come, First-Served.\par
+      AoI: Age of Information.\par
+      CSV: Comma-Separated Values.\par
+      CI: Continuous Integration.\par
+      LPDDR4X: Low-Power Double Data Rate 4X.\par
+      P50/P95/P99: phân vị 50/95/99\%.\par
+      Failsafe: trạng thái an toàn.\par}
+    \end{column}
+  \end{columns}
+  \note{Tên profile, bản tin, trạng thái giữ theo protocol. CPU affinity ràng buộc lõi; cgroups là control groups; latest-value buffer giữ dữ liệu mới nhất đang chờ gửi. Các viết tắt hành chính ở bìa đã giải thích tại chỗ. Các tên tổ chức thư mục giữ tên xuất bản để tra cứu.}
 \end{frame}
 
+% 29 — Ảnh bổ trợ, giữ nguyên caption gốc
+\begin{frame}{Ảnh bổ trợ minh họa cấu hình và giao tiếp liên miền}
+  \relax % Ngăn Beamer đọc nhóm nội dung đầu tiên thành framesubtitle.
+  \begin{columns}[c]
+    \begin{column}{0.49\textwidth}
+      \centering
+      \slideimg[0.29\textheight]{\linewidth}{V13}{Profiles detail}\par\vspace{3pt}
+      {\footnotesize Chi tiết profile: đối chiếu cấu hình runtime.}\par\vspace{5pt}
+      \slideimg[0.29\textheight]{\linewidth}{V18}{Supervisor detail}\par\vspace{3pt}
+      {\footnotesize Supervisor: kiểm tra liveness và freshness.}
+    \end{column}
+    \begin{column}{0.49\textwidth}
+      \centering
+      \slideimg[0.29\textheight]{\linewidth}{V15}{UART frame illustration}\par\vspace{3pt}
+      {\footnotesize Frame: đối chiếu parser và CRC.}\par\vspace{5pt}
+      \slideimg[0.29\textheight]{\linewidth}{V19}{Clock sync illustration}\par\vspace{3pt}
+      {\footnotesize Đồng hồ: trao đổi UART và kiểm tra GPIO.}
+    \end{column}
+  \end{columns}
+  \note{Ảnh là minh họa bổ trợ, không thay TikZ hoặc phép đo. Caption English từng V-id giữ nguyên để khớp bộ prompt đang chuẩn bị. PNG thêm sau cần render lại; macro giữ tỷ lệ và không crop.}
+\end{frame}
 \end{document}
