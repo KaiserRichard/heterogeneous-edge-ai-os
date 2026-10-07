@@ -1,0 +1,596 @@
+% Heterogeneous Edge-AI Runtime -- progress report deck.
+% Build: latexmk -xelatex main.tex   (see README.md)
+% Content source: docs/SLIDES_OVERVIEW.md, docs/SYSTEM_GUIDE.md, docs/research/.
+% Number policy: every number is a DESIGN value, a CALCULATED value, a HOST-TEST
+% result, or a PUBLISHED figure from another setup. Nothing here is a Pi/STM32 measurement.
+\documentclass[aspectratio=169,11pt]{beamer}
+
+% Speaker notes: uncomment ONE line to see them.
+% \setbeameroption{show notes on second screen=right}  % dual-screen (pdfpc)
+% \setbeameroption{show only notes}                     % notes handout
+
+\usetheme[progressbar=frametitle, numbering=fraction, sectionpage=progressbar]{moloch}
+
+% ---------- fonts ----------
+\usepackage{fontspec}
+\setsansfont{Avenir Next}[BoldFont={Avenir Next Demi Bold}]
+\setmonofont{Menlo}[Scale=0.85]
+
+% ---------- palette ----------
+\definecolor{navy}{HTML}{1F3A5F}
+\definecolor{teal}{HTML}{2A9D8F}
+\definecolor{fault}{HTML}{E76F51}
+\definecolor{paper}{HTML}{FAFAF7}
+\definecolor{ink}{HTML}{22262B}
+\definecolor{muted}{HTML}{6B7280}
+\definecolor{rule}{HTML}{D6D9DE}
+
+\setbeamercolor{normal text}{fg=ink, bg=paper}
+\setbeamercolor{frametitle}{fg=paper, bg=navy}
+\setbeamercolor{progress bar}{fg=teal, bg=rule}
+\setbeamercolor{alerted text}{fg=fault}
+\setbeamercolor{example text}{fg=teal}
+\setbeamercolor{structure}{fg=navy}
+\setbeamercolor{title separator}{fg=teal}
+\setbeamercolor{footline}{fg=muted}
+\setbeamercolor{block title}{fg=paper, bg=navy}
+\setbeamercolor{block body}{bg=navy!6}
+\setbeamerfont{frametitle}{size=\large, series=\bfseries}
+\setbeamertemplate{itemize items}{\color{teal}\rule[0.25ex]{0.45em}{0.45em}}
+\setbeamertemplate{bibliography item}[text]
+\AtBeginSection{}  % no separate section-divider pages; progress bar shows position
+\setbeamertemplate{itemize subitem}{\color{muted}--}
+
+% ---------- packages ----------
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, automata, calc, shapes.geometric, fit, backgrounds, decorations.pathreplacing}
+\usepackage{booktabs}
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\usepackage{amsmath}
+\usepackage{siunitx}
+\sisetup{detect-all}
+
+% ---------- helpers ----------
+\newcommand{\muted}[1]{{\color{muted}#1}}
+\newcommand{\evid}[1]{{\scriptsize\color{muted}[#1]}}   % evidence tag: DESIGN, PUBLISHED, ...
+\newcommand{\src}[1]{\par\vfill{\scriptsize\color{muted}#1}}
+
+% \slideimg[<max height>]{<width>}{<V-id>}{<caption for placeholder>}
+% Shows images/<V-id>.png if present, otherwise a labelled gray box of the same size.
+\newcommand{\slideimg}[4][0.62\textheight]{%
+  \IfFileExists{images/#3.png}{%
+    \includegraphics[width=#2, height=#1, keepaspectratio]{images/#3.png}%
+  }{%
+    \begin{tikzpicture}
+      \node[draw=rule, fill=black!6, rounded corners=2pt, minimum width=\dimexpr#2-1pt\relax, outer sep=0pt,
+            minimum height=#1, align=center, text width=\dimexpr#2-8mm\relax, font=\footnotesize, text=muted]
+        {\textbf{#3}\\[2pt]#4\\[2pt]\scriptsize image pending};
+    \end{tikzpicture}%
+  }%
+}
+
+\tikzset{
+  box/.style={draw=navy, fill=white, rounded corners=2pt, align=center, font=\footnotesize,
+              minimum height=7mm, inner sep=3pt},
+  flow/.style={-{Stealth[length=2mm]}, thick, color=navy},
+  faultflow/.style={-{Stealth[length=2mm]}, thick, color=fault},
+  lbl/.style={font=\scriptsize, color=ink, fill=paper, inner sep=1pt},
+}
+
+\title{Heterogeneous Edge-AI Runtime}
+\subtitle{Linux + FreeRTOS on Raspberry Pi~5 and STM32: measuring timing and failure behaviour}
+\author{Team names}
+\institute{Course name \quad\textbullet\quad Progress report}
+\date{\today}
+
+\begin{document}
+
+% ======================================================================
+\begin{frame}[plain]
+  \begin{columns}[c]
+    \begin{column}{0.52\textwidth}
+      {\Large\bfseries\color{navy} Heterogeneous Edge-AI Runtime\par}
+      \vspace{4pt}
+      {\color{teal}\rule{0.6\linewidth}{1.2pt}\par}
+      \vspace{6pt}
+      {\small Linux + FreeRTOS on Raspberry Pi~5 and STM32: measuring how a
+       general-purpose OS and a real-time OS share a time-sensitive AI data path\par}
+      \vspace{14pt}
+      {\footnotesize Team names\\ Course name \textbullet\ Progress report \textbullet\ \today\par}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \centering\slideimg[0.8\textheight]{\linewidth}{V01}{Title visual: Pi~5 (green) + Nucleo (white) on one link}
+    \end{column}
+  \end{columns}
+  \note{One sentence: we study how a general-purpose OS and a real-time OS can share an AI
+  workload safely, and we measure it.}
+\end{frame}
+
+% ======================================================================
+\section{Problem}
+
+\begin{frame}{Under load, Linux delivers results late, and the receiver cannot tell}
+  \begin{columns}[T]
+    \begin{column}{0.42\textwidth}
+      \begin{itemize}
+        \item Linux: high throughput, \alert{no timing guarantee}
+        \item Late results look exactly like fresh ones
+        \item If Linux hangs, nothing on Linux can be trusted to notice
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.56\textwidth}
+      \centering
+      \slideimg[0.36\textheight]{\linewidth}{V02}{Late result under load}\\[3pt]
+      \slideimg[0.2\textheight]{0.48\linewidth}{V03}{Delay invisible to receiver}\hfill
+      \slideimg[0.2\textheight]{0.48\linewidth}{V04}{Linux hang}
+    \end{column}
+  \end{columns}
+  \note{Example: the Pi runs a neural network every 100 ms and sends ``obstacle / no
+  obstacle'' to a microcontroller that drives a motor. A late or frozen answer is a safety
+  problem, not just a performance one.}
+\end{frame}
+
+\begin{frame}{We ask three measurable questions, using only stock OS mechanisms}
+  \begin{columns}[c]
+    \begin{column}{0.55\textwidth}
+      \begin{enumerate}
+        \setlength{\itemsep}{6pt}
+        \item How much does Linux \textbf{resource contention} delay a time-sensitive data path?
+        \item Which \textbf{stock OS mechanisms} recover that delay, and which cannot?
+        \item Can an \textbf{independent real-time supervisor} bound the reaction to Linux failures?
+      \end{enumerate}
+      \vspace{6pt}
+      \muted{\footnotesize No new OS, no kernel patches: we combine, configure and measure.}
+    \end{column}
+    \begin{column}{0.43\textwidth}
+      \centering\slideimg[0.62\textheight]{\linewidth}{V07}{Three research questions}
+    \end{column}
+  \end{columns}
+  \note{We do not write a new OS or patch the kernel; we combine and configure existing OS
+  mechanisms and measure the effect.}
+\end{frame}
+
+% ======================================================================
+\section{Background}
+
+\begin{frame}{The pattern is known; its failsafe latency on commodity Linux is not measured}
+  \begin{columns}[T]
+    \begin{column}{0.64\textwidth}
+      \footnotesize
+      \begin{itemize}
+        \setlength{\itemsep}{3pt}
+        \item \textbf{System-Level Simplex} \cite{bak2009}: untrusted complex subsystem + simple
+              safety subsystem on separate hardware
+        \item \textbf{Age of Information} \cite{kaul2012queues,kaul2012infocom}: newest-first
+              delivery keeps data freshest
+        \item \textbf{Multicore interference} \cite{yun2013memguard,bechtel2018deeppicar}: dedicated
+              cores do not isolate memory bandwidth
+        \item \textbf{Pi~5 + PREEMPT\_RT} \cite{arxiv2604}: SCHED\_FIFO 99 worst case
+              \SI{1.8}{ms} stock vs \SI{0.22}{ms} RT kernel, stressed \evid{PUBLISHED}
+      \end{itemize}
+      \vspace{4pt}
+      \begin{block}{Gap}
+        \footnotesize Simplex papers report no failsafe-latency numbers. We measure them end to end
+        on Linux + FreeRTOS.
+      \end{block}
+    \end{column}
+    \begin{column}{0.34\textwidth}
+      \centering\slideimg[0.66\textheight]{\linewidth}{V06}{Related work map}
+    \end{column}
+  \end{columns}
+  \note{Sources in docs/research/RELATED\_WORK.md. Say clearly that these are their results,
+  not ours. The 1.8 / 0.22 ms figures are Table 4 of arXiv:2604.19275 (4 ms loop, stressed).}
+\end{frame}
+
+\begin{frame}{CPU scheduling decides who runs, not who uses memory bandwidth}
+  \begin{columns}[c]
+    \begin{column}{0.44\textwidth}
+      \begin{itemize}
+        \setlength{\itemsep}{5pt}
+        \item 4 $\times$ Cortex-A76, \SI{512}{KB} private L2 each
+        \item \SI{2}{MB} shared L3, shared LPDDR4X
+        \item Pinning a core isolates CPU time,\\ \alert{not} L3 or DRAM bandwidth
+      \end{itemize}
+      \vspace{4pt}
+      \muted{\footnotesize Leads to hypothesis H2.}
+    \end{column}
+    \begin{column}{0.54\textwidth}
+      \centering\slideimg[0.66\textheight]{\linewidth}{V05}{BCM2712: private L2, shared L3 and DRAM}
+    \end{column}
+  \end{columns}
+  \note{This is why we expect tuning to fix CPU contention but not memory contention
+  (hypothesis H2).}
+\end{frame}
+
+% ======================================================================
+\section{System design}
+
+\begin{frame}{Linux proposes; the STM32 has final authority over the output}
+  \begin{columns}[c]
+    \begin{column}{0.40\textwidth}
+      \footnotesize
+      \textbf{\color{navy}Linux domain} \muted{(Pi~5, Ubuntu 24.04)}
+      \begin{itemize}
+        \item source, inference, bridge, stressors
+      \end{itemize}
+      \vspace{3pt}
+      \textbf{\color{teal}Real-time domain} \muted{(STM32F446RE, FreeRTOS)}
+      \begin{itemize}
+        \item UART RX, supervisor, status, failsafe output
+      \end{itemize}
+      \vspace{3pt}
+      One UART link + one GPIO sync line
+    \end{column}
+    \begin{column}{0.58\textwidth}
+      \centering\slideimg[0.7\textheight]{\linewidth}{V08}{System architecture: two domains}
+    \end{column}
+  \end{columns}
+  \note{The STM32 has final authority over the (simulated) actuator; Pi outputs are proposals.
+  This is the System-Level Simplex split.}
+\end{frame}
+
+\begin{frame}{The rig uses two boards, one UART and one timing wire}
+  \begin{columns}[c]
+    \begin{column}{0.40\textwidth}
+      \footnotesize
+      \begin{itemize}
+        \setlength{\itemsep}{4pt}
+        \item Raspberry Pi~5 (4~GB), active cooler, \SI{27}{W} PSU
+        \item STM32 Nucleo-F446RE\\ (Cortex-M4F, \SI{180}{MHz})
+        \item UART: GPIO14/15 $\leftrightarrow$ PA10/PA9
+        \item GPIO17 $\rightarrow$ PA0 timer capture; shared GND
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.58\textwidth}
+      \centering
+      \slideimg[0.42\textheight]{\linewidth}{V09}{Hardware rig photo/illustration}\\[3pt]
+      \slideimg[0.24\textheight]{\linewidth}{V22}{Wiring detail}
+    \end{column}
+  \end{columns}
+  \note{The STM32 is flashed from the Pi over ST-LINK, so the rig runs unattended.}
+\end{frame}
+
+\begin{frame}{Freshness is measured as Age of Information at the MCU}
+  \begin{columns}[c]
+    \begin{column}{0.40\textwidth}
+      \footnotesize
+      capture $\rightarrow$ inference $\rightarrow$ buffer $\rightarrow$ UART $\rightarrow$ supervisor $\rightarrow$ action
+      \vspace{6pt}
+      \[ \Delta(t) = t - u(t), \quad u(t)=\max\{g_i : r_i \le t\} \]
+      \muted{$g_i$: input time, $r_i$: arrival at MCU}
+      \vspace{4pt}
+      \begin{itemize}
+        \item grows linearly between deliveries
+        \item drops at each fresh delivery
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.58\textwidth}
+      \centering
+      \slideimg[0.36\textheight]{\linewidth}{V10}{End-to-end data path}\\[3pt]
+      \slideimg[0.3\textheight]{\linewidth}{V20}{AoI sawtooth}
+    \end{column}
+  \end{columns}
+  \note{AoI grows linearly between deliveries and drops at each fresh delivery. Average AoI and
+  the fraction of time above a threshold are our freshness metrics. Definition follows Kaul et al.}
+\end{frame}
+
+\begin{frame}{The AI model is the workload, not the contribution}
+  \begin{columns}[c]
+    \begin{column}{0.6\textwidth}
+      \begin{itemize}
+        \setlength{\itemsep}{6pt}
+        \item MobileNetV2 (ONNX, FP32, batch~1) on ONNX Runtime CPU
+        \item Published Pi~5 range: \SIrange{20}{50}{ms} per inference, 1--4 threads \evid{PUBLISHED, other setups}
+        \item Input period \SI{100}{ms} \evid{DESIGN, provisional}
+        \item Realistic: compute- and memory-heavy, variable
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.38\textwidth}
+      \centering
+      \begin{tikzpicture}[font=\footnotesize]
+        \draw[rule] (0,0) -- (4.6,0);
+        \foreach \x/\l in {0/0, 2.3/50, 4.6/100} {\draw[muted] (\x,0.08)--(\x,-0.08) node[below, muted] {\l};}
+        \fill[teal!70] (0.92,0.15) rectangle (2.3,0.55);
+        \node[above, align=center] at (1.6,0.55) {inference\\ \scriptsize 20--50 ms};
+        \draw[navy, thick, |-|] (0,1.45) -- (4.6,1.45) node[midway, above] {input period 100 ms};
+        \node[muted, below] at (2.3,-0.4) {time [ms]};
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+  \note{AI is the workload, not the contribution. It is realistic, compute- and memory-heavy, and
+  variable. The 100 ms period is provisional and is calibrated on our Pi first.}
+\end{frame}
+
+\begin{frame}{Four runtime profiles: each step changes exactly one thing}
+  \begin{columns}[c]
+    \begin{column}{0.58\textwidth}
+      \centering
+      \begin{tikzpicture}[
+          prof/.style={box, minimum width=27mm, minimum height=9mm, text width=25mm},
+          stp/.style={flow},
+          dl/.style={lbl, font=\scriptsize\itshape, text=teal}]
+        \node[prof] (p0) at (0,0)    {\textbf{P0 stock}\\ \scriptsize Linux defaults};
+        \node[prof] (p1) at (0,1.75) {\textbf{P1 tuned}\\ \scriptsize FIFO 50, pinning,\\ cgroups, mlockall};
+        \node[prof] (p2) at (-1.7,3.75) {\textbf{P2}\\ \scriptsize P1 + latest value};
+        \node[prof] (p3) at (1.7,3.75)  {\textbf{P3}\\ \scriptsize P1 on RT kernel};
+        \draw[stp] (p0) -- node[dl, right=2pt] {+ OS tuning} (p1);
+        \draw[stp] (p1.north) -- ++(0,0.3) -| node[dl, pos=0.75, left=1pt] {+ buffer} (p2.south);
+        \draw[stp] (p1.north) -- ++(0,0.3) -| node[dl, pos=0.75, right=1pt] {+ PREEMPT\_RT} (p3.south);
+      \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \centering
+      \slideimg[0.34\textheight]{\linewidth}{V12}{Profile ladder illustration}\\[3pt]
+      \slideimg[0.28\textheight]{\linewidth}{V11}{Stock vs tuned scheduling}
+    \end{column}
+  \end{columns}
+  \note{Each comparison changes one thing: P0 to P1 tuning, P1 to P2 buffering, P1 to P3 kernel.
+  P3 uses the packaged Real-time Ubuntu 24.04 kernel; no kernel build. FIFO priority 50 is a
+  design value.}
+\end{frame}
+
+\begin{frame}{A latest-value buffer drops stale results instead of queueing them}
+  \begin{columns}[c]
+    \begin{column}{0.40\textwidth}
+      \begin{itemize}
+        \setlength{\itemsep}{6pt}
+        \item \textbf{FIFO queue}: under overload, results wait and arrive old
+        \item \textbf{Latest value}: an unsent old result is overwritten
+        \item Theory \cite{kaul2012queues}: lower average age; \alert{no hard bound}
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.58\textwidth}
+      \centering\slideimg[0.7\textheight]{\linewidth}{V14}{FIFO queue vs 1-slot latest value}
+    \end{column}
+  \end{columns}
+  \note{Theory predicts lower average age, but no hard bound; the queueing results assume
+  memoryless arrivals and service. We measure how much it helps on real hardware (E3).}
+\end{frame}
+
+\begin{frame}{One byte-wise frame parser runs unchanged on Linux and on the STM32}
+  \centering
+  \begin{tikzpicture}[
+      f/.style={draw=navy, fill=white, minimum height=9mm, align=center, font=\footnotesize, inner sep=2pt},
+      w/.style={font=\scriptsize, color=muted}]
+    \node[f, fill=navy!10, minimum width=20mm] (sof) {SOF\\ \ttfamily A5 5A};
+    \node[f, minimum width=11mm, right=0pt of sof] (ver) {ver};
+    \node[f, minimum width=11mm, right=0pt of ver] (typ) {type};
+    \node[f, minimum width=11mm, right=0pt of typ] (seq) {seq};
+    \node[f, minimum width=11mm, right=0pt of seq] (len) {len};
+    \node[f, fill=teal!12, minimum width=44mm, right=0pt of len] (pay) {payload\\ \scriptsize 0--64 B};
+    \node[f, fill=navy!10, minimum width=20mm, right=0pt of pay] (crc) {CRC-16};
+    \foreach \n/\b in {sof/2 B, ver/1 B, typ/1 B, seq/1 B, len/1 B, pay/$\le$64 B, crc/2 B}
+      \node[w, below=1pt of \n] {\b};
+    \draw[decorate, decoration={brace, amplitude=4pt}, muted] (ver.north west) -- node[above=4pt, w] {header, covered by CRC} (pay.north east);
+  \end{tikzpicture}
+  \vspace{8pt}
+  \begin{columns}[T]
+    \begin{column}{0.47\textwidth}
+      \footnotesize
+      \textbf{Messages}
+      \begin{itemize}
+        \item HEARTBEAT, INFERENCE
+        \item ECHO\_REQ / ECHO\_RESP (clock sync)
+        \item MCU\_STATUS
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.47\textwidth}
+      \footnotesize
+      \textbf{Host unit tests} \evid{HOST-TEST}
+      \begin{itemize}
+        \item every single-bit error detected
+        \item \SI{99.99}{\percent} frame recovery under random noise
+        \item $\approx$\SI{0.34}{ms} per frame at 921\,600 baud \evid{CALCULATED}
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \note{The byte-wise parser runs unchanged on Linux and on the STM32. Test numbers are host
+  unit-test results, not link measurements; the real UART error rate is measured later.
+  Image V15 can go in backup.}
+\end{frame}
+
+\begin{frame}{Two independent timers separate stale data from a dead bridge}
+  \begin{columns}[c]
+    \begin{column}{0.62\textwidth}
+      \centering
+      \begin{tikzpicture}[
+          st/.style={draw=navy, fill=white, rounded corners=3pt, minimum width=20mm,
+                     minimum height=9mm, font=\footnotesize\bfseries, thick},
+          lb/.style={lbl, font=\scriptsize}]
+        \node[st] (init) at (0,0)      {INIT};
+        \node[st, fill=teal!15] (fresh) at (3.1,0) {FRESH};
+        \node[st, fill=navy!10] (hold) at (3.1,-2.6) {HOLD};
+        \node[st, draw=fault, fill=fault!15, text=fault] (fs) at (6.2,-1.3) {FAILSAFE};
+        \node[font=\scriptsize\itshape, muted, below=0pt of fs] {latched};
+        \draw[flow] (init) -- node[lb, above] {valid data} (fresh);
+        \draw[flow] (fresh.250) -- node[lb, left] {data stale} (hold.110);
+        \draw[flow] (hold.70) -- node[lb, right] {fresh data} (fresh.290);
+        \draw[faultflow] (fresh.east) -- node[lb, above, sloped] {heartbeat lost} (fs.north west);
+        \draw[faultflow] (hold.east) -- node[lb, below, sloped] {timeout} (fs.south west);
+        \draw[flow, dashed] (fs.north) -- (fs.north |- 0,1.15) -- node[lb, above] {explicit rearm} (init.north |- 0,1.15) -- (init.north);
+      \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.36\textwidth}
+      \scriptsize
+      \begin{itemize}
+        \setlength{\itemsep}{2pt}
+        \item Timers: heartbeat liveness, result freshness
+        \item Duplicates and corrupt frames never refresh a timer
+        \item Highest app priority, \SI{1}{kHz}, absolute release \evid{DESIGN}
+        \item Thresholds set after measuring inference latency
+      \end{itemize}
+      \vspace{2pt}
+      \centering\slideimg[0.2\textheight]{0.48\linewidth}{V16}{Supervisor}\hfill
+      \slideimg[0.2\textheight]{0.48\linewidth}{V17}{Two timers}
+    \end{column}
+  \end{columns}
+  \note{Why two timers: a live bridge can keep forwarding stale results. Stale data moves FRESH to
+  HOLD; a lost heartbeat goes straight to FAILSAFE. FAILSAFE is latched until an explicit rearm, so
+  there is no flapping. This is the proposed transition table; thresholds are set after measuring
+  inference latency. V18 can go in backup.}
+\end{frame}
+
+\begin{frame}{Two clocks are mapped by a T1--T4 exchange and checked by a GPIO edge}
+  \begin{columns}[c]
+    \begin{column}{0.52\textwidth}
+      \centering
+      \begin{tikzpicture}[font=\footnotesize]
+        \draw[navy, thick] (0,0) node[above, align=center] {\textbf{Pi~5}\\ \scriptsize CLOCK\_MONOTONIC\_RAW} -- (0,-3.4);
+        \draw[teal, thick] (4,0) node[above, align=center] {\textbf{STM32}\\ \scriptsize timer, \si{\micro s}} -- (4,-3.4);
+        \draw[flow] (0,-0.5) node[left] {$T_1$} -- node[lbl, above, sloped] {ECHO\_REQ} (4,-1.3) node[right] {$T_2$};
+        \draw[flow, teal] (4,-1.9) node[right] {$T_3$} -- node[lbl, above, sloped] {ECHO\_RESP} (0,-2.8) node[left] {$T_4$};
+        \foreach \y in {-0.5,-2.8} \fill[navy] (0,\y) circle (1.5pt);
+        \foreach \y in {-1.3,-1.9} \fill[teal] (4,\y) circle (1.5pt);
+      \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \footnotesize
+      \[ \theta = \frac{(T_2 - T_1) + (T_3 - T_4)}{2} \]
+      \[ \delta = (T_4 - T_1) - (T_3 - T_2) \]
+      \muted{$\theta$: clock offset, $\delta$: round-trip link delay;\\ assumes symmetric delay (as in NTP)}
+      \vspace{4pt}
+      \begin{itemize}
+        \item Drift: linear fit over many exchanges, min-delay filter
+        \item Ground truth: GPIO17 edge $\rightarrow$ PA0 input capture
+        \item Target: sub-millisecond \evid{to be measured}
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \note{Never subtract timestamps from different clocks without this mapping. Asymmetric UART
+  delay biases theta by half the asymmetry; the GPIO edge checks this independently. Image V19 can
+  go in backup.}
+\end{frame}
+
+% ======================================================================
+\section{Evaluation plan}
+
+\begin{frame}{Four experiments, one variable each}
+  \footnotesize
+  \begin{tabular}{@{}l L{0.36\textwidth} L{0.38\textwidth}@{}}
+    \toprule
+    & \textbf{Compare} & \textbf{Metric} \\
+    \midrule
+    \textbf{E1} contention   & P0 idle vs CPU / memory-bandwidth / cache / I/O stressors & P50/P95/P99 end-to-end latency \\
+    \textbf{E2} tuning, kernel & P0 vs P1;\; P1 vs P3 & same + dispatch jitter \\
+    \textbf{E3} freshness    & P1 vs P2 at rising load & average AoI, peak AoI, violation fraction \\
+    \textbf{E4} faults       & kill bridge, stop process, CPU hog & failsafe latency on STM32 \\
+    \bottomrule
+  \end{tabular}
+  \vspace{8pt}
+  \begin{columns}[c]
+    \begin{column}{0.55\textwidth}
+      \footnotesize Every run logs temperature, frequency, throttling;\\ throttled runs are excluded.
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \centering\slideimg[0.3\textheight]{\linewidth}{V21}{Experiment matrix}
+    \end{column}
+  \end{columns}
+  \note{Every run logs temperature, frequency and throttling; throttled runs are excluded. Stressor
+  choices follow the R5 note (stress-ng stream, cache, memrate).}
+\end{frame}
+
+\begin{frame}{Failsafe latency is timed on one external clock, not by Linux}
+  \begin{columns}[c]
+    \begin{column}{0.56\textwidth}
+      \centering
+      \begin{tikzpicture}[font=\footnotesize]
+        \draw[-{Stealth}, muted] (0,0) -- (6.4,0) node[right] {$t$};
+        \foreach \x/\n/\c in {0.5/t_f/fault, 3.2/t_d/navy, 5.4/t_s/teal}
+          {\draw[\c, thick] (\x,-0.15) -- (\x,0.9); \node[\c, above] at (\x,0.9) {$\n$};}
+        \draw[|-|, navy] (0.5,-0.45) -- node[lbl, below=1pt] {detection} (3.2,-0.45);
+        \draw[|-|, teal] (3.2,-0.45) -- node[lbl, below=1pt] {activation} (5.4,-0.45);
+        \draw[|-|, ink] (0.5,-1.15) -- node[lbl, below=1pt] {total} (5.4,-1.15);
+        \node[font=\scriptsize, muted, align=left, anchor=west] at (0,-2.05)
+          {$t_f$ fault onset \quad $t_d$ decision \quad $t_s$ safe output};
+      \end{tikzpicture}
+      \vspace{6pt}
+      \begin{minipage}{\linewidth}\raggedright\scriptsize
+        \textbf{Budget} \evid{DESIGN}: timeout + supervisor period + dispatch delay + execution + output delay
+      \end{minipage}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+      \centering\slideimg[0.66\textheight]{\linewidth}{V23}{Logic analyzer on fault, decision, output pins}
+    \end{column}
+  \end{columns}
+  \note{Linux logs cannot time a freeze; that is why the STM32 and the logic analyzer observe it.
+  Detection, activation and total latency are reported separately.}
+\end{frame}
+
+\begin{frame}{Hypotheses: predictions to be tested, not results}
+  \begin{enumerate}
+    \setlength{\itemsep}{7pt}
+    \item[\textbf{H1}] Contention inflates P99 far more than P50
+    \item[\textbf{H2}] Tuning recovers CPU-contention tails, \alert{not} memory-contention tails
+    \item[\textbf{H3}] Latest value lowers average AoI and violation time (no hard bound)
+    \item[\textbf{H4}] STM32 failsafe latency stays within its budget for every fault type
+  \end{enumerate}
+  \vspace{8pt}
+  \muted{\footnotesize Each hypothesis maps to one experiment: H1--E1, H2--E2, H3--E3, H4--E4.}
+  \note{These are predictions; results slides come after the experiments. H2 is supported by prior
+  work (MemGuard, DeepPicar) on other platforms, not yet on the Pi~5.}
+\end{frame}
+
+% ======================================================================
+\section{Status}
+
+\begin{frame}{Design and host-tested core are done; hardware experiments are next}
+  \begin{columns}[c]
+    \begin{column}{0.48\textwidth}
+      \footnotesize
+      \textbf{\color{teal}Done}
+      \begin{itemize}
+        \item Design and research pass (8 cited notes)
+        \item Protocol library + host tests
+        \item Supervisor state machine + tests (113 assertions)
+        \item CI, Pi provisioning scripts
+      \end{itemize}
+      \vspace{4pt}
+      \textbf{\color{navy}Next}
+      \begin{itemize}
+        \item Rig setup, firmware, bridge daemon
+        \item Then E1--E4
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \centering\slideimg[0.7\textheight]{\linewidth}{V24}{Progress timeline}
+    \end{column}
+  \end{columns}
+  \note{Update before presenting. The supervisor tests cover the one-timer skeleton; the two-timer
+  version with latched FAILSAFE is in progress.}
+\end{frame}
+
+% ======================================================================
+\begin{frame}{References}
+  \scriptsize
+  \begin{thebibliography}{9}
+    \bibitem{bak2009} S.~Bak, D.~K. Chivukula, O.~Adekunle, M.~Sun, M.~Caccamo, L.~Sha.
+      The System-Level Simplex Architecture for Improved Real-Time Embedded System Safety.
+      \emph{IEEE RTAS}, 2009, pp.~99--107.
+    \bibitem{kaul2012infocom} S.~Kaul, R.~Yates, M.~Gruteser.
+      Real-Time Status: How Often Should One Update? \emph{IEEE INFOCOM}, 2012.
+    \bibitem{kaul2012queues} S.~Kaul, R.~Yates, M.~Gruteser.
+      Status Updates Through Queues. \emph{Conf.\ on Information Sciences and Systems (CISS)}, 2012.
+    \bibitem{yun2013memguard} H.~Yun, G.~Yao, R.~Pellizzoni, M.~Caccamo, L.~Sha.
+      MemGuard: Memory Bandwidth Reservation System for Efficient Performance Isolation in
+      Multi-core Platforms. \emph{IEEE RTAS}, 2013.
+    \bibitem{bechtel2018deeppicar} M.~G. Bechtel, E.~McEllhiney, M.~Kim, H.~Yun.
+      DeepPicar: A Low-cost Deep Neural Network-based Autonomous Car.
+      arXiv:1712.08644, 2018.
+    \bibitem{arxiv2604} Scheduling Analysis of UAV Flight Control Workloads on PREEMPT\_RT Linux
+      Using a Raspberry Pi~5. arXiv:2604.19275, 2026.
+  \end{thebibliography}
+\end{frame}
+
+% ======================================================================
+\appendix
+
+\begin{frame}{Backup: supporting illustrations}
+  \centering
+  \slideimg[0.38\textheight]{0.3\linewidth}{V13}{Profiles detail}\hfill
+  \slideimg[0.38\textheight]{0.3\linewidth}{V15}{UART frame illustration}\hfill
+  \slideimg[0.38\textheight]{0.3\linewidth}{V18}{Supervisor detail}\\[6pt]
+  \slideimg[0.38\textheight]{0.3\linewidth}{V19}{Clock sync illustration}
+\end{frame}
+
+\end{document}
