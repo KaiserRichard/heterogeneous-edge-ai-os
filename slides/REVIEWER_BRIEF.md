@@ -34,6 +34,9 @@ typographer). You do NOT edit main.tex. You judge the rendered pages and write a
 - L8 Language: natural academic Vietnamese, English technical terms kept, abbreviations expanded
   once at first use (not on cover, Mục lục, dividers, references); no typos or broken diacritics.
 - L9 Cover: title large and high, centred; info block large, balanced against V01; no big empty band.
+- L11 Figure numbering: list every caption in page order; a repeated figure must keep its original
+  number; text references must match; no figure number skipped or duplicated for different figures.
+  Also verify every item of slides/OWNER_FIXES_V6.md is satisfied (severity high if not).
 - L10 Build: zero LaTeX errors and overfull boxes.
 Severity: high = overlap, clipping, wrong content, unreadable; medium = imbalance, misalignment,
 inconsistent spacing; low = taste. List low items too but they do not block PASS.

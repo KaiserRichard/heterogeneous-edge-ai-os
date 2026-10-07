@@ -8,6 +8,8 @@ Specs that still apply: `slides/RESTRUCTURE_SPEC.md`, `slides/REVISION_V4.md`.
 If `slides/review/latest.md` exists, it is the strict reviewer's list of defects from the last
 round: fix EVERY item in it first, then continue with the rules below.
 
+**FIRST read `slides/OWNER_FIXES_V6.md` and fix every item in it; it overrides anything below.**
+
 ## 1. Global layout system (implement once in the preamble, use everywhere)
 1. **Vertical rhythm.** Body text `\normalsize` at 12pt base with `\linespread{1.12}`. Uniform
    bullet spacing: `\setlength{\itemsep}{0.55em}` for level 1 and `0.25em` for level 2 in EVERY
