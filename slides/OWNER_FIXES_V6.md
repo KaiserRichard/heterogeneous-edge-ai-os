@@ -27,3 +27,9 @@
    bullets far apart.
 5. Re-check every slide for the same classes of defects (repeated-figure numbering, unequal
    font sizes in one block, explanations far from their figure).
+6. **p26** has the same defect and layout problem as p5: apply the p5 pattern (figure centred
+   with caption under it, left/right explanations on one row below, take-away box at the bottom).
+7. **References on ONE slide.** "Tài liệu tham khảo (1/4)" etc. must become a single slide:
+   no allowframebreaks; use `\footnotesize` (or `\scriptsize` if needed) for the entries,
+   compact entries (authors, title, venue, year; drop URLs/DOIs if space is short), two columns
+   if necessary. Exactly one references page.
