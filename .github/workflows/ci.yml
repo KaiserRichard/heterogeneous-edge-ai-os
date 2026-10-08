@@ -9,6 +9,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Protocol unit tests (gcc, ASan/UBSan)
         run: make -C protocol test
+      - name: Supervisor receipt-silence tests (gcc, ASan/UBSan)
+        run: make -C stm32 test
       - name: Shell script syntax
         run: for f in scripts/pi/*.sh; do bash -n "$f"; done
   mcu-builds:
@@ -22,6 +24,14 @@ jobs:
             -std=c99 -Os -Wall -Wextra -Wconversion -Werror \
             -Iprotocol/include -c protocol/src/hea_proto.c -o hea_proto.o
           arm-none-eabi-size hea_proto.o
+      - name: Compile supervisor for STM32F446RE (no firmware link)
+        run: |
+          for source in supervisor supervisor_protocol; do
+            arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 \
+              -std=c99 -Os -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Werror \
+              -Istm32/include -Iprotocol/include -c stm32/src/$source.c -o $source.o
+          done
+          arm-none-eabi-size supervisor.o supervisor_protocol.o
       - name: Compile protocol for STM32H7 (Cortex-M7, WBR target)
         run: |
           arm-none-eabi-gcc -mcpu=cortex-m7 -mthumb -mfloat-abi=hard -mfpu=fpv5-d16 \

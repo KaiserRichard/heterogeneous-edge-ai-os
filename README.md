@@ -8,6 +8,7 @@ Operating Systems course project exploring a heterogeneous Embedded Linux-FreeRT
 - [`docs/SYSTEM_GUIDE.md`](docs/SYSTEM_GUIDE.md): Plain-language guide to the system, the work items and an OS glossary. Read first.
 - [`docs/SYSTEM_OVERVIEW.md`](docs/SYSTEM_OVERVIEW.md): What the system is, what it improves over stock Linux, the experiments, and where it fits in WBR. Start here.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md): Day-by-day plan with hardware per day.
+- [`stm32/README.md`](stm32/README.md): Portable supervisor v2, receipt-silence contract, tests and hardware handoff.
 - [`protocol/PROTOCOL.md`](protocol/PROTOCOL.md): Proposed UART frame format and messages.
 - [`AGENTS.md`](file:///Users/quockaiser/Desktop/OS/OS-project/heterogeneous-edge-ai-os/AGENTS.md): Operational boundaries and developer guidelines for AI coding agents.
 
@@ -18,3 +19,13 @@ Operating Systems course project exploring a heterogeneous Embedded Linux-FreeRT
 - `experiments/`: Experiment orchestrators, latency/freshness loggers, and analysis scripts.
 - `scripts/`: Tooling for building, flashing, and device configuration.
 - `third_party/`: Git submodules of reference implementations (read-only references).
+
+## Software verification (no STM32 required)
+
+```sh
+make -C protocol test
+make -C stm32 test
+```
+
+These run shared-protocol and portable-supervisor tests with ASan/UBSan on macOS
+or Ubuntu/Pi. They do not establish physical UART reliability or source AoI.

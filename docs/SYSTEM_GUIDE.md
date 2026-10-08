@@ -169,7 +169,7 @@ Status: ✓ done, ◐ partly, ○ not started. Hardware column says what must be
 |---|---|---|---|
 | 1 | Design, research notes R1–R8, design changes | ✓ | None |
 | 2 | UART protocol library + tests | ✓ | None |
-| 3 | Supervisor state machine (your skeleton, 113 test assertions; on `feat/software-skeleton-wip`, not merged) | ◐ has one timer and recovers after 1 valid packet; needs two timers + latched FAILSAFE | None |
+| 3 | Portable supervisor v2, Step 1 (`feat/supervisor-v2`; `stm32/README.md`) | ◐ two receipt timers, sequence checks, latched FAILSAFE + explicit rearm implemented; hardware and source AoI pending | None |
 | 4 | Merge skeleton; drop its duplicate `protocol.c` in favour of `hea_proto`; fix the Linux build bug (`%llu`) | ○ | None |
 | 5 | CI: host tests + STM32 compile | ✓ | None |
 | 6 | Pi provisioning and experiment runner scripts | ◐ written, never run | Pi |
@@ -192,10 +192,19 @@ The same work as an ordered plan with a "done when" check per step:
 Each step has a "done when" check. Do them in this order; later steps depend on earlier ones.
 
 ### Stage 1: software only (Mac, no hardware)
+
+**Implementation scope correction (2026-10-08).** Step 1 uses MCU-local receipt
+silence, not source AoI. FRESH currently means recently received heartbeat and
+advancing result. Step 2 adds source-age accounting after a separately approved
+payload/clock contract; there is no clock-mapping prerequisite for Step 1.
+The diagrams above describe the eventual design. The other skeleton modules
+remain unmerged; Step 1 adapts only the supervisor and reuses `hea_proto`.
+See `stm32/README.md` for the exact state/sequence/rearm acceptance matrix.
+
 | # | Work | Done when |
 |---|---|---|
 | 1 | Merge the skeleton into the main branch; one protocol library; one byte order | CI green; one `protocol/` |
-| 2 | Supervisor v2: two timers, sequence check, latched FAILSAFE + rearm, pure C with no FreeRTOS calls (time passed in as an argument) | host unit tests for: heartbeat lost, results stale but heartbeat alive, duplicates, CRC errors, rearm |
+| 2 | Supervisor v2, Step 1: heartbeat + result receipt silence, sequence check, latched FAILSAFE + local rearm, pure C with caller-supplied MCU time | `make -C stm32 test`: heartbeat lost, results silent but heartbeat alive, duplicates, real-parser CRC errors, latch and rearm; source AoI is Step 2 |
 | 3 | Clock-sync math: offset/delay from T1-T4, drift fit, min-delay filter | host test with synthetic clocks (known offset + drift) recovers them |
 | 4 | Linux bridge: Unix socket in, latest-value or FIFO (config), UART out, heartbeat, echo, MCU_STATUS in | runs against a pseudo-terminal pair (`socat`/`openpty`) with a fake MCU script |
 | 5 | Linux source + workload (ORT MobileNetV2; synthetic fallback) + CSV logger | runs on the Mac or the Pi; CSV has `t_input`, `t_done`, `t_sent` per frame |
