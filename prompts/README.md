@@ -4,6 +4,7 @@ Reusable instruction sets for other AI agents (ChatGPT Work, ChatGPT projects, C
 
 | Folder | Use |
 |---|---|
+| `CHATGPT_WORK_LEAD.md` | Lead-agent prompt for ChatGPT Work (replaces Claude as coordinator). |
 | `academic-beamer-deck/` | Build or revise a paper-structured Beamer deck + AI image-prompt batch. Start with `SKILL.md`. |
 
 How to use with ChatGPT Work or a ChatGPT project: upload `SKILL.md` (and the `template/` files)
