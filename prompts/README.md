@@ -11,3 +11,7 @@ How to use with ChatGPT Work or a ChatGPT project: upload `SKILL.md` (and the `t
 as project files or paste `SKILL.md` as the first message, then give the task. With Codex CLI:
 copy the folder to `~/.codex/skills/academic-beamer-deck/` or point the prompt at this path.
 Other handoff prompts: `docs/HANDOFF_CHATGPT.md`, `docs/LEARNING_PLAN.md`, `slides/SLIDE_PLAYBOOK.md`.
+
+## OS project takeover (ChatGPT Work)
+1. `CHATGPT_WORK_LEAD.md`: paste first; ChatGPT Work checks its own capabilities and picks Mode A or B.
+2. `CHATGPT_WORK_CONDUCTOR_PLAN.md`: paste second. It covers the rig setup checklist with verification gates, local vs cloud mode, the shared `docs/CONDUCTOR_STATE.md`, the ticket/worktree/review loop, and the staged plan.
