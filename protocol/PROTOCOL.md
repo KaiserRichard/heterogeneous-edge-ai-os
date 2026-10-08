@@ -1,6 +1,6 @@
-# UART Protocol v1 (PROPOSED)
+# UART Protocol v2 (legacy v1 decoding)
 
-Status: PROPOSED, host-tested only (`make -C protocol test`). Not yet run on the STM32 or over a real UART.
+Status: approved v2 age-at-send extension, software-tested (`make -C protocol test`). Not yet run on the STM32 or over a real UART.
 This fills the framing/integrity TBD in `PROJECT.md` section 5.3; it can still change before firmware work starts.
 
 ## Frame
@@ -8,15 +8,17 @@ This fills the framing/integrity TBD in `PROJECT.md` section 5.3; it can still c
 | Field | Size | Notes |
 |---|---|---|
 | SOF | 2 | `0xA5 0x5A`. Two bytes make false sync in payload data less likely than one. |
-| version | 1 | `1`. Frames with another version are counted and dropped. |
+| version | 1 | Encoder emits `2`; decoder accepts `1` and `2`. Unknown versions are counted and dropped after CRC validation. |
 | type | 1 | See below. |
 | seq | 2 | Per-sender counter, little-endian. Gaps = lost frames. |
 | len | 1 | Payload length, 0..64. Larger values are rejected before reading the payload. |
 | payload | len | Little-endian fields. |
 | crc | 2 | CRC-16/CCITT-FALSE over version..payload, little-endian. |
 
-Overhead is 9 bytes. A 22-byte inference frame is 31 bytes, about 2.7 ms at 115200 baud
-and 0.34 ms at 921600 baud (8N1, 10 bits per byte; CALCULATED).
+Overhead is unchanged at 9 bytes. Version 1 inference payload is 22 bytes (31-byte
+frame); version 2 is 26 bytes (35-byte frame). V2 nominal serialization is about
+3.04 ms at 115200 baud and 0.38 ms at 921600 baud (8N1, 10 bits per byte; CALCULATED).
+These times exclude software queues and are not validated transit bounds.
 
 Why this shape: a SOF + length + CRC frame with a byte-at-a-time state machine is
 small enough to read in full, runs unchanged in an ISR, a FreeRTOS task or a Linux
@@ -29,13 +31,42 @@ encoding step that hides less of the OS-level behaviour we want to observe.
 | Type | Direction | Payload | Purpose |
 |---|---|---|---|
 | `0x01` HEARTBEAT | Pi to STM32 | `linux_send_ns` u64 | Liveness for the supervisor watchdog. |
-| `0x02` INFERENCE | Pi to STM32 | `linux_input_ns` u64, `linux_done_ns` u64, `input_seq` u32, `class_id` u8, `confidence_pct` u8 | Result plus the timestamps AoI is computed from. |
+| `0x02` INFERENCE | Pi to STM32 | `linux_input_ns` u64, `linux_done_ns` u64, `input_seq` u32, `class_id` u8, `confidence_pct` u8, **v2 only:** `age_at_send_us` u32 | Result, Pi timestamps and Pi-local input-to-send duration. Step 1 supervisor uses receipt silence only. |
 | `0x03` ECHO_REQ | Pi to STM32 | `linux_t1_ns` u64 | Round-trip time and clock-offset estimation. |
 | `0x83` ECHO_RESP | STM32 to Pi | `linux_t1_ns` u64 (T1), `mcu_rx_us` u32 (T2), `mcu_tx_us` u32 (T3) | Linux adds T4 on receipt; offset and delay per RFC 4330 section 5 (see `docs/research/R8.md`). |
 | `0x84` MCU_STATUS | STM32 to Pi | `mcu_us` u32, `state` u8, `missed_heartbeats` u16, `rx_crc_errors` u16 | Supervisor state (INIT / FRESH / HOLD / FAILSAFE), matching the supervisor state machine. |
 
-`_ns` fields are Pi `CLOCK_MONOTONIC`; `_us` fields are the STM32 timer. They are
-separate clock domains and are only compared through an explicit offset/drift estimate.
+Pi timestamp fields and the age-at-send calculation must use the same Pi monotonic
+clock (the planned sender uses `CLOCK_MONOTONIC_RAW`). `mcu_*_us` fields belong to the
+STM32 timer; `age_at_send_us` is a Pi duration. Never subtract a Pi timestamp from
+an MCU timestamp without an explicit mapping.
+
+## Version 2 age-at-send contract
+
+KNOWN: Append `age_at_send_us` at payload offset 22, uint32 little-endian. It covers
+`t_send - t_input` on one Pi clock, including inference and outbound queue residence,
+and must be computed at the actual software-send boundary rather than inference
+completion. The library does not sample clocks. Hardware transit accounting is
+separate and remains UNKNOWN.
+
+`hea_age_at_send_us(input_ns, send_ns, &age)` converts the same-clock difference,
+rounds up to whole microseconds (less than 1 us quantization), and saturates at
+`UINT32_MAX` instead of wrapping. It rejects backward clocks or NULL output, leaving
+the output unchanged. The sender must drop/count such a failed calculation. The
+maximum value denotes saturation or an exact maximum age; future source-age policy
+must treat it conservatively, never as an exact finite upper bound for older data.
+
+Version 1 requires exactly 22 INFERENCE payload bytes; version 2 requires exactly
+26. There is no silent version/length fallback. Legacy decoding sets the member to
+zero for initialization, but **the age is absent**, not a measured zero. Callers
+must inspect `frame.version` for presence and label legacy observations receipt
+silence. Other message payload layouts are unchanged and accepted in both versions.
+Old v1-only decoders will reject v2; update both peers before physical-link tests.
+
+Acceptance: v2 round-trip and endian field position; independent captured v1 golden
+frame; both version/length mismatch directions; unknown version; zero/sub-us/exact
+us conversion; regression; exact maximum, overflow and UINT64_MAX durations;
+supervisor receipt-only behavior for both versions.
 
 ## Known limitation
 

@@ -8,7 +8,7 @@ supervisor_state_t supervisor_receive_frame(supervisor_t *sv,
                                              uint64_t now_ticks)
 {
     supervisor_event_t event = {SUPERVISOR_EVENT_NONE, false, 0u, 0u, received_at_ticks};
-    if (frame != NULL && frame->version == HEA_PROTO_VERSION) {
+    if (frame != NULL && hea_version_supported(frame->version)) {
         event.wire_seq = frame->seq;
         switch (frame->type) {
         case HEA_MSG_HEARTBEAT: {

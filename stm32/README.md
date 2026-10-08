@@ -4,7 +4,8 @@ Status: implemented and host-tested; firmware, physical UART and safe-output tim
 are not validated. The core is pure C99 with no heap, HAL, FreeRTOS or clock calls.
 It adapts the earlier `feat/software-skeleton-wip` supervisor design but does not
 merge that branch or its second protocol implementation. `hea_proto` remains the
-only wire library. Header and payload bytes are unchanged.
+only wire library. Protocol v2 appends Pi-local `age_at_send_us`; the adapter accepts
+v1 and v2 but Step 1 deliberately ignores source-age fields.
 
 ## Scope and meaning of FRESH
 
@@ -25,8 +26,9 @@ uncertainty must be accounted for. `pi_age_at_send` must cover input to actual s
 `transit_bound` must cover every remaining send-to-receive delay, including software
 queues/serialization, not only nominal baud time. This would be an upper estimate
 under stated assumptions, not exact measured source AoI. No validated transit bound
-exists yet. An age-at-send payload extension requires a separate reviewed protocol
-change; it is **not** included here. Clock mapping/GPIO validation remain later work.
+exists yet. The separately approved protocol v2 now supplies an age-at-send field,
+but the supervisor does not use it yet. Source-age policy, clock mapping and GPIO
+validation remain later work.
 
 ## Files and ownership
 
@@ -156,4 +158,5 @@ fault tests on the real link; observe failsafe with an analyzer. A successful ho
 or cross-compile check does not establish electrical reliability or bounded latency.
 
 Rollback: keep this feature branch isolated; revert its commit if required. No
-primary-checkout user changes, wire format, boot/UART settings or slides are changed.
+primary-checkout user changes, boot/UART settings or slides are changed. The separate
+protocol-v2 ticket changes payload/version, with legacy decoding retained.

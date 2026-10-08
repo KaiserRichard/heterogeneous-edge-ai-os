@@ -23,7 +23,8 @@ extern "C" {
 
 #define HEA_SOF0 0xA5u
 #define HEA_SOF1 0x5Au
-#define HEA_PROTO_VERSION 1u
+#define HEA_PROTO_VERSION_LEGACY 1u
+#define HEA_PROTO_VERSION 2u
 #define HEA_MAX_PAYLOAD 64u
 #define HEA_HEADER_LEN 7u /* SOF0 SOF1 ver type seq(2) len */
 #define HEA_CRC_LEN 2u
@@ -39,9 +40,10 @@ enum hea_msg_type {
 };
 
 /*
- * Clock domains: fields ending in _ns are Linux CLOCK_MONOTONIC on the Pi;
- * fields ending in _us are the STM32 free-running timer. They are never
- * subtracted from each other without an explicit offset/drift estimate.
+ * Clock domains: fields ending in _ns use one Pi monotonic clock (planned CLOCK_MONOTONIC_RAW);
+ * mcu_*_us fields are the STM32 free-running timer. age_at_send_us is a
+ * Pi-local duration, not an MCU timestamp. Cross-domain timestamps are never
+ * subtracted without an explicit offset/drift estimate.
  */
 struct hea_heartbeat {
     uint64_t linux_send_ns;
@@ -53,6 +55,7 @@ struct hea_inference {
     uint32_t input_seq;      /* sequence number of the input sample */
     uint8_t class_id;
     uint8_t confidence_pct;
+    uint32_t age_at_send_us; /* Pi input-to-send duration; absent in version 1. */
 };
 
 struct hea_echo_req {
@@ -90,6 +93,11 @@ struct hea_frame {
 /* CRC-16/CCITT-FALSE: poly 0x1021, init 0xFFFF, no reflection, no xorout. */
 uint16_t hea_crc16(const uint8_t *data, size_t len);
 uint16_t hea_crc16_update(uint16_t crc, uint8_t byte);
+int hea_version_supported(uint8_t version);
+
+/* Same Pi clock only. Round duration up to us and saturate at UINT32_MAX.
+ * Return -1 on clock regression/NULL output, leaving output untouched. */
+int hea_age_at_send_us(uint64_t input_ns, uint64_t send_ns, uint32_t *age_us);
 
 /*
  * Encode a frame into out (capacity out_cap). Returns the number of bytes
