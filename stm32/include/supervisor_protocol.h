@@ -8,7 +8,7 @@
  * adapter checks version, type, length and result field plausibility.
  * received_at_ticks is the real receipt boundary, now_ticks is evaluation time.
  * Invalid/unknown frames still trigger a timer evaluation. No Pi timestamp
- * is subtracted from MCU time, and INFERENCE payload/header are unchanged. */
+ * is subtracted from MCU time. Version 1/2 age fields are not used by Step 1. */
 supervisor_state_t supervisor_receive_frame(supervisor_t *sv,
                                              const struct hea_frame *frame,
                                              uint64_t received_at_ticks,

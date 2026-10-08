@@ -216,7 +216,7 @@ static size_t feed(supervisor_t *sv, struct hea_parser *parser,
 static size_t inference(uint8_t *out, uint16_t wire, uint32_t input,
                         uint64_t sample, uint64_t done, uint8_t confidence)
 {
-    struct hea_inference m = {sample, done, input, 1u, confidence};
+    struct hea_inference m = {sample, done, input, 1u, confidence, UINT32_MAX};
     uint8_t payload[HEA_MAX_PAYLOAD];
     uint8_t len = hea_pack_inference(&m, payload);
     return hea_encode(HEA_MSG_INFERENCE, wire, payload, len, out, HEA_MAX_FRAME);
@@ -285,7 +285,7 @@ static void test_parser_heartbeat_echo_and_no_cross_clock_math(void)
     CHECK(feed(&sv, &parser, out, len, 50u) == 1u);
     CHECK(sv.state == SUPERVISOR_STATE_FAILSAFE);
     struct hea_frame bad = parser.frame;
-    bad.version = 2u;
+    bad.version = 3u;
     CHECK(supervisor_receive_frame(&sv, &bad, 51u, 51u) == SUPERVISOR_STATE_FAILSAFE);
     CHECK(sv.last_wire_seq == 2u);
 }
@@ -348,6 +348,28 @@ static void test_backlog_epoch_and_nonzero_clock(void)
     CHECK(sv.last_result_ticks == 12u && sv.last_input_seq == 1u && sv.last_wire_seq == 3u);
 }
 
+static void test_legacy_adapter_receipt_only(void)
+{
+    supervisor_t sv;
+    struct hea_parser parser;
+    uint8_t out[HEA_MAX_FRAME], payload[HEA_MAX_PAYLOAD];
+    struct hea_heartbeat hb = {UINT64_MAX};
+    init(&sv);
+    hea_parser_init(&parser);
+    size_t n = hea_encode(HEA_MSG_HEARTBEAT, 0u, payload, hea_pack_heartbeat(&hb, payload), out, sizeof out);
+    CHECK(feed(&sv, &parser, out, n, 0u) == 1u);
+    n = inference(out, 1u, 0u, 0u, UINT64_MAX, 90u);
+    out[2] = HEA_PROTO_VERSION_LEGACY;
+    out[6] = 22u;
+    n -= 4u;
+    uint16_t crc = hea_crc16(&out[2], n - 4u);
+    out[n - 2u] = (uint8_t)crc;
+    out[n - 1u] = (uint8_t)(crc >> 8);
+    CHECK(feed(&sv, &parser, out, n, 1u) == 1u);
+    CHECK(sv.state == SUPERVISOR_STATE_FRESH && sv.last_result_ticks == 1u);
+    CHECK(parser.frame.version == HEA_PROTO_VERSION_LEGACY);
+}
+
 static void test_malformed_heartbeat_and_crc_storm(void)
 {
     supervisor_t sv;
@@ -384,7 +406,8 @@ int main(void)
     test_parser_crc_and_payload_validation();
     test_parser_heartbeat_echo_and_no_cross_clock_math();
     test_backlog_epoch_and_nonzero_clock();
+    test_legacy_adapter_receipt_only();
     test_malformed_heartbeat_and_crc_storm();
-    printf("12 supervisor scenarios passed (%u checks, including exhaustive 16-bit increment wrap).\n", checks);
+    printf("13 supervisor scenarios passed (%u checks, including exhaustive 16-bit increment wrap).\n", checks);
     return 0;
 }

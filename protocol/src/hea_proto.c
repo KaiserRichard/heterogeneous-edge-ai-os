@@ -2,6 +2,20 @@
 
 #include <string.h>
 
+int hea_version_supported(uint8_t version)
+{
+    return version == HEA_PROTO_VERSION_LEGACY || version == HEA_PROTO_VERSION;
+}
+
+int hea_age_at_send_us(uint64_t input_ns, uint64_t send_ns, uint32_t *age_us)
+{
+    if (age_us == NULL || send_ns < input_ns) return -1;
+    uint64_t elapsed = send_ns - input_ns;
+    uint64_t us = elapsed / UINT64_C(1000) + (elapsed % UINT64_C(1000) != 0u ? 1u : 0u);
+    *age_us = us > UINT32_MAX ? UINT32_MAX : (uint32_t)us;
+    return 0;
+}
+
 uint16_t hea_crc16_update(uint16_t crc, uint8_t byte)
 {
     uint32_t c = (uint32_t)crc ^ ((uint32_t)byte << 8);
@@ -111,7 +125,7 @@ int hea_parser_feed(struct hea_parser *p, uint8_t b)
             p->stats.crc_errors++;
             return 0;
         }
-        if (p->frame.version != HEA_PROTO_VERSION) {
+        if (!hea_version_supported(p->frame.version)) {
             p->stats.version_errors++;
             return 0;
         }
@@ -162,7 +176,7 @@ static uint64_t get_u64(const uint8_t *b)
 
 static int check(const struct hea_frame *f, uint8_t type, uint8_t len)
 {
-    return (f->type == type && f->len == len) ? 0 : -1;
+    return (hea_version_supported(f->version) && f->type == type && f->len == len) ? 0 : -1;
 }
 
 /* ---- payloads ---- */
@@ -188,18 +202,22 @@ uint8_t hea_pack_inference(const struct hea_inference *m, uint8_t *b)
     put_u32(&b[16], m->input_seq);
     b[20] = m->class_id;
     b[21] = m->confidence_pct;
-    return 22;
+    put_u32(&b[22], m->age_at_send_us);
+    return 26;
 }
 
 int hea_unpack_inference(const struct hea_frame *f, struct hea_inference *m)
 {
-    if (check(f, HEA_MSG_INFERENCE, 22))
+    uint8_t expected = f->version == HEA_PROTO_VERSION_LEGACY ? 22u : 26u;
+    if (check(f, HEA_MSG_INFERENCE, expected))
         return -1;
     m->linux_input_ns = get_u64(&f->payload[0]);
     m->linux_done_ns = get_u64(&f->payload[8]);
     m->input_seq = get_u32(&f->payload[16]);
     m->class_id = f->payload[20];
     m->confidence_pct = f->payload[21];
+    /* Zero here means absent: callers must check frame.version for presence. */
+    m->age_at_send_us = f->version == HEA_PROTO_VERSION_LEGACY ? 0u : get_u32(&f->payload[22]);
     return 0;
 }
 
