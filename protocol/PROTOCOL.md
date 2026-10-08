@@ -41,5 +41,36 @@ separate clock domains and are only compared through an explicit offset/drift es
 
 After a CRC or length error the parser resumes SOF hunting at the next byte and does
 not rescan the rejected bytes, so a valid frame that starts inside a corrupted one is
-lost (at most one maximum-size frame). The noise test measures this: 19998/20000 frames
-recovered with random noise between every frame, and zero false accepts.
+lost. One false candidate consumes at most a maximum-size frame (73 bytes); that can
+overlap more than one shorter valid frame. CRC does not guarantee lossless resync.
+
+## Reproducible noise test
+
+KNOWN: Noise uses test-local xorshift32, seed 12345, with defined uint32 arithmetic.
+The noise-only FNV-1a fingerprint is `8c9204cd`. All wire bytes are `uint8_t`.
+The CRC known vector also uses an explicit uint8 array; no plain-char wire buffers
+exist. Build both the protocol and supervisor tests with `-fsigned-char` and
+`-funsigned-char`; CI exercises both modes.
+
+MEASURED (software test on macOS and Ubuntu aarch64): the fixed noise stream recovers
+20,000/20,000 frames, zero false accepts, zero CRC errors and one rejected oversize
+noise header. These counts are asserted, not just a 95% recovery threshold.
+
+The earlier `srand(12345)`/`rand()` stream was platform-dependent. Captured Pi losses:
+
+| Real sequence | Noise immediately before frame (hex) | Parser behavior |
+|---|---|---|
+| 13355 | `bb fd a5 5a` | Noise SOF starts a false candidate; first five real-frame bytes `a5 5a 01 02 2b` become its header: len `0x2b` = 43; after the real frame, payload index is 26 |
+| 13356 | `9c b4 b1 d4` | Continues false payload to index 30; consumes the start of this frame, fails CRC once, resumes SOF hunting |
+
+Captured real frames, including their unchanged CRCs:
+
+```
+13355: a55a01022b3416887766554433221100ffeeddccbbaa99efbeadde075d70a8
+13356: a55a01022c3416887766554433221100ffeeddccbbaa99efbeadde075d5d60
+```
+
+`test_false_sync_consumes_two_frames` reproduces these bytes without libc random
+functions: both frames are lost, one false candidate fails CRC, and sequence 13357
+decodes. This proves the previous two losses are resync behavior under a different
+input stream, not a byte-signedness or platform-specific parser defect.

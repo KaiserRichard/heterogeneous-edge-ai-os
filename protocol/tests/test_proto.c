@@ -37,7 +37,8 @@ static size_t make_inference(uint16_t seq, uint8_t *out)
 static void test_crc_known_vector(void)
 {
     /* CRC-16/CCITT-FALSE check value for "123456789" is 0x29B1. */
-    CHECK(hea_crc16((const uint8_t *)"123456789", 9) == 0x29B1u);
+    const uint8_t vector[] = {0x31u, 0x32u, 0x33u, 0x34u, 0x35u, 0x36u, 0x37u, 0x38u, 0x39u};
+    CHECK(hea_crc16(vector, sizeof vector) == 0x29B1u);
 }
 
 static void test_roundtrip_all_types(void)
@@ -151,20 +152,59 @@ static void test_every_single_bit_flip_detected(void)
     CHECK(accepted == 0);
 }
 
+/* Fixed unsigned operations: libc rand() is not portable across platforms. */
+static uint32_t noise_next(uint32_t *state)
+{
+    uint32_t x = *state;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    *state = x;
+    return x;
+}
+
+static void test_false_sync_consumes_two_frames(void)
+{
+    /* Captured glibc rand() losses at seed 12345, sequences 13355/13356.
+     * The noise SOF takes A5 5A 01 02 2B from the first real frame as its
+     * header: fake len=0x2B (43), which consumes two 31-byte frames. */
+    const uint8_t first_noise[] = {0xBBu, 0xFDu, 0xA5u, 0x5Au};
+    const uint8_t second_noise[] = {0x9Cu, 0xB4u, 0xB1u, 0xD4u};
+    uint8_t frame[HEA_MAX_FRAME];
+    struct hea_parser p;
+    hea_parser_init(&p);
+    CHECK(feed_all(&p, first_noise, sizeof first_noise, NULL) == 0);
+    size_t n = make_inference(13355u, frame);
+    CHECK(feed_all(&p, frame, n, NULL) == 0);
+    CHECK(p.state == HEA_P_PAYLOAD && p.frame.len == 43u && p.idx == 26u);
+    CHECK(feed_all(&p, second_noise, sizeof second_noise, NULL) == 0);
+    n = make_inference(13356u, frame);
+    CHECK(feed_all(&p, frame, n, NULL) == 0);
+    CHECK(p.stats.crc_errors == 1u && p.state == HEA_P_SOF0);
+    n = make_inference(13357u, frame);
+    CHECK(feed_all(&p, frame, n, NULL) == 1);
+    CHECK(p.frame.seq == 13357u);
+}
+
 static void test_random_noise_recovers(void)
 {
     /* Interleave valid frames with random noise; every frame not overlapped
        by a false sync must decode, and no corrupted frame may be accepted. */
-    srand(12345);
+    uint32_t rng = UINT32_C(12345);
+    uint32_t fingerprint = UINT32_C(2166136261);
     uint8_t frame[HEA_MAX_FRAME];
     struct hea_parser p;
     hea_parser_init(&p);
     int sent = 0, got = 0, wrong = 0;
     for (int r = 0; r < 20000; r++) {
-        int noise = rand() % 12;
-        for (int j = 0; j < noise; j++)
-            if (hea_parser_feed(&p, (uint8_t)rand()))
+        uint32_t noise = noise_next(&rng) % 12u;
+        fingerprint = (fingerprint ^ noise) * UINT32_C(16777619);
+        for (uint32_t j = 0u; j < noise; j++) {
+            uint8_t byte = (uint8_t)noise_next(&rng);
+            fingerprint = (fingerprint ^ byte) * UINT32_C(16777619);
+            if (hea_parser_feed(&p, byte))
                 wrong++; /* a noise-only frame would need a 1/65536 CRC collision */
+        }
         size_t n = make_inference((uint16_t)r, frame);
         sent++;
         for (size_t i = 0; i < n; i++)
@@ -177,8 +217,11 @@ static void test_random_noise_recovers(void)
     }
     printf("  noise test: %d/%d frames decoded (%.2f%%), %d false accepts, crc_err=%u len_err=%u\n",
            got, sent, 100.0 * got / sent, wrong, p.stats.crc_errors, p.stats.len_errors);
+    printf("  noise PRNG: xorshift32 seed=12345 fingerprint=%08x\n", (unsigned)fingerprint);
     CHECK(wrong == 0);
-    CHECK(got > sent * 95 / 100);
+    CHECK(got == sent);
+    CHECK(fingerprint == UINT32_C(0x8C9204CD));
+    CHECK(p.stats.crc_errors == 0u && p.stats.len_errors == 1u);
 }
 
 int main(void)
@@ -189,6 +232,7 @@ int main(void)
     test_resync_after_garbage();
     test_bad_version_rejected();
     test_every_single_bit_flip_detected();
+    test_false_sync_consumes_two_frames();
     test_random_noise_recovers();
     if (failures) {
         fprintf(stderr, "FAILED: %d check(s)\n", failures);
