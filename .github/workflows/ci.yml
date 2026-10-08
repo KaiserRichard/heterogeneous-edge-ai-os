@@ -5,6 +5,11 @@ on:
 jobs:
   host-tests:
     runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        char_mode: [signed, unsigned]
+    env:
+      CFLAGS: -std=c99 -O2 -g -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Werror -f${{ matrix.char_mode }}-char
     steps:
       - uses: actions/checkout@v4
       - name: Protocol unit tests (gcc, ASan/UBSan)
