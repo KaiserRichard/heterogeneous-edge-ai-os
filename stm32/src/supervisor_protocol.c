@@ -4,10 +4,13 @@
 
 supervisor_state_t supervisor_receive_frame(supervisor_t *sv,
                                              const struct hea_frame *frame,
+                                             uint64_t generation,
                                              uint64_t received_at_ticks,
                                              uint64_t now_ticks)
 {
-    supervisor_event_t event = {SUPERVISOR_EVENT_NONE, false, 0u, 0u, received_at_ticks};
+    supervisor_event_t event = {0};
+    event.received_at_ticks = received_at_ticks;
+    event.generation = generation;
     if (frame != NULL && hea_version_supported(frame->version)) {
         event.wire_seq = frame->seq;
         switch (frame->type) {
@@ -15,6 +18,8 @@ supervisor_state_t supervisor_receive_frame(supervisor_t *sv,
             struct hea_heartbeat heartbeat;
             if (hea_unpack_heartbeat(frame, &heartbeat) == 0) {
                 event.kind = SUPERVISOR_EVENT_HEARTBEAT;
+                event.session_id = heartbeat.session_id;
+                event.has_session_id = frame->version == HEA_PROTO_VERSION;
                 event.valid = true;
             }
             break;

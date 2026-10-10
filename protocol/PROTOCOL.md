@@ -1,6 +1,6 @@
-# UART Protocol v2 (legacy v1 decoding)
+# UART Protocol v3 (v1/v2 decoding)
 
-Status: approved v2 age-at-send extension, software-tested (`make -C protocol test`). Not yet run on the STM32 or over a real UART.
+Status: v3 session extension and v2 age-at-send extension, software-tested (`make -C protocol test`). Not yet run on the STM32 or over a real UART.
 This fills the framing/integrity TBD in `PROJECT.md` section 5.3; it can still change before firmware work starts.
 
 ## Frame
@@ -8,7 +8,7 @@ This fills the framing/integrity TBD in `PROJECT.md` section 5.3; it can still c
 | Field | Size | Notes |
 |---|---|---|
 | SOF | 2 | `0xA5 0x5A`. Two bytes make false sync in payload data less likely than one. |
-| version | 1 | Encoder emits `2`; decoder accepts `1` and `2`. Unknown versions are counted and dropped after CRC validation. |
+| version | 1 | Encoder emits `3`; decoder accepts `1`, `2` and `3`. Unknown versions are counted and dropped after CRC validation. |
 | type | 1 | See below. |
 | seq | 2 | Per-sender counter, little-endian. Gaps = lost frames. |
 | len | 1 | Payload length, 0..64. Larger values are rejected before reading the payload. |
@@ -16,7 +16,7 @@ This fills the framing/integrity TBD in `PROJECT.md` section 5.3; it can still c
 | crc | 2 | CRC-16/CCITT-FALSE over version..payload, little-endian. |
 
 Overhead is unchanged at 9 bytes. Version 1 inference payload is 22 bytes (31-byte
-frame); version 2 is 26 bytes (35-byte frame). V2 nominal serialization is about
+frame); versions 2/3 are 26 bytes (35-byte frame). V2 nominal serialization is about
 3.04 ms at 115200 baud and 0.38 ms at 921600 baud (8N1, 10 bits per byte; CALCULATED).
 These times exclude software queues and are not validated transit bounds.
 
@@ -30,8 +30,8 @@ encoding step that hides less of the OS-level behaviour we want to observe.
 
 | Type | Direction | Payload | Purpose |
 |---|---|---|---|
-| `0x01` HEARTBEAT | Pi to STM32 | `linux_send_ns` u64 | Liveness for the supervisor watchdog. |
-| `0x02` INFERENCE | Pi to STM32 | `linux_input_ns` u64, `linux_done_ns` u64, `input_seq` u32, `class_id` u8, `confidence_pct` u8, **v2 only:** `age_at_send_us` u32 | Result, Pi timestamps and Pi-local input-to-send duration. Step 1 supervisor uses receipt silence only. |
+| `0x01` HEARTBEAT | Pi to STM32 | `linux_send_ns` u64, **v3 only:** `session_id` u64 | Liveness for the supervisor watchdog. |
+| `0x02` INFERENCE | Pi to STM32 | `linux_input_ns` u64, `linux_done_ns` u64, `input_seq` u32, `class_id` u8, `confidence_pct` u8, **v2/v3:** `age_at_send_us` u32 | Result, Pi timestamps and Pi-local input-to-send duration. Step 1 supervisor uses receipt silence only. |
 | `0x03` ECHO_REQ | Pi to STM32 | `linux_t1_ns` u64 | Round-trip time and clock-offset estimation. |
 | `0x83` ECHO_RESP | STM32 to Pi | `linux_t1_ns` u64 (T1), `mcu_rx_us` u32 (T2), `mcu_tx_us` u32 (T3) | Linux adds T4 on receipt; offset and delay per RFC 4330 section 5 (see `docs/research/R8.md`). |
 | `0x84` MCU_STATUS | STM32 to Pi | `mcu_us` u32, `state` u8, `missed_heartbeats` u16, `rx_crc_errors` u16 | Supervisor state (INIT / FRESH / HOLD / FAILSAFE), matching the supervisor state machine. |
@@ -56,17 +56,67 @@ the output unchanged. The sender must drop/count such a failed calculation. The
 maximum value denotes saturation or an exact maximum age; future source-age policy
 must treat it conservatively, never as an exact finite upper bound for older data.
 
-Version 1 requires exactly 22 INFERENCE payload bytes; version 2 requires exactly
+Version 1 requires exactly 22 INFERENCE payload bytes; versions 2/3 require exactly
 26. There is no silent version/length fallback. Legacy decoding sets the member to
 zero for initialization, but **the age is absent**, not a measured zero. Callers
 must inspect `frame.version` for presence and label legacy observations receipt
-silence. Other message payload layouts are unchanged and accepted in both versions.
-Old v1-only decoders will reject v2; update both peers before physical-link tests.
+silence. ECHO_REQ, ECHO_RESP and MCU_STATUS layouts are unchanged across all three
+versions. Old decoders reject newer versions; update both peers before physical-link tests.
 
 Acceptance: v2 round-trip and endian field position; independent captured v1 golden
 frame; both version/length mismatch directions; unknown version; zero/sub-us/exact
 us conversion; regression; exact maximum, overflow and UINT64_MAX durations;
 supervisor receipt-only behavior for both versions.
+
+## Version 3 session and local generation contract
+
+V3 HEARTBEAT appends `session_id`, uint64 little-endian at payload offset 8:
+16 payload bytes, 25 frame bytes. V1/v2 HEARTBEAT remains exactly 8 payload bytes.
+The decoder initializes absent legacy session IDs to zero; presence is determined
+by version, not the value. Zero is a valid v3 ID. All version/length mismatches
+are rejected, with no fallback. The packers and encoder emit v3; v3 INFERENCE
+retains the v2 layout and age semantics.
+
+The bridge must choose a new session ID on every process restart, keep it constant
+for that incarnation, and send HEARTBEAT before results/echoes. IDs are opaque
+identities, not sequence counters or timestamps. Avoid reuse across incarnations.
+A first explicit session (including after legacy traffic), or a changed session,
+clears both wire and input sequence history and all receipt/healthy history.
+The establishing heartbeat is accepted even if its wire sequence restarts at zero.
+The supervisor returns to safe INIT unless FAILSAFE is already latched, in which
+case healthy observation and explicit local rearm are still required. Expiry is
+checked first, so a restart heartbeat at a failsafe deadline cannot bypass the latch.
+Same-session heartbeats obey the normal shared wire sequence checks. Once an
+explicit session is known, legacy heartbeats are ignored to prevent downgrade;
+legacy inference decoding remains supported. A legacy-only sender has no automatic
+restart detection and its sequence history is preserved.
+
+`generation` is a separate uint64 **local queue stamp**, never transmitted.
+The supervisor initializes it to zero and increments it on successful rearm and
+on session establishment/change, invalidating outstanding queue entries. The
+accepted session heartbeat belongs to the closing generation; subsequent entries
+must capture the new generation. Rearm preserves the session and both sequence
+watermarks, clears receipt/health flags, and requires new traffic for FRESH.
+Every queued event/frame must retain the generation and actual receipt time
+captured at handoff; never restamp on dispatch. The single owner must serialize
+capture, update and rearm. A mismatched generation is rejected before session,
+sequence or timer renewal, even at the same tick; the saturating uint64
+`rejected_generation_events` counter counts each rejected entry, including repeated
+dispatches. Deadlines still run. Failed rearm does not increment generation.
+Generation exhaustion refuses rearm/session reset; reinitialize the core and clear
+the entire queue before exhaustion or any full core reinitialization.
+
+These rules assume ordered delivery from one bridge. CRC is integrity checking,
+not authentication. A historical session replayed on the wire with a newly captured
+local generation is indistinguishable from another restart; arbitrary session
+replay protection is not provided. Results/echoes have no session ID, so sender
+ordering and preserved queue stamps are essential across a restart. Generation
+rejects old local queue entries; session ID permits counter restart. Neither is a
+source-age measurement.
+
+Acceptance includes exact v1/v2/v3 heartbeat layouts, v1/v2/v3 inference decoding,
+malformed lengths, legacy-to-session transition, same-session duplicates, restarted
+wire/input counters, all supervisor states, and same-tick queue rejection/counting.
 
 ## Known limitation
 

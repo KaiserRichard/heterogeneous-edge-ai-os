@@ -79,6 +79,11 @@ static void evaluate(supervisor_t *sv, uint64_t now)
 
 static void accept(supervisor_t *sv, const supervisor_event_t *event, uint64_t now)
 {
+    if (event != NULL && event->generation != sv->generation) {
+        if (sv->rejected_generation_events != UINT64_MAX)
+            ++sv->rejected_generation_events;
+        return;
+    }
     if (event == NULL || !event->valid ||
         event->kind < SUPERVISOR_EVENT_HEARTBEAT ||
         event->kind > SUPERVISOR_EVENT_OTHER ||
@@ -88,6 +93,25 @@ static void accept(supervisor_t *sv, const supervisor_event_t *event, uint64_t n
          event->received_at_ticks < sv->last_heartbeat_ticks) ||
         (event->kind == SUPERVISOR_EVENT_RESULT && sv->has_result &&
          event->received_at_ticks < sv->last_result_ticks)) return;
+    if (event->kind == SUPERVISOR_EVENT_HEARTBEAT) {
+        /* Once a session is known, a legacy heartbeat cannot downgrade it. */
+        if (sv->has_session_id && !event->has_session_id) return;
+        if (event->has_session_id && (!sv->has_session_id ||
+            event->session_id != sv->session_id)) {
+            if (sv->generation == UINT64_MAX) return;
+            ++sv->generation;
+            sv->has_session_id = true;
+            sv->session_id = event->session_id;
+            sv->has_wire_seq = false;
+            sv->has_input_seq = false;
+            sv->has_heartbeat = false;
+            sv->has_result = false;
+            sv->healthy_interval = false;
+            sv->epoch_start_ticks = event->received_at_ticks;
+            if (sv->state != SUPERVISOR_STATE_FAILSAFE)
+                transition(sv, SUPERVISOR_STATE_INIT, SUPERVISOR_REASON_SESSION_CHANGE);
+        }
+    }
     if (sv->has_wire_seq && supervisor_seq_compare16(event->wire_seq,
         sv->last_wire_seq) != SUPERVISOR_SEQ_NEWER) return;
 
@@ -143,11 +167,13 @@ bool supervisor_rearm(supervisor_t *sv, uint64_t now_ticks)
         return false;
     }
     (void)supervisor_update(sv, NULL, now_ticks);
-    if (sv->state != SUPERVISOR_STATE_FAILSAFE || !sv->healthy_interval ||
+    if (sv->generation == UINT64_MAX ||
+        sv->state != SUPERVISOR_STATE_FAILSAFE || !sv->healthy_interval ||
         now_ticks - sv->healthy_since_ticks < sv->config.rearm_healthy_ticks) {
         return false;
     }
     transition(sv, SUPERVISOR_STATE_INIT, SUPERVISOR_REASON_REARM);
+    ++sv->generation;
     sv->epoch_start_ticks = now_ticks;
     sv->has_heartbeat = false;
     sv->has_result = false;

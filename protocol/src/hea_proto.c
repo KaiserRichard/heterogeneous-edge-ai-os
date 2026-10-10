@@ -4,7 +4,8 @@
 
 int hea_version_supported(uint8_t version)
 {
-    return version == HEA_PROTO_VERSION_LEGACY || version == HEA_PROTO_VERSION;
+    return version == HEA_PROTO_VERSION_LEGACY ||
+        version == HEA_PROTO_VERSION_AGE || version == HEA_PROTO_VERSION;
 }
 
 int hea_age_at_send_us(uint64_t input_ns, uint64_t send_ns, uint32_t *age_us)
@@ -184,14 +185,17 @@ static int check(const struct hea_frame *f, uint8_t type, uint8_t len)
 uint8_t hea_pack_heartbeat(const struct hea_heartbeat *m, uint8_t *b)
 {
     put_u64(b, m->linux_send_ns);
-    return 8;
+    put_u64(&b[8], m->session_id);
+    return 16;
 }
 
 int hea_unpack_heartbeat(const struct hea_frame *f, struct hea_heartbeat *m)
 {
-    if (check(f, HEA_MSG_HEARTBEAT, 8))
+    uint8_t expected = f->version == HEA_PROTO_VERSION ? 16u : 8u;
+    if (check(f, HEA_MSG_HEARTBEAT, expected))
         return -1;
     m->linux_send_ns = get_u64(f->payload);
+    m->session_id = f->version == HEA_PROTO_VERSION ? get_u64(&f->payload[8]) : 0u;
     return 0;
 }
 
