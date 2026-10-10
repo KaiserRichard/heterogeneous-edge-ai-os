@@ -1,11 +1,11 @@
-# Portable supervisor v2 — Step 1
+# Portable supervisor — Step 1 and A3 restart/rearm edges
 
 Status: implemented and host-tested; firmware, physical UART and safe-output timing
 are not validated. The core is pure C99 with no heap, HAL, FreeRTOS or clock calls.
 It adapts the earlier `feat/software-skeleton-wip` supervisor design but does not
 merge that branch or its second protocol implementation. `hea_proto` remains the
 only wire library. Protocol v2 appends Pi-local `age_at_send_us`; the adapter accepts
-v1 and v2 but Step 1 deliberately ignores source-age fields.
+v1, v2 and v3 but Step 1 deliberately ignores source-age fields.
 
 ## Scope and meaning of FRESH
 
@@ -80,11 +80,31 @@ clears receipt/health flags, preserving sequence watermarks. New post-rearm hear
 and advancing result are needed for FRESH. This API is a local request: **no UART
 rearm message** is added. The hardware/user command that invokes it is later work.
 
-The owner must atomically invalidate queued pre-rearm events on successful rearm
-(or attach a local epoch generation to queued events). Receipt-time filtering
-rejects strictly earlier ticks, but a pre-rearm event received in the same coarse
-tick as rearm is indistinguishable by timestamp alone. Queue invalidation belongs
-to the future firmware port; the portable core does not own a queue.
+Every event carries a local `generation` captured alongside `received_at_ticks`
+at receipt/handoff. `supervisor_receive_frame` takes that captured generation as an
+explicit argument; reading `sv.generation` at delayed dispatch would incorrectly
+make old traffic current. The owner serializes capture with update/rearm. Successful
+rearm increments `sv.generation`; mismatches are rejected even in the same coarse
+tick and counted in saturating `rejected_generation_events`. Failed rearm leaves
+generation unchanged. Timer evaluation still precedes rejection. No queue or
+concurrency mechanism is introduced by this portable API.
+
+V3 HEARTBEAT carries an opaque uint64 `session_id`; v1/v2 have no session. The first
+explicit ID or a changed ID increments local generation to invalidate outstanding
+queue entries, clears wire/input sequence and receipt/health history, and accepts
+the establishing heartbeat. It returns to INIT unless FAILSAFE remains latched.
+Zero is a valid session ID. New results are required for FRESH; in FAILSAFE, traffic
+can establish the healthy interval but only local rearm clears the latch. Rearm
+preserves the session ID and sequence history. Same-session replays cannot reset
+history. A legacy heartbeat cannot downgrade an established session. Legacy-only
+operation preserves the existing sequence policy and cannot detect sender restart.
+See `protocol/PROTOCOL.md` for exact version/length and sender ordering rules.
+
+Generation and session ID are distinct: generation belongs to local queue ownership;
+session ID belongs to the sender incarnation. Never derive either from receipt ticks
+or reset generation when the sender restarts. Generation must not wrap: exhaustion
+refuses rearm/session reset; clear the queue and reinitialize before exhaustion.
+Any full initialization must also invalidate all outstanding queue entries.
 
 Sequence arithmetic is unsigned half-range: delta 0 is duplicate, below half-range
 is newer, above is older, exact half-range is ambiguous. The header is uint16 and
@@ -95,9 +115,12 @@ advances the wire watermark but never refreshes result silence or heartbeat.
 ECHO_REQ advances only the wire watermark. MCU-to-Pi/unknown frames are ignored.
 
 This assumes strictly ordered delivery from a single Pi sender and fewer than half
-the counter space between accepted frames. After Pi reboot, counters may restart:
-a session/sequence-reset policy needs a separate design; rearm does not silently
-accept old counters. CRC/sequence checks do not authenticate an adversarial sender.
+the counter space between accepted frames. The bridge changes session ID on every
+restart and sends its heartbeat before results/echoes. Old queued sessions are
+rejected by generation. An arbitrary historical session replayed on the wire under
+a current local stamp cannot be distinguished from a restart; CRC/sequence checks
+do not authenticate the sender. Results/echoes have no session ID. Source freshness
+and transit allowances remain Step 2 work.
 
 ## Build and test
 
@@ -143,8 +166,8 @@ This compiles object files, not linked FreeRTOS firmware. No board is needed.
 | Healthy traffic after FAILSAFE | Latch remains, including after healthy interval completes |
 | Missing/early rearm and interrupted healthy interval | Rearm refused |
 | Eligible explicit rearm | INIT; anti-replay history preserved |
-| Queued old events and pre-rearm backlog | Actual receipt time retained; strictly pre-epoch events rejected; same-tick queue invalidation is a firmware requirement |
-| Sender reset | Old input watermark preserved; reboot needs separate session policy |
+| Queued old events and pre-rearm backlog | Receipt time and generation retained; same-tick older-generation events rejected and counted |
+| Sender reset | Changed session resets both watermarks and receipts; INIT unless FAILSAFE latched |
 | Large nonzero MCU clock | Deadlines depend on elapsed ticks |
 | Clock regression/invalid config | Safe FAILSAFE; no timer renewal |
 | Pi timestamps near uint64 maximum | MCU receipt deadlines unaffected; no cross-clock subtraction |
@@ -159,4 +182,4 @@ or cross-compile check does not establish electrical reliability or bounded late
 
 Rollback: keep this feature branch isolated; revert its commit if required. No
 primary-checkout user changes, boot/UART settings or slides are changed. The separate
-protocol-v2 ticket changes payload/version, with legacy decoding retained.
+v3 HEARTBEAT extension retains v1/v2 decoding.

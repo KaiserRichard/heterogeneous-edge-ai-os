@@ -20,6 +20,7 @@ typedef enum {
     SUPERVISOR_REASON_RESULT_TIMEOUT,
     SUPERVISOR_REASON_REARM,
     SUPERVISOR_REASON_CLOCK_REGRESSION,
+    SUPERVISOR_REASON_SESSION_CHANGE,
     SUPERVISOR_REASON_INVALID_CONFIG
 } supervisor_reason_t;
 
@@ -50,6 +51,9 @@ typedef struct {
     uint16_t wire_seq; /* One shared per-Pi counter, across message types. */
     uint32_t input_seq; /* Used only for RESULT; independent input counter. */
     uint64_t received_at_ticks; /* Actual MCU receipt boundary, not queue dispatch. */
+    uint64_t generation; /* Capture at receipt/handoff; never restamp at dispatch. */
+    uint64_t session_id; /* HEARTBEAT only; independent of local generation. */
+    bool has_session_id; /* False for protocol v1/v2. */
 } supervisor_event_t;
 
 typedef struct {
@@ -61,9 +65,13 @@ typedef struct {
     uint64_t last_heartbeat_ticks;
     uint64_t last_result_ticks;
     uint64_t healthy_since_ticks;
+    uint64_t generation;
+    uint64_t rejected_generation_events; /* Saturating count of stale queue events. */
+    uint64_t session_id;
     uint16_t last_wire_seq;
     uint32_t last_input_seq;
     bool configured;
+    bool has_session_id;
     bool has_wire_seq;
     bool has_input_seq;
     bool has_heartbeat;
@@ -81,7 +89,8 @@ bool supervisor_init(supervisor_t *sv, const supervisor_config_t *config,
 /* Single-owner API. Call even without traffic. Expiry precedes event handling.
  * Times must be nondecreasing, extended MCU-local ticks in one unit; no wrap.
  * NONE/NULL means a timer evaluation. Invalid events never renew timers.
- * An event must carry receipt time <= now and within this init/rearm epoch. */
+ * An event must carry receipt time <= now, within this epoch, and the generation
+ * captured at receipt. Generation mismatch is rejected and counted. */
 supervisor_state_t supervisor_update(supervisor_t *sv,
                                      const supervisor_event_t *event,
                                      uint64_t now_ticks);
@@ -89,8 +98,9 @@ supervisor_state_t supervisor_update(supervisor_t *sv,
 /* Local explicit request, not a wire command. Only succeeds from FAILSAFE
  * after uninterrupted healthy observation; clears receipt/health history,
  * preserves sequence high-water marks, and returns to safe INIT.
- * Owner must atomically invalidate queued pre-rearm events: receipt ticks
- * equal to the new epoch cannot distinguish events within the same tick. */
+ * Increments generation, rejecting queued pre-rearm events even in the same tick.
+ * The owner must serialize generation capture with update/rearm. Generation must
+ * not wrap; reset the whole queue/core before UINT64_MAX is exhausted. */
 bool supervisor_rearm(supervisor_t *sv, uint64_t now_ticks);
 
 /* Only FRESH permits new simulated output; HOLD policy is a port decision.
