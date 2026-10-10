@@ -31,7 +31,15 @@ supervisor_state_t supervisor_receive_frame(supervisor_t *sv,
                 result.linux_done_ns >= result.linux_input_ns) {
                 event.kind = SUPERVISOR_EVENT_RESULT;
                 event.input_seq = result.input_seq;
-                event.valid = true;
+                event.has_age_at_send = frame->version != HEA_PROTO_VERSION_LEGACY;
+                event.age_at_send_us = result.age_at_send_us;
+                /* Pi-only plausibility: done cannot follow the declared send age.
+                 * UINT32_MAX is the sender's saturation value, accepted as stale. */
+                uint64_t processing_us = (result.linux_done_ns - result.linux_input_ns) / 1000u;
+                uint64_t remainder = (result.linux_done_ns - result.linux_input_ns) % 1000u;
+                if (remainder != 0u) ++processing_us;
+                event.valid = !event.has_age_at_send || result.age_at_send_us == UINT32_MAX ||
+                    processing_us <= result.age_at_send_us;
             }
             break;
         }

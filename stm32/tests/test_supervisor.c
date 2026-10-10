@@ -9,8 +9,8 @@ static unsigned checks;
     fprintf(stderr, "%s:%d: %s\n", __FILE__, __LINE__, #expr); exit(1); \
 } } while (0)
 
-/* Synthetic ticks, not hardware-calibrated deadlines. */
-static const supervisor_config_t config = {50u, 30u, 90u, 20u};
+/* Synthetic microseconds, not hardware-calibrated deadlines. */
+static const supervisor_config_t config = {50u, 30u, 90u, 20u, 0u};
 
 static void init(supervisor_t *sv)
 {
@@ -20,7 +20,7 @@ static void init(supervisor_t *sv)
 static supervisor_state_t event(supervisor_t *sv, supervisor_event_kind_t kind,
                                 uint16_t wire, uint32_t input, uint64_t now)
 {
-    supervisor_event_t e = {kind, true, wire, input, now, sv->generation, 0u, false};
+    supervisor_event_t e = {kind, true, wire, input, now, sv->generation, 0u, false, 0u, false};
     return supervisor_update(sv, &e, now);
 }
 
@@ -162,7 +162,7 @@ static void test_duplicates_replays_and_invalid_events(void)
     CHECK(sv.last_result_ticks == 1u);
     CHECK(event(&sv, SUPERVISOR_EVENT_RESULT, 4u, UINT32_C(0x80000000), 10u) == SUPERVISOR_STATE_FRESH);
     CHECK(sv.last_result_ticks == 1u && sv.last_input_seq == 0u);
-    supervisor_event_t bad = {SUPERVISOR_EVENT_HEARTBEAT, false, 5u, 0u, 20u, 0u, 0u, false};
+    supervisor_event_t bad = {SUPERVISOR_EVENT_HEARTBEAT, false, 5u, 0u, 20u, 0u, 0u, false, 0u, false};
     CHECK(supervisor_update(&sv, &bad, 20u) == SUPERVISOR_STATE_FRESH);
     CHECK(sv.last_heartbeat_ticks == 0u && sv.last_wire_seq == 4u);
     CHECK(event(&sv, SUPERVISOR_EVENT_OTHER, 5u, 0u, 30u) == SUPERVISOR_STATE_FRESH);
@@ -216,7 +216,9 @@ static size_t feed(supervisor_t *sv, struct hea_parser *parser,
 static size_t inference(uint8_t *out, uint16_t wire, uint32_t input,
                         uint64_t sample, uint64_t done, uint8_t confidence)
 {
-    struct hea_inference m = {sample, done, input, 1u, confidence, UINT32_MAX};
+    /* Fresh age for the retained Step 1 receipt/sequence scenarios. Step 2
+     * tests separately exercise the previously ignored saturation value. */
+    struct hea_inference m = {sample, done, input, 1u, confidence, 1u};
     uint8_t payload[HEA_MAX_PAYLOAD];
     uint8_t len = hea_pack_inference(&m, payload);
     return hea_encode(HEA_MSG_INFERENCE, wire, payload, len, out, HEA_MAX_FRAME);
@@ -297,7 +299,7 @@ static void test_backlog_epoch_and_nonzero_clock(void)
     uint64_t base = UINT64_C(1000000000000);
     CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 100u, 0u, base) == SUPERVISOR_STATE_INIT);
     CHECK(event(&sv, SUPERVISOR_EVENT_RESULT, 101u, 100u, base + 1u) == SUPERVISOR_STATE_FRESH);
-    supervisor_event_t delayed = {SUPERVISOR_EVENT_RESULT, true, 102u, 101u, base + 2u, 0u, 0u, false};
+    supervisor_event_t delayed = {SUPERVISOR_EVENT_RESULT, true, 102u, 101u, base + 2u, 0u, 0u, false, 0u, false};
     CHECK(supervisor_update(&sv, &delayed, base + 35u) == SUPERVISOR_STATE_HOLD);
     CHECK(sv.last_result_ticks == base + 2u); /* Not processing time! */
     delayed.kind = SUPERVISOR_EVENT_HEARTBEAT;
@@ -401,7 +403,7 @@ static void test_generation_same_tick_and_adapter_backlog(void)
     CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 3u, 0u, 50u) == SUPERVISOR_STATE_FAILSAFE);
     uint64_t old_generation = sv.generation;
     supervisor_event_t queued = {SUPERVISOR_EVENT_RESULT, true, 100u, 100u,
-                                 70u, old_generation, 0u, false};
+                                 70u, old_generation, 0u, false, 0u, false};
     CHECK(!supervisor_rearm(&sv, 69u));
     CHECK(sv.generation == old_generation);
     CHECK(supervisor_rearm(&sv, 70u));
@@ -485,7 +487,7 @@ static void test_sessions_restart_and_replay(void)
         CHECK(feed(&sv, &parser, bytes, n, now + 1u) == 1u);
         CHECK(sv.last_heartbeat_ticks == now && sv.generation == old_generation + 1u);
         supervisor_event_t queued = {SUPERVISOR_EVENT_HEARTBEAT, true, 200u, 0u,
-                                     now, old_generation, 0u, true};
+                                     now, old_generation, 0u, true, 0u, false};
         CHECK(supervisor_update(&sv, &queued, now + 1u) == expected);
         CHECK(sv.session_id == UINT64_MAX && sv.rejected_generation_events == 1u);
         /* Legacy heartbeat must not erase a known session, even with new seq. */
@@ -543,7 +545,7 @@ static void test_legacy_versions_and_invalid_session(void)
         CHECK(feed(&sv, &parser, bytes, n, 4u) == 1u);
         CHECK(sv.state == SUPERVISOR_STATE_INIT && sv.session_id == 8u && !sv.has_input_seq);
         supervisor_event_t backward = {SUPERVISOR_EVENT_HEARTBEAT, true, 0u, 0u,
-                                       3u, sv.generation, 9u, true};
+                                       3u, sv.generation, 9u, true, 0u, false};
         CHECK(supervisor_update(&sv, &backward, 5u) == SUPERVISOR_STATE_INIT);
         CHECK(sv.session_id == 8u);
         backward.received_at_ticks = 6u; /* Future receipt is invalid too. */
@@ -583,6 +585,228 @@ static void test_restart_expiry_and_generation_exhaustion(void)
     CHECK(sv.last_wire_seq == 1u && sv.last_heartbeat_ticks == 50u);
 }
 
+static void test_source_age_policy_and_queue(void)
+{
+    supervisor_t sv;
+    supervisor_config_t cfg = config;
+    cfg.transit_bound_us = 5u; /* PROVISIONAL test value. */
+    CHECK(supervisor_init(&sv, &cfg, 0u));
+    CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 0u, 0u, 0u) == SUPERVISOR_STATE_INIT);
+    supervisor_event_t e = {SUPERVISOR_EVENT_RESULT, true, 1u, 1u,
+                            1u, sv.generation, 0u, false, 10u, true};
+    CHECK(supervisor_update(&sv, &e, 1u) == SUPERVISOR_STATE_FRESH);
+    CHECK(sv.source_age_estimate_us == 15u && !sv.receipt_silence_fallback);
+    CHECK(supervisor_update(&sv, NULL, 15u) == SUPERVISOR_STATE_FRESH);
+    CHECK(sv.source_age_estimate_us == 29u);
+    CHECK(supervisor_update(&sv, NULL, 16u) == SUPERVISOR_STATE_HOLD);
+    CHECK(sv.last_transition_reason == SUPERVISOR_REASON_SOURCE_AGE_HOLD);
+    e.wire_seq = 2u;
+    e.input_seq = 2u;
+    e.received_at_ticks = 17u;
+    e.age_at_send_us = 0u; /* Zero is present and valid. */
+    CHECK(supervisor_update(&sv, &e, 17u) == SUPERVISOR_STATE_FRESH);
+    CHECK(sv.source_age_estimate_us == 5u);
+    /* Duplicate input cannot replace age metadata. */
+    e.wire_seq = 3u;
+    e.received_at_ticks = 18u;
+    e.age_at_send_us = UINT32_MAX;
+    CHECK(supervisor_update(&sv, &e, 18u) == SUPERVISOR_STATE_FRESH);
+    CHECK(sv.last_age_at_send_us == 0u && sv.last_result_ticks == 17u);
+    e.wire_seq = 4u;
+    e.input_seq = 3u;
+    e.received_at_ticks = 19u;
+    e.age_at_send_us = 20u;
+    /* The 10 us MCU queue delay counts, even with fresh receipt silence. */
+    CHECK(supervisor_update(&sv, &e, 29u) == SUPERVISOR_STATE_HOLD);
+    CHECK(sv.source_age_estimate_us == 35u && sv.last_result_ticks == 19u);
+    CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 5u, 0u, 40u) == SUPERVISOR_STATE_HOLD);
+    CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 6u, 0u, 80u) == SUPERVISOR_STATE_HOLD);
+    CHECK(supervisor_update(&sv, NULL, 84u) == SUPERVISOR_STATE_FAILSAFE);
+    CHECK(sv.source_age_estimate_us == 90u);
+    CHECK(sv.last_transition_reason == SUPERVISOR_REASON_SOURCE_AGE_TIMEOUT);
+    e.wire_seq = 7u;
+    e.input_seq = 4u;
+    e.received_at_ticks = 84u;
+    e.age_at_send_us = 0u;
+    CHECK(supervisor_update(&sv, &e, 84u) == SUPERVISOR_STATE_FAILSAFE);
+    CHECK(!supervisor_rearm(&sv, 103u));
+    CHECK(supervisor_rearm(&sv, 104u));
+    CHECK(!sv.has_result && sv.source_age_estimate_us == 0u);
+
+    CHECK(supervisor_init(&sv, &cfg, 0u));
+    CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 0u, 0u, 0u) == SUPERVISOR_STATE_INIT);
+    e.wire_seq = 1u;
+    e.input_seq = 1u;
+    e.generation = sv.generation;
+    e.received_at_ticks = 1u;
+    e.age_at_send_us = 85u;
+    CHECK(supervisor_update(&sv, &e, 1u) == SUPERVISOR_STATE_FAILSAFE);
+    CHECK(!sv.healthy_interval && !supervisor_rearm(&sv, 21u));
+
+    /* Source-age expiry must precede a fresh replacement in the same update. */
+    CHECK(supervisor_init(&sv, &cfg, 0u));
+    CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 0u, 0u, 0u) == SUPERVISOR_STATE_INIT);
+    e.age_at_send_us = 80u;
+    CHECK(supervisor_update(&sv, &e, 1u) == SUPERVISOR_STATE_INIT);
+    e.age_at_send_us = 0u;
+    e.wire_seq = 2u;
+    e.input_seq = 2u;
+    e.received_at_ticks = 2u;
+    CHECK(supervisor_update(&sv, &e, 2u) == SUPERVISOR_STATE_FRESH);
+    e.has_age_at_send = false;
+    e.wire_seq = 3u;
+    e.input_seq = 3u;
+    e.received_at_ticks = 3u;
+    CHECK(supervisor_update(&sv, &e, 3u) == SUPERVISOR_STATE_FRESH);
+    CHECK(sv.receipt_silence_fallback && sv.source_age_estimate_us == 0u);
+    e.has_age_at_send = true;
+    e.age_at_send_us = 80u;
+    e.wire_seq = 4u;
+    e.input_seq = 4u;
+    e.received_at_ticks = 4u;
+    CHECK(supervisor_update(&sv, &e, 4u) == SUPERVISOR_STATE_HOLD);
+    CHECK(!sv.receipt_silence_fallback && sv.source_age_estimate_us == 85u);
+    e.age_at_send_us = 0u;
+    e.wire_seq = 5u;
+    e.input_seq = 5u;
+    e.received_at_ticks = 9u;
+    CHECK(supervisor_update(&sv, &e, 9u) == SUPERVISOR_STATE_FAILSAFE);
+    CHECK(sv.last_transition_reason == SUPERVISOR_REASON_SOURCE_AGE_TIMEOUT);
+    CHECK(sv.source_age_estimate_us == 5u);
+}
+
+static void test_init_source_age_expiry_precedence(void)
+{
+    for (uint64_t now = 5u; now <= 7u; ++now) {
+        supervisor_t sv;
+        supervisor_config_t cfg = config;
+        cfg.transit_bound_us = 5u; /* PROVISIONAL test value. */
+        CHECK(supervisor_init(&sv, &cfg, 0u));
+        CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 0u, 0u, 0u) == SUPERVISOR_STATE_INIT);
+        supervisor_event_t e = {SUPERVISOR_EVENT_RESULT, true, 1u, 1u,
+                                1u, sv.generation, 0u, false, 80u, true};
+        CHECK(supervisor_update(&sv, &e, 1u) == SUPERVISOR_STATE_INIT);
+        CHECK(sv.source_age_estimate_us == 85u);
+        e.wire_seq = 2u;
+        e.input_seq = 2u;
+        e.received_at_ticks = now;
+        e.age_at_send_us = 0u;
+        /* The previous estimate reaches 90 us at t=6, before acceptance. */
+        CHECK(supervisor_update(&sv, &e, now) ==
+              (now < 6u ? SUPERVISOR_STATE_FRESH : SUPERVISOR_STATE_FAILSAFE));
+        CHECK(sv.last_transition_reason ==
+              (now < 6u ? SUPERVISOR_REASON_READY : SUPERVISOR_REASON_SOURCE_AGE_TIMEOUT));
+        CHECK(sv.last_result_ticks == now && sv.source_age_estimate_us == 5u);
+        CHECK(supervisor_update(&sv, NULL, now) ==
+              (now < 6u ? SUPERVISOR_STATE_FRESH : SUPERVISOR_STATE_FAILSAFE));
+    }
+}
+
+static void test_age_validation_and_saturation(void)
+{
+    supervisor_t sv;
+    ready(&sv);
+    supervisor_event_t e = {SUPERVISOR_EVENT_RESULT, true, 2u, 1u,
+                            2u, sv.generation, 0u, false,
+                            UINT64_C(0x100000000), true};
+    CHECK(supervisor_update(&sv, &e, 2u) == SUPERVISOR_STATE_FRESH);
+    CHECK(sv.last_wire_seq == 1u && sv.last_result_ticks == 1u);
+    e.age_at_send_us = UINT64_MAX;
+    CHECK(supervisor_update(&sv, &e, 3u) == SUPERVISOR_STATE_FRESH);
+    CHECK(sv.last_result_ticks == 1u);
+    e.age_at_send_us = UINT32_MAX; /* Sender saturation is stale, not absent. */
+    CHECK(supervisor_update(&sv, &e, 3u) == SUPERVISOR_STATE_FAILSAFE);
+    CHECK(sv.source_age_estimate_us == (uint64_t)UINT32_MAX + 1u);
+    CHECK(!sv.receipt_silence_fallback && !sv.healthy_interval);
+
+    supervisor_config_t cfg = {UINT64_MAX, UINT64_MAX - 1u, UINT64_MAX, 1u, UINT32_MAX};
+    CHECK(supervisor_init(&sv, &cfg, 0u));
+    CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 0u, 0u, 0u) == SUPERVISOR_STATE_INIT);
+    e.wire_seq = 1u;
+    e.input_seq = 0u;
+    e.received_at_ticks = 0u;
+    CHECK(supervisor_update(&sv, &e, 0u) == SUPERVISOR_STATE_FRESH);
+    CHECK(sv.source_age_estimate_us == (uint64_t)UINT32_MAX * 2u);
+    CHECK(supervisor_update(&sv, NULL, UINT64_MAX - 2u) == SUPERVISOR_STATE_FAILSAFE);
+    CHECK(sv.source_age_estimate_us == UINT64_MAX);
+    CHECK(sv.last_transition_reason == SUPERVISOR_REASON_SOURCE_AGE_TIMEOUT);
+}
+
+static void test_age_adapter_versions_and_invalid_data(void)
+{
+    for (uint8_t version = 1u; version <= 3u; ++version) {
+        supervisor_t sv;
+        struct hea_parser parser;
+        uint8_t bytes[HEA_MAX_FRAME], payload[HEA_MAX_PAYLOAD];
+        init(&sv);
+        hea_parser_init(&parser);
+        CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 0u, 0u, 0u) == SUPERVISOR_STATE_INIT);
+        struct hea_inference m = {UINT64_MAX - 2000u, UINT64_MAX, 0u, 1u, 90u, 20u};
+        uint8_t len = hea_pack_inference(&m, payload);
+        if (version == 1u) len = 22u;
+        size_t n = hea_encode(HEA_MSG_INFERENCE, 1u, payload, len, bytes, sizeof bytes);
+        bytes[2] = version;
+        uint16_t crc = hea_crc16(&bytes[2], n - 4u);
+        bytes[n - 2u] = (uint8_t)crc;
+        bytes[n - 1u] = (uint8_t)(crc >> 8);
+        for (size_t i = 0u; i < n; ++i) (void)hea_parser_feed(&parser, bytes[i]);
+        CHECK(parser.stats.frames_ok == 1u);
+        CHECK(supervisor_receive_frame(&sv, &parser.frame, sv.generation, 1u, 12u) ==
+              (version == 1u ? SUPERVISOR_STATE_FRESH : SUPERVISOR_STATE_INIT));
+        CHECK(sv.receipt_silence_fallback == (version == 1u));
+        CHECK(sv.source_age_estimate_us == (version == 1u ? 11u : 31u));
+        CHECK(supervisor_update(&sv, NULL, 31u) ==
+              (version == 1u ? SUPERVISOR_STATE_HOLD : SUPERVISOR_STATE_INIT));
+    }
+    supervisor_t sv;
+    struct hea_parser parser;
+    uint8_t bytes[HEA_MAX_FRAME], payload[HEA_MAX_PAYLOAD];
+    ready(&sv);
+    hea_parser_init(&parser);
+    struct hea_inference m = {0u, 1001u, 1u, 1u, 90u, 1u};
+    size_t n = hea_encode(HEA_MSG_INFERENCE, 2u, payload,
+                          hea_pack_inference(&m, payload), bytes, sizeof bytes);
+    CHECK(feed(&sv, &parser, bytes, n, 2u) == 1u);
+    CHECK(sv.last_wire_seq == 1u && sv.last_result_ticks == 1u);
+    m.age_at_send_us = 2u; /* Ceiling to microseconds avoids accepting understated age. */
+    n = hea_encode(HEA_MSG_INFERENCE, 2u, payload,
+                   hea_pack_inference(&m, payload), bytes, sizeof bytes);
+    CHECK(feed(&sv, &parser, bytes, n, 3u) == 1u);
+    CHECK(sv.last_result_ticks == 3u && sv.source_age_estimate_us == 2u);
+    m.input_seq = 2u;
+    m.age_at_send_us = UINT32_MAX;
+    n = hea_encode(HEA_MSG_INFERENCE, 3u, payload,
+                   hea_pack_inference(&m, payload), bytes, sizeof bytes);
+    CHECK(feed(&sv, &parser, bytes, n, 4u) == 1u);
+    CHECK(sv.state == SUPERVISOR_STATE_FAILSAFE && sv.source_age_estimate_us == UINT32_MAX);
+}
+
+static void test_mcu_timer_wrap_extension(void)
+{
+    uint64_t now = UINT32_MAX - 5u;
+    uint64_t receipt = now;
+    CHECK(supervisor_extend_mcu_us(now, 4u, &now));
+    CHECK(now == UINT64_C(0x100000004) && now - receipt == 10u);
+    supervisor_t sv;
+    CHECK(supervisor_init(&sv, &config, receipt));
+    CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 0u, 0u, receipt) == SUPERVISOR_STATE_INIT);
+    supervisor_event_t e = {SUPERVISOR_EVENT_RESULT, true, 1u, 1u,
+                            receipt, sv.generation, 0u, false, 20u, true};
+    CHECK(supervisor_update(&sv, &e, now) == SUPERVISOR_STATE_INIT);
+    CHECK(sv.source_age_estimate_us == 30u);
+    uint64_t unchanged = now;
+    CHECK(!supervisor_extend_mcu_us(now, 3u, &now));
+    CHECK(now == unchanged);
+    CHECK(!supervisor_extend_mcu_us(now, UINT32_C(0x80000004), &now));
+    CHECK(now == unchanged);
+    CHECK(supervisor_extend_mcu_us(now, 4u, &now));
+    CHECK(!supervisor_extend_mcu_us(now, 5u, NULL));
+    CHECK(!supervisor_extend_mcu_us(UINT64_MAX - 1u, 0u, &now));
+    CHECK(now == unchanged);
+    CHECK(supervisor_extend_mcu_us(now, UINT32_C(0x80000003), &now));
+    CHECK(now == unchanged + UINT32_C(0x7fffffff));
+}
+
 int main(void)
 {
     test_sequence_boundaries();
@@ -602,6 +826,11 @@ int main(void)
     test_sessions_restart_and_replay();
     test_legacy_versions_and_invalid_session();
     test_restart_expiry_and_generation_exhaustion();
-    printf("17 supervisor scenarios passed (%u checks, including exhaustive 16-bit increment wrap).\n", checks);
+    test_source_age_policy_and_queue();
+    test_init_source_age_expiry_precedence();
+    test_age_validation_and_saturation();
+    test_age_adapter_versions_and_invalid_data();
+    test_mcu_timer_wrap_extension();
+    printf("22 supervisor scenarios passed (%u checks, including exhaustive 16-bit increment wrap).\n", checks);
     return 0;
 }
