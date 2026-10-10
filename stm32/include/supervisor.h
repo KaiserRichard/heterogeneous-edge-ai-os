@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/* Step 1: MCU-local receipt silence, not source Age of Information. */
+/* Step 2: duration-based source-age estimate; all local ticks are microseconds. */
 typedef enum {
     SUPERVISOR_STATE_INIT = 0,
     SUPERVISOR_STATE_FRESH,
@@ -21,7 +21,9 @@ typedef enum {
     SUPERVISOR_REASON_REARM,
     SUPERVISOR_REASON_CLOCK_REGRESSION,
     SUPERVISOR_REASON_SESSION_CHANGE,
-    SUPERVISOR_REASON_INVALID_CONFIG
+    SUPERVISOR_REASON_INVALID_CONFIG,
+    SUPERVISOR_REASON_SOURCE_AGE_HOLD,
+    SUPERVISOR_REASON_SOURCE_AGE_TIMEOUT
 } supervisor_reason_t;
 
 typedef enum {
@@ -43,6 +45,7 @@ typedef struct {
     uint64_t result_hold_ticks;
     uint64_t result_failsafe_ticks;
     uint64_t rearm_healthy_ticks;
+    uint32_t transit_bound_us; /* PROVISIONAL send-to-receipt allowance, not proven. */
 } supervisor_config_t;
 
 typedef struct {
@@ -54,6 +57,8 @@ typedef struct {
     uint64_t generation; /* Capture at receipt/handoff; never restamp at dispatch. */
     uint64_t session_id; /* HEARTBEAT only; independent of local generation. */
     bool has_session_id; /* False for protocol v1/v2. */
+    uint64_t age_at_send_us; /* RESULT: reject values > UINT32_MAX. */
+    bool has_age_at_send; /* False only when source age is absent (legacy v1). */
 } supervisor_event_t;
 
 typedef struct {
@@ -77,7 +82,16 @@ typedef struct {
     bool has_heartbeat;
     bool has_result;
     bool healthy_interval;
+    uint32_t last_age_at_send_us;
+    uint64_t source_age_estimate_us; /* Saturates at UINT64_MAX; valid with has_result. */
+    bool receipt_silence_fallback; /* Last accepted RESULT has no source age. */
 } supervisor_t;
+
+/* Extend a raw uint32 microsecond timer from the previous extended sample.
+ * Initialize previous to the first raw sample. Sample strictly within 2^31 us;
+ * regression/ambiguous gaps and uint64 overflow return false without writing out.
+ * Capture extended receipt time before queueing; never extend old queued samples. */
+bool supervisor_extend_mcu_us(uint64_t previous, uint32_t raw, uint64_t *out);
 
 supervisor_seq_order_t supervisor_seq_compare16(uint16_t current, uint16_t last);
 supervisor_seq_order_t supervisor_seq_compare(uint32_t current, uint32_t last);
@@ -87,7 +101,7 @@ bool supervisor_init(supervisor_t *sv, const supervisor_config_t *config,
                      uint64_t now_ticks);
 
 /* Single-owner API. Call even without traffic. Expiry precedes event handling.
- * Times must be nondecreasing, extended MCU-local ticks in one unit; no wrap.
+ * Times must be nondecreasing, extended MCU-local microseconds; no wrap.
  * NONE/NULL means a timer evaluation. Invalid events never renew timers.
  * An event must carry receipt time <= now, within this epoch, and the generation
  * captured at receipt. Generation mismatch is rejected and counted. */

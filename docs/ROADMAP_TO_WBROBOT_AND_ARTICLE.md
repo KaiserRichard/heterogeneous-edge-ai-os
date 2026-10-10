@@ -60,6 +60,11 @@ and clock-rate uncertainty; baud time alone is insufficient. This is an estimate
 under stated assumptions, not automatically an exact AoI or proven upper bound.
 Clock mapping/GPIO later provides a separate cross-check.
 
+A4 host implementation: see `stm32/README.md` for the microsecond API contract,
+flagged v1 receipt-silence fallback, saturating uint64 estimate, age plausibility
+checks, and uint32 MCU timer extension assumptions. Transit configuration remains
+PROVISIONAL; host tests do not validate a physical transport allowance.
+
 ### Stage A measurements
 
 | Study | Compare | Evidence |

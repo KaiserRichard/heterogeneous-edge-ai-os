@@ -1,34 +1,64 @@
-# Portable supervisor — Step 1 and A3 restart/rearm edges
+# Portable supervisor — Step 2 and A3 restart/rearm edges
 
 Status: implemented and host-tested; firmware, physical UART and safe-output timing
 are not validated. The core is pure C99 with no heap, HAL, FreeRTOS or clock calls.
-It adapts the earlier `feat/software-skeleton-wip` supervisor design but does not
-merge that branch or its second protocol implementation. `hea_proto` remains the
-only wire library. Protocol v2 appends Pi-local `age_at_send_us`; the adapter accepts
-v1, v2 and v3 but Step 1 deliberately ignores source-age fields.
+`hea_proto` remains the only wire library; no wire format changes are needed.
 
 ## Scope and meaning of FRESH
 
-Step 1 checks **heartbeat liveness** and **result receipt silence** independently,
-using caller-supplied extended MCU-local ticks. FRESH means both receipt conditions
-are within their configured limits. It does **not** establish source freshness or
-Age of Information (AoI). A delayed input with a genuinely advancing `input_seq`
-can still pass this step. No Pi timestamp is subtracted from MCU time.
-
-Source age is Step 2. A possible estimate is:
+Step 2 checks heartbeat liveness and result freshness independently, using
+caller-supplied extended MCU-local **microseconds**. The existing `_ticks` API names
+are retained, but arbitrary tick units are no longer permitted. For v2/v3 results:
 
 ```
-age_upper = pi_age_at_send + MCU_elapsed_since_receive + transit_bound
+source_age_estimate_us = age_at_send_us
+                       + (now_MCU_us - received_at_MCU_us)
+                       + transit_bound_us
 ```
 
-Offset synchronization is not required to add durations, but units and clock-rate
-uncertainty must be accounted for. `pi_age_at_send` must cover input to actual send;
-`transit_bound` must cover every remaining send-to-receive delay, including software
-queues/serialization, not only nominal baud time. This would be an upper estimate
-under stated assumptions, not exact measured source AoI. No validated transit bound
-exists yet. The separately approved protocol v2 now supplies an age-at-send field,
-but the supervisor does not use it yet. Source-age policy, clock mapping and GPIO
-validation remain later work.
+The age at send is a Pi-local duration. The subtraction above is entirely MCU-local;
+Pi timestamps are never subtracted from MCU timestamps. The estimate includes MCU
+queue delay because receipt time is captured before handoff and retained at dispatch.
+All additions saturate at UINT64_MAX. The diagnostic `source_age_estimate_us` is
+updated on each valid-time evaluation and is meaningful only while `has_result` is
+true. It clears on rearm/session reset.
+
+`transit_bound_us` is an explicit uint32 configuration value marked **PROVISIONAL**.
+Zero is allowed for controlled tests, not a claim of zero transport delay. No measured
+or proven default is supplied. It must account for the entire send-to-receive path,
+including software queues and serialization after age capture, plus clock-rate
+uncertainty. Sender input and send timestamps must use the same Pi CLOCK_MONOTONIC;
+age must cover input to the stated send boundary. Comparable microsecond units,
+monotonic local clocks and sufficiently small rate error are assumed. This is an
+**estimate under those assumptions, not an exact AoI or a proven upper bound**.
+Hardware measurement and clock mapping remain separate future validation.
+
+FRESH requires heartbeat receipt silence below its limit and result age below
+`result_hold_ticks`. HOLD and FAILSAFE use the same configured result thresholds for
+source age as Step 1 used for receipt silence, including equality at each boundary.
+An initial source result at/above hold stays safe INIT; at/above failsafe it latches
+FAILSAFE immediately. Source-age expiry in INIT is evaluated before accepting a
+replacement, including one arriving exactly at the failsafe deadline.
+A stale result cannot establish rearm health. Periodic updates
+must continue without traffic. A packet arriving at an already-expired failsafe
+boundary cannot hide expiry; valid recovery traffic never clears the latch itself.
+`SUPERVISOR_REASON_SOURCE_AGE_HOLD/TIMEOUT` distinguish source-age transitions.
+
+V1 results lack age. They retain receipt-silence behavior, **without adding transit
+allowance**, flagged by `receipt_silence_fallback`. For these results the diagnostic
+field reports receipt silence, not source age; FRESH has only the legacy receipt
+meaning. A v2/v3 zero age is present, not a legacy marker. Each accepted advancing
+result replaces the flag/age metadata; duplicate or rejected results cannot replace it.
+
+The core accepts ages 0..UINT32_MAX when `has_age_at_send` is true and rejects wider
+values before advancing watermarks or renewing health. UINT32_MAX is the sender's
+legitimate saturation value; it is treated conservatively as a very old result, never
+as absence. A saturated sender value loses its true age, so the estimate cannot be
+claimed as an upper bound. At the adapter, age must be at least the Pi-only
+input-to-done duration rounded up to microseconds. Sender saturation is exempt from
+this plausibility check (and still evaluated as old); v1 retains legacy validation.
+Malformed length, reversed Pi timestamps and confidence above 100 remain invalid.
+No receiver can verify that a plausible sender age is truthful.
 
 ## Files and ownership
 
@@ -50,10 +80,18 @@ future 1 kHz release period must be calibrated/verified on hardware.
 
 ## Contract
 
-All times and thresholds use the same local tick unit. Receipt times must be no later than evaluation time and no earlier than the
+All times and thresholds use microseconds. Receipt times must be no later than evaluation time and no earlier than the
 current initialization/rearm epoch; invalid times do not refresh any timer.
 A hardware timer wrap must
-be extended by the port into nondecreasing uint64 ticks. Clock regression latches
+be extended into nondecreasing uint64 microseconds. `supervisor_extend_mcu_us` takes
+the previous extended sample and current raw uint32 timer. Initialize the previous
+value to the first raw sample; sample strictly within 2^31 us (about 35.8 minutes).
+Unsigned deltas support wrap; half-range/ambiguous gaps, apparent regression and
+uint64 overflow return false without writing the output. The owner must treat a
+failed extension as a clock fault and select safe output, not silently continue
+with a frozen clock. Multiple wraps or sufficiently large backward jumps cannot be
+inferred from two raw samples. Extend chronologically at receipt/evaluation, never
+when dispatching an old queued raw timestamp. Clock regression latches
 FAILSAFE, ignores that event, and breaks the observed healthy interval.
 
 The caller must supply nonzero `heartbeat_timeout_ticks`, `result_hold_ticks`,
@@ -64,8 +102,8 @@ unrearmable FAILSAFE until a valid initialization.
 | State | Behavior |
 |---|---|
 | INIT | Safe output; waits until both a valid heartbeat and advancing result are recently received. No-data startup remains safe INIT. |
-| FRESH | Both conditions valid; missing heartbeat goes directly to FAILSAFE, result silence reaches HOLD. |
-| HOLD | Heartbeat continues but results are silent; timely new result recovers FRESH; heartbeat expiry or result failsafe deadline latches FAILSAFE. |
+| FRESH | Both conditions valid; missing heartbeat goes directly to FAILSAFE, result age reaches HOLD. |
+| HOLD | Heartbeat continues but results are stale; a fresh result recovers FRESH; heartbeat expiry or result failsafe deadline latches FAILSAFE. |
 | FAILSAFE | Safe output is retained; traffic may establish health but never clears the latch by itself. |
 
 Expiration uses `elapsed >= threshold` and is evaluated **before** processing an
@@ -73,7 +111,7 @@ event at that time. Thus a packet at an already-expired failsafe deadline cannot
 hide expiry. HOLD can recover if a result arrives before its failsafe deadline.
 `last_transition_reason` records a state transition, not each packet diagnostic.
 
-Only explicit `supervisor_rearm` can leave FAILSAFE, after both receipt conditions
+Only explicit `supervisor_rearm` can leave FAILSAFE, after heartbeat and result freshness conditions
 have stayed healthy for the configured interval. Expiry during the interval resets
 it, including an event arriving exactly at a timeout. Rearm returns to safe INIT and
 clears receipt/health flags, preserving sequence watermarks. New post-rearm heartbeat
@@ -119,8 +157,7 @@ the counter space between accepted frames. The bridge changes session ID on ever
 restart and sends its heartbeat before results/echoes. Old queued sessions are
 rejected by generation. An arbitrary historical session replayed on the wire under
 a current local stamp cannot be distinguished from a restart; CRC/sequence checks
-do not authenticate the sender. Results/echoes have no session ID. Source freshness
-and transit allowances remain Step 2 work.
+do not authenticate the sender. Results/echoes have no session ID. Source-age estimates do not authenticate or validate the sender clock.
 
 ## Build and test
 
@@ -170,7 +207,12 @@ This compiles object files, not linked FreeRTOS firmware. No board is needed.
 | Sender reset | Changed session resets both watermarks and receipts; INIT unless FAILSAFE latched |
 | Large nonzero MCU clock | Deadlines depend on elapsed ticks |
 | Clock regression/invalid config | Safe FAILSAFE; no timer renewal |
-| Pi timestamps near uint64 maximum | MCU receipt deadlines unaffected; no cross-clock subtraction |
+| Pi timestamps near uint64 maximum | Same-domain plausibility only; no cross-clock subtraction |
+| V2/v3 age, transit allowance and delayed queue | Source estimate drives hold/failsafe and rearm health |
+| V1 absence vs v2/v3 zero | Flagged receipt fallback vs present zero age |
+| Age exceeds wire range or understates input-to-done | Rejected without watermark/health renewal |
+| Saturated sender age and estimate arithmetic | Old result remains old; addition saturates instead of overflowing |
+| Uint32 MCU timer wrap and invalid sampling | Correct extended duration; rejected ambiguous/regressing/overflow sample |
 
 Hardware follow-up: first flash a minimal FreeRTOS Nucleo image using its Mini-B
 ST-LINK USB connection (no Pi UART wires yet). Verify task release and safe output.
