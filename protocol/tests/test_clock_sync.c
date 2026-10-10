@@ -81,11 +81,11 @@ static int test_jitter_and_singular(void)
     {
         struct hea_clock_sample s = {1u, 21u, 21u, 101u};
         CHECK(hea_clock_filter_add(&f, &s) == 0);
-        s.t1_pi_us = 2u;
         s.t2_mcu_us = 22u;
         s.t3_mcu_us = 22u;
-        s.t4_pi_us = 102u;
         CHECK(hea_clock_filter_add(&f, &s) == 0);
+        CHECK(f.count == 2u && storage[0].reference_pi_us == 51u &&
+              storage[1].reference_pi_us == 51u);
         CHECK(hea_clock_fit(&f, 1u, &fit) != 0);
     }
     return 0;

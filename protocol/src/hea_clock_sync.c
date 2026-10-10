@@ -18,16 +18,26 @@ static int signed_difference(uint64_t a, uint64_t b, int64_t *difference)
     return 0;
 }
 
+static int add_signed_checked(int64_t a, int64_t b, int64_t *sum)
+{
+    if ((b > 0 && a > INT64_MAX - b) ||
+        (b < 0 && a < INT64_MIN - b))
+        return -1;
+    *sum = a + b;
+    return 0;
+}
+
 int hea_clock_sample(const struct hea_clock_sample *sample,
                      struct hea_clock_estimate *estimate)
 {
-    int64_t t2_minus_t1, t3_minus_t4;
+    int64_t t2_minus_t1, t3_minus_t4, offset_numerator;
     uint64_t pi_elapsed, mcu_elapsed;
     if (sample == NULL || estimate == NULL || sample->t4_pi_us < sample->t1_pi_us ||
         sample->t3_mcu_us < sample->t2_mcu_us)
         return -1;
     if (signed_difference(sample->t2_mcu_us, sample->t1_pi_us, &t2_minus_t1) != 0 ||
-        signed_difference(sample->t3_mcu_us, sample->t4_pi_us, &t3_minus_t4) != 0)
+        signed_difference(sample->t3_mcu_us, sample->t4_pi_us, &t3_minus_t4) != 0 ||
+        add_signed_checked(t2_minus_t1, t3_minus_t4, &offset_numerator) != 0)
         return -1;
     pi_elapsed = sample->t4_pi_us - sample->t1_pi_us;
     mcu_elapsed = sample->t3_mcu_us - sample->t2_mcu_us;
@@ -35,9 +45,8 @@ int hea_clock_sample(const struct hea_clock_sample *sample,
 
     if (sample->t1_pi_us > UINT64_MAX - pi_elapsed / 2u) return -1;
     /* Combine the exact integer differences before converting.  In particular,
-     * converting each term to double first can lose a low bit at 2^53. */
-    estimate->offset_us = (double)(((long double)t2_minus_t1 +
-                                    (long double)t3_minus_t4) / 2.0L);
+     * converting each term to floating point first can lose a low bit at 2^53. */
+    estimate->offset_us = (double)offset_numerator / 2.0;
     estimate->delay_us = pi_elapsed - mcu_elapsed;
     estimate->reference_pi_us = sample->t1_pi_us + pi_elapsed / 2u;
     if (!isfinite(estimate->offset_us)) return -1;
