@@ -85,12 +85,24 @@ class SummaryTests(unittest.TestCase):
         for index, filename in enumerate(("meta_before.json", "meta_after.json", "thermal.csv"), 1):
             directory = self.run_directory(f"idle_r{index}")
             path = directory / filename
-            path.write_text(path.read_text(encoding="utf-8").replace("0x0", "0x10000"), encoding="utf-8")
+            path.write_text(path.read_text(encoding="utf-8").replace("0x0", "0x1"), encoding="utf-8")
             with self.subTest(filename=filename):
                 row = summary.summarize_run(directory)
                 self.assertEqual(row["status"], "INVALID")
                 self.assertIn(filename, row["reason"])
-                self.assertIn("0x10000", row["throttled"])
+                self.assertIn("0x1", row["throttled"])
+
+    def test_sticky_bits_only_invalidate_when_new_during_run(self):
+        directory = self.run_directory("idle_r1")
+        for name in ("meta_before.json", "meta_after.json", "thermal.csv"):
+            path = directory / name
+            path.write_text(path.read_text(encoding="utf-8").replace("0x0", "0x50000"), encoding="utf-8")
+        self.assertEqual(summary.summarize_run(directory)["status"], "VALID")
+        before = directory / "meta_before.json"
+        before.write_text(before.read_text(encoding="utf-8").replace("0x50000", "0x0"), encoding="utf-8")
+        row = summary.summarize_run(directory)
+        self.assertEqual(row["status"], "INVALID")
+        self.assertIn("new sticky", row["reason"])
 
     def test_headerless_legacy_thermal_and_numeric_zero(self):
         directory = self.run_directory()

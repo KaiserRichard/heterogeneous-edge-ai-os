@@ -102,6 +102,14 @@ def parse_histogram(path):
                 p99_us=percentile(99, 100), p99_9_us=percentile(999, 1000))
 
 
+# vcgencmd get_throttled: bits 0-3 are live (under-voltage, freq capped, throttled,
+# soft temp limit); bits 16-19 are sticky "has occurred" flags kept until reboot.
+# A run is INVALID if a live bit is ever sampled, or a new sticky bit appears between
+# meta_before and meta_after (catches events shorter than the sampling interval).
+LIVE_MASK = 0xF
+STICKY_MASK = 0xF0000
+
+
 def throttled_value(value):
     raw = str(value).strip().lower()
     if raw.startswith("throttled="):
@@ -124,8 +132,8 @@ def summarize_run(directory):
         try:
             value = throttled_value(throttle)
             throttles.add(value)
-            if value:
-                reasons.append(source + ": throttled=" + hex(value))
+            if value & LIVE_MASK:
+                reasons.append(source + ": live throttled=" + hex(value))
         except ValueError as error:
             reasons.append(source + ": " + str(error))
         try:
@@ -145,6 +153,10 @@ def summarize_run(directory):
             health(data.get("temp_millic"), data.get("throttled"), name)
         except (OSError, ValueError) as error:
             reasons.append(name + ": " + str(error))
+    sticky = [throttled_value(d.get("throttled")) & STICKY_MASK for d in metadata
+              if isinstance(d.get("throttled"), str) and d.get("throttled").startswith("0x")]
+    if len(sticky) == 2 and sticky[1] & ~sticky[0]:
+        reasons.append("new sticky throttle/under-voltage bits during run: " + hex(sticky[1] & ~sticky[0]))
     profiles = {data.get("profile") for data in metadata if data.get("profile")}
     if len(profiles) > 1:
         reasons.append("profile changed during run")

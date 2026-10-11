@@ -108,14 +108,14 @@ class CampaignTests(unittest.TestCase):
                     self.assertEqual(before["cooler"], "synthetic cooler")
                     self.assertEqual(before["git_commit"], "synthetic_commit")
                     command = (run / "cyclictest_cmd.txt").read_text()
-                    self.assertIn("--policy=other -p 0" if profile == "P0" else "sudo -n cyclictest --policy=fifo -p 50", command)
+                    self.assertIn("sudo -n cyclictest --policy=other -p 0" if profile == "P0" else "sudo -n cyclictest --policy=fifo -p 50", command)
                     self.assertIn("-m -t1 -a 0", command)
                     self.assertIn("-D 1s", command)
                     self.assertIn("SYNTHETIC TEST DATA", (run / "cyclictest_hist.txt").read_text())
                     self.assertIn("synthetic stderr", (run / "cyclictest.err").read_text())
                     self.assertTrue((run / "meta_after.json").exists())
                     self.assertIn("0x0", (run / "thermal.csv").read_text())
-                self.assertEqual((self.root / "sudo.log").exists(), profile == "P1")
+                self.assertTrue((self.root / "sudo.log").exists())
 
     def test_failed_cyclictest_keeps_evidence_without_done_marker(self):
         out, result = self.campaign(MOCK_CYCLIC_RC="1")

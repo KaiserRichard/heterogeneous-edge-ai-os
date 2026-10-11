@@ -23,7 +23,7 @@ fi
 for tool in cyclictest stress-ng taskset vcgencmd python3 lscpu git; do
   command -v "$tool" >/dev/null || { echo "Missing tool: $tool" >&2; exit 2; }
 done
-if [[ $profile == P1 ]]; then command -v sudo >/dev/null; sudo -v; fi
+command -v sudo >/dev/null; sudo -n true || { echo "cyclictest needs passwordless sudo, also for P0 (SCHED_OTHER)" >&2; exit 2; }
 if [[ -e $out ]]; then echo "Refusing to overwrite campaign: $out" >&2; exit 2; fi
 mkdir -p "$out"
 repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
@@ -50,7 +50,7 @@ monitor() {
       "$(read_or_unknown /sys/class/thermal/thermal_zone0/temp)" \
       "$(read_or_unknown /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq)" \
       "${throttled:-unknown}"
-    sleep 2
+    sleep 0.5
   done
 }
 {
@@ -70,7 +70,7 @@ failed=0
 while IFS=: read -r condition repetition; do
   d="$out/${condition}_r${repetition}"
   mkdir "$d"
-  cmd=(cyclictest --policy=other -p 0 -m -t1 -a 0 -i 1000 -D "${secs}s" -h 20000 -q)
+  cmd=(sudo -n cyclictest --policy=other -p 0 -m -t1 -a 0 -i 1000 -D "${secs}s" -h 20000 -q)
   if [[ $profile == P1 ]]; then
     cmd=(sudo -n cyclictest --policy=fifo -p 50 -m -t1 -a 0 -i 1000 -D "${secs}s" -h 20000 -q)
   fi
