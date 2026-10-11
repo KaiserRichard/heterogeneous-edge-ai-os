@@ -1,0 +1,128 @@
+"""Host tests: only standard library, no ONNX Runtime or numpy required."""
+import csv
+import math
+import struct
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from bench_common import (RESULT_RECORD, SOURCE_RECORD, clock, pack_result,
+                          parse_cpu, percentile, pin_cpu, sha256, summarize,
+                          unpack_source, write_csv)
+
+
+class PercentileTests(unittest.TestCase):
+    def test_interpolation_and_unsorted_input(self):
+        values = [40, 10, 30, 20]
+        self.assertEqual(percentile(values, 50), 25)
+        self.assertAlmostEqual(percentile(values, 95), 38.5)
+        self.assertAlmostEqual(percentile(values, 99), 39.7)
+        self.assertEqual(values, [40, 10, 30, 20])
+
+    def test_endpoints_single_and_duplicates(self):
+        self.assertEqual(percentile([9, 1], 0), 1)
+        self.assertEqual(percentile([9, 1], 100), 9)
+        self.assertEqual(percentile([7], 99), 7)
+        self.assertEqual(percentile([7, 7, 7], 95), 7)
+
+    def test_invalid(self):
+        with self.assertRaises(ValueError):
+            percentile([], 50)
+        for percent in (-1, 101, math.nan, math.inf):
+            with self.subTest(percent=percent), self.assertRaises(ValueError):
+                percentile([1], percent)
+
+    def test_summary(self):
+        result = summarize([10, 20, 30])
+        self.assertEqual(result['count'], 3)
+        self.assertEqual(result['mean_ns'], 20)
+        self.assertEqual(result['max_ns'], 30)
+        self.assertAlmostEqual(result['p95_ns'], 29)
+
+
+class CsvTests(unittest.TestCase):
+    def test_all_samples_preserved(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'samples.csv'
+            write_csv(path, [(0, 12, 345), (1, 67, 890)])
+            with path.open(newline='') as stream:
+                self.assertEqual(list(csv.reader(stream)), [
+                    ['run_idx', 'pre_ns', 'infer_ns'], ['0', '12', '345'], ['1', '67', '890']])
+
+    def test_empty_has_header(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'samples.csv'
+            write_csv(path, [])
+            self.assertEqual(path.read_text().splitlines(), ['run_idx,pre_ns,infer_ns'])
+
+    def test_hash_known_vector(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'data'
+            path.write_bytes(b'abc')
+            self.assertEqual(sha256(path), 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad')
+
+
+class RecordTests(unittest.TestCase):
+    def test_source_golden_bytes(self):
+        data = bytes.fromhex('08070605040302011817161514131211')
+        self.assertEqual(SOURCE_RECORD.size, 16)
+        self.assertEqual(unpack_source(data), (0x0102030405060708, 0x1112131415161718))
+        self.assertEqual(SOURCE_RECORD.pack(*unpack_source(data)), data)
+
+    def test_result_golden_bytes(self):
+        data = pack_result(1, 2, 3, 0x01020304, 0.5)
+        self.assertEqual(RESULT_RECORD.size, 32)
+        self.assertEqual(data.hex(), '010000000000000002000000000000000300000000000000040302010000003f')
+        self.assertEqual(RESULT_RECORD.unpack(data), (1, 2, 3, 0x01020304, 0.5))
+
+    def test_u64_and_u32_boundaries(self):
+        value = (1 << 64) - 1
+        self.assertEqual(unpack_source(SOURCE_RECORD.pack(value, value)), (value, value))
+        self.assertEqual(RESULT_RECORD.unpack(pack_result(value, value, value, (1 << 32) - 1, 1)),
+                         (value, value, value, (1 << 32) - 1, 1))
+        with self.assertRaises(struct.error):
+            pack_result(1 << 64, 0, 0, 0, 0)
+        with self.assertRaises(struct.error):
+            pack_result(0, 0, 0, -1, 0)
+
+    def test_bad_sizes_and_confidence(self):
+        for length in (0, 15, 17, 100):
+            with self.subTest(length=length), self.assertRaises(ValueError):
+                unpack_source(bytes(length))
+        for confidence in (-0.1, 1.1, math.nan, math.inf):
+            with self.subTest(confidence=confidence), self.assertRaises(ValueError):
+                pack_result(0, 0, 0, 0, confidence)
+
+
+class PlatformTests(unittest.TestCase):
+    def test_cpu_list(self):
+        self.assertEqual(parse_cpu('0,2,2'), {0, 2})
+        for value in ('', '-1', '0,a', '0,'):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                parse_cpu(value)
+
+    def test_nonlinux_affinity_fails_explicitly(self):
+        with patch('bench_common.sys.platform', 'darwin'), self.assertRaises(RuntimeError):
+            pin_cpu({0})
+
+    def test_clock_increases(self):
+        now, name = clock()
+        self.assertIn(name, ('CLOCK_MONOTONIC_RAW', 'perf_counter_ns'))
+        start = now()
+        self.assertGreaterEqual(now(), start)
+
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux affinity only')
+    def test_linux_affinity_roundtrip(self):
+        import os
+        original = os.sched_getaffinity(0)
+        try:
+            self.assertEqual(pin_cpu({min(original)}), [min(original)])
+        finally:
+            os.sched_setaffinity(0, original)
+
+
+if __name__ == '__main__':
+    unittest.main()
