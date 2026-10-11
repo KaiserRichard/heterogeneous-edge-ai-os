@@ -60,8 +60,8 @@ Version 1 requires exactly 22 INFERENCE payload bytes; versions 2/3 require exac
 26. There is no silent version/length fallback. Legacy decoding sets the member to
 zero for initialization, but **the age is absent**, not a measured zero. Callers
 must inspect `frame.version` for presence and label legacy observations receipt
-silence. ECHO_REQ, ECHO_RESP and MCU_STATUS layouts are unchanged across all three
-versions. Old decoders reject newer versions; update both peers before physical-link tests.
+silence. ECHO_REQ, ECHO_RESP and the nine-byte base MCU_STATUS layouts are unchanged
+across all three versions; the optional v3 status diagnostic extension is below. Old decoders reject newer versions; update both peers before physical-link tests.
 
 Acceptance: v2 round-trip and endian field position; independent captured v1 golden
 frame; both version/length mismatch directions; unknown version; zero/sub-us/exact
@@ -155,3 +155,27 @@ Captured real frames, including their unchanged CRCs:
 functions: both frames are lost, one false candidate fails CRC, and sequence 13357
 decodes. This proves the previous two losses are resync behavior under a different
 input stream, not a byte-signedness or platform-specific parser defect.
+
+## Optional firmware diagnostics in v3 MCU_STATUS
+
+**UNVERIFIED ON HARDWARE.** To observe ISR/queue contention and validate GPIO clock
+capture, v3 status may contain exactly 33 bytes instead of nine. The first nine
+bytes retain the base layout. Six little-endian u32 fields follow:
+
+| Offset | Field | Meaning |
+|---:|---|---|
+| 9 | last_capture_us | Last dequeued TIM2_CH1 rising-edge timestamp, raw us |
+| 13 | capture_count | Saturating number of dequeued captures; zero means absent |
+| 17 | rx_dropped | Saturating UART records lost to full stream buffer |
+| 21 | uart_errors | Saturating RX records with PE/FE/NE/ORE |
+| 25 | queue_dropped | Saturating frame/echo queue enqueue failures |
+| 29 | capture_lost | Saturating capture queue loss plus hardware overcapture |
+
+`hea_pack_mcu_status` still emits nine bytes. Firmware uses the explicit
+`hea_pack_mcu_status_extended` API. The base decoder accepts nine bytes for v1/v2/v3
+and 33 bytes for v3; the extended decoder accepts only v3/33. All other lengths and
+versions are rejected. Existing strict nine-byte receivers must be updated before
+using this firmware. This is an optional v3 diagnostic payload, not a change to
+HEARTBEAT/INFERENCE/ECHO or their sequencing. Base counters in the firmware mean
+heartbeat-timeout latch transitions and saturated parser CRC failures. Tests cover
+wire round-trip, field byte order, every payload length, versions and wrong types.

@@ -74,7 +74,7 @@ The core has **one owner**: serialize every update and rearm call. Future RX tas
 handoff must pass bounded events to the supervisor owner, not concurrently mutate
 this structure from an ISR or status task. Events carry `received_at_ticks` from
 the actual MCU receipt boundary separately from evaluation time. Queued backlog
-must retain that timestamp; dispatch time must never masquerade as receipt time. Firmware ownership/queues are not built.
+must retain that timestamp; dispatch time must never masquerade as receipt time. The compile-only firmware implements this ownership/queue contract; see `firmware/README.md`.
 Call update periodically even without incoming traffic. Tick thresholds and the
 future 1 kHz release period must be calibrated/verified on hardware.
 
@@ -225,3 +225,10 @@ or cross-compile check does not establish electrical reliability or bounded late
 Rollback: keep this feature branch isolated; revert its commit if required. No
 primary-checkout user changes, boot/UART settings or slides are changed. The separate
 v3 HEARTBEAT extension retains v1/v2 decoding.
+
+## Compile-only board port
+
+`make -C stm32 firmware` builds the Nucleo-F446RE FreeRTOS image; see
+[firmware/README.md](firmware/README.md) for reference paths, clocks, wiring,
+provisional thresholds, status extension, Pi flashing commands and bring-up order.
+**UNVERIFIED ON HARDWARE.** Portable core host validation does not validate the port.
