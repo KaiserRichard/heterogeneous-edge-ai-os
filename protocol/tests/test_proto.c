@@ -65,11 +65,11 @@ static void test_roundtrip_all_types(void)
     struct hea_frame f;
     hea_parser_init(&p);
 
-    struct hea_heartbeat hb = {123456789012345ull}, hb2;
+    struct hea_heartbeat hb = {123456789012345ull, UINT64_C(0x8877665544332211)}, hb2;
     size_t n = hea_encode(HEA_MSG_HEARTBEAT, 1, pl, hea_pack_heartbeat(&hb, pl), buf, sizeof buf);
     CHECK(feed_all(&p, buf, n, &f) == 1);
     CHECK(hea_unpack_heartbeat(&f, &hb2) == 0 && hb2.linux_send_ns == hb.linux_send_ns);
-    CHECK(f.seq == 1);
+    CHECK(f.seq == 1 && hb2.session_id == hb.session_id);
 
     struct hea_inference in2;
     n = make_inference(0xBEEF, buf);
@@ -77,7 +77,7 @@ static void test_roundtrip_all_types(void)
     CHECK(hea_unpack_inference(&f, &in2) == 0);
     CHECK(in2.linux_input_ns == 0x1122334455667788ull && in2.linux_done_ns == 0x99AABBCCDDEEFF00ull);
     CHECK(in2.input_seq == 0xDEADBEEFu && in2.class_id == 7 && in2.confidence_pct == 93);
-    CHECK(f.version == 2u && f.len == 26u && in2.age_at_send_us == UINT32_C(0x12345678));
+    CHECK(f.version == HEA_PROTO_VERSION && f.len == 26u && in2.age_at_send_us == UINT32_C(0x12345678));
     CHECK(n == 35u && buf[29] == 0x78u && buf[30] == 0x56u && buf[31] == 0x34u && buf[32] == 0x12u);
     CHECK(f.seq == 0xBEEF);
 
@@ -145,7 +145,7 @@ static void test_bad_version_rejected(void)
 {
     uint8_t buf[HEA_MAX_FRAME];
     size_t n = make_inference(1, buf);
-    buf[2] = 3;
+    buf[2] = 4;
     uint16_t crc = hea_crc16(&buf[2], n - 4); /* re-sign so only the version is wrong */
     buf[n - 2] = (uint8_t)crc;
     buf[n - 1] = (uint8_t)(crc >> 8);
@@ -221,7 +221,7 @@ static void test_version_compatibility_and_age_saturation(void)
     struct hea_frame invalid = p.frame;
     invalid.version = 2u; /* Version/length must match; no silent fallback. */
     CHECK(hea_unpack_inference(&invalid, &decoded) == -1);
-    invalid.version = 3u;
+    invalid.version = 4u;
     CHECK(hea_unpack_inference(&invalid, &decoded) == -1);
     uint32_t age = 77u;
     CHECK(hea_age_at_send_us(100u, 99u, &age) == -1 && age == 77u);
@@ -239,15 +239,58 @@ static void test_version_compatibility_and_age_saturation(void)
     invalid = p.frame;
     invalid.version = 1u;
     CHECK(hea_unpack_inference(&invalid, &decoded) == -1);
-    /* All other payload layouts remain compatible with legacy version 1. */
-    struct hea_heartbeat hb = {1u}, hb2;
+    /* Legacy heartbeat still has its historical 8-byte payload. */
+    struct hea_heartbeat hb = {1u, 0u}, hb2;
     n = hea_encode(HEA_MSG_HEARTBEAT, 5u, payload, hea_pack_heartbeat(&hb, payload), frame, sizeof frame);
     frame[2] = 1u;
+    frame[6] = 8u;
+    n -= 8u;
     uint16_t crc = hea_crc16(&frame[2], n - 4u);
     frame[n - 2u] = (uint8_t)crc;
     frame[n - 1u] = (uint8_t)(crc >> 8);
     CHECK(feed_all(&p, frame, n, NULL) == 1);
     CHECK(hea_unpack_heartbeat(&p.frame, &hb2) == 0 && hb2.linux_send_ns == 1u);
+}
+
+static void test_session_versions_and_lengths(void)
+{
+    uint8_t payload[HEA_MAX_PAYLOAD], bytes[HEA_MAX_FRAME];
+    struct hea_heartbeat hb = {UINT64_MAX, UINT64_C(0x8877665544332211)}, decoded;
+    CHECK(hea_pack_heartbeat(&hb, payload) == 16u);
+    CHECK(payload[8] == 0x11u && payload[15] == 0x88u);
+    for (uint8_t version = 1u; version <= HEA_PROTO_VERSION; ++version) {
+        uint8_t len = version == HEA_PROTO_VERSION ? 16u : 8u;
+        size_t n = hea_encode(HEA_MSG_HEARTBEAT, 65535u, payload, len, bytes, sizeof bytes);
+        bytes[2] = version;
+        uint16_t crc = hea_crc16(&bytes[2], n - 4u);
+        bytes[n - 2u] = (uint8_t)crc;
+        bytes[n - 1u] = (uint8_t)(crc >> 8);
+        struct hea_parser parser;
+        hea_parser_init(&parser);
+        CHECK(feed_all(&parser, bytes, n, NULL) == 1);
+        memset(&decoded, 0xFF, sizeof decoded);
+        CHECK(hea_unpack_heartbeat(&parser.frame, &decoded) == 0);
+        CHECK(decoded.linux_send_ns == UINT64_MAX);
+        CHECK(decoded.session_id == (version == HEA_PROTO_VERSION ? hb.session_id : 0u));
+        /* Reject every wrong length, including cross-version extended payloads. */
+        for (uint8_t bad = 0u; bad <= HEA_MAX_PAYLOAD; ++bad) {
+            if (bad == len) continue;
+            parser.frame.len = bad;
+            CHECK(hea_unpack_heartbeat(&parser.frame, &decoded) == -1);
+        }
+        struct hea_inference result = {1u, 2u, 3u, 4u, 5u, 6u}, result2;
+        len = hea_pack_inference(&result, payload);
+        if (version == HEA_PROTO_VERSION_LEGACY) len = 22u;
+        n = hea_encode(HEA_MSG_INFERENCE, 0u, payload, len, bytes, sizeof bytes);
+        bytes[2] = version;
+        crc = hea_crc16(&bytes[2], n - 4u);
+        bytes[n - 2u] = (uint8_t)crc;
+        bytes[n - 1u] = (uint8_t)(crc >> 8);
+        CHECK(feed_all(&parser, bytes, n, NULL) == 1);
+        CHECK(hea_unpack_inference(&parser.frame, &result2) == 0);
+        CHECK(result2.input_seq == 3u && result2.age_at_send_us == (version == 1u ? 0u : 6u));
+        (void)hea_pack_heartbeat(&hb, payload);
+    }
 }
 
 static void test_random_noise_recovers(void)
@@ -298,6 +341,7 @@ int main(void)
     test_every_single_bit_flip_detected();
     test_false_sync_consumes_two_frames();
     test_version_compatibility_and_age_saturation();
+    test_session_versions_and_lengths();
     test_random_noise_recovers();
     if (failures) {
         fprintf(stderr, "FAILED: %d check(s)\n", failures);

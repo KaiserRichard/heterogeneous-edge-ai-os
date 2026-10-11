@@ -24,7 +24,8 @@ extern "C" {
 #define HEA_SOF0 0xA5u
 #define HEA_SOF1 0x5Au
 #define HEA_PROTO_VERSION_LEGACY 1u
-#define HEA_PROTO_VERSION 2u
+#define HEA_PROTO_VERSION_AGE 2u
+#define HEA_PROTO_VERSION 3u
 #define HEA_MAX_PAYLOAD 64u
 #define HEA_HEADER_LEN 7u /* SOF0 SOF1 ver type seq(2) len */
 #define HEA_CRC_LEN 2u
@@ -47,6 +48,7 @@ enum hea_msg_type {
  */
 struct hea_heartbeat {
     uint64_t linux_send_ns;
+    uint64_t session_id; /* Sender incarnation; present only in version 3. */
 };
 
 struct hea_inference {

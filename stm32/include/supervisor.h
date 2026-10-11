@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/* Step 1: MCU-local receipt silence, not source Age of Information. */
+/* Step 2: duration-based source-age estimate; all local ticks are microseconds. */
 typedef enum {
     SUPERVISOR_STATE_INIT = 0,
     SUPERVISOR_STATE_FRESH,
@@ -20,7 +20,10 @@ typedef enum {
     SUPERVISOR_REASON_RESULT_TIMEOUT,
     SUPERVISOR_REASON_REARM,
     SUPERVISOR_REASON_CLOCK_REGRESSION,
-    SUPERVISOR_REASON_INVALID_CONFIG
+    SUPERVISOR_REASON_SESSION_CHANGE,
+    SUPERVISOR_REASON_INVALID_CONFIG,
+    SUPERVISOR_REASON_SOURCE_AGE_HOLD,
+    SUPERVISOR_REASON_SOURCE_AGE_TIMEOUT
 } supervisor_reason_t;
 
 typedef enum {
@@ -42,6 +45,7 @@ typedef struct {
     uint64_t result_hold_ticks;
     uint64_t result_failsafe_ticks;
     uint64_t rearm_healthy_ticks;
+    uint32_t transit_bound_us; /* PROVISIONAL send-to-receipt allowance, not proven. */
 } supervisor_config_t;
 
 typedef struct {
@@ -50,6 +54,11 @@ typedef struct {
     uint16_t wire_seq; /* One shared per-Pi counter, across message types. */
     uint32_t input_seq; /* Used only for RESULT; independent input counter. */
     uint64_t received_at_ticks; /* Actual MCU receipt boundary, not queue dispatch. */
+    uint64_t generation; /* Capture at receipt/handoff; never restamp at dispatch. */
+    uint64_t session_id; /* HEARTBEAT only; independent of local generation. */
+    bool has_session_id; /* False for protocol v1/v2. */
+    uint64_t age_at_send_us; /* RESULT: reject values > UINT32_MAX. */
+    bool has_age_at_send; /* False only when source age is absent (legacy v1). */
 } supervisor_event_t;
 
 typedef struct {
@@ -61,15 +70,28 @@ typedef struct {
     uint64_t last_heartbeat_ticks;
     uint64_t last_result_ticks;
     uint64_t healthy_since_ticks;
+    uint64_t generation;
+    uint64_t rejected_generation_events; /* Saturating count of stale queue events. */
+    uint64_t session_id;
     uint16_t last_wire_seq;
     uint32_t last_input_seq;
     bool configured;
+    bool has_session_id;
     bool has_wire_seq;
     bool has_input_seq;
     bool has_heartbeat;
     bool has_result;
     bool healthy_interval;
+    uint32_t last_age_at_send_us;
+    uint64_t source_age_estimate_us; /* Saturates at UINT64_MAX; valid with has_result. */
+    bool receipt_silence_fallback; /* Last accepted RESULT has no source age. */
 } supervisor_t;
+
+/* Extend a raw uint32 microsecond timer from the previous extended sample.
+ * Initialize previous to the first raw sample. Sample strictly within 2^31 us;
+ * regression/ambiguous gaps and uint64 overflow return false without writing out.
+ * Capture extended receipt time before queueing; never extend old queued samples. */
+bool supervisor_extend_mcu_us(uint64_t previous, uint32_t raw, uint64_t *out);
 
 supervisor_seq_order_t supervisor_seq_compare16(uint16_t current, uint16_t last);
 supervisor_seq_order_t supervisor_seq_compare(uint32_t current, uint32_t last);
@@ -79,9 +101,10 @@ bool supervisor_init(supervisor_t *sv, const supervisor_config_t *config,
                      uint64_t now_ticks);
 
 /* Single-owner API. Call even without traffic. Expiry precedes event handling.
- * Times must be nondecreasing, extended MCU-local ticks in one unit; no wrap.
+ * Times must be nondecreasing, extended MCU-local microseconds; no wrap.
  * NONE/NULL means a timer evaluation. Invalid events never renew timers.
- * An event must carry receipt time <= now and within this init/rearm epoch. */
+ * An event must carry receipt time <= now, within this epoch, and the generation
+ * captured at receipt. Generation mismatch is rejected and counted. */
 supervisor_state_t supervisor_update(supervisor_t *sv,
                                      const supervisor_event_t *event,
                                      uint64_t now_ticks);
@@ -89,8 +112,9 @@ supervisor_state_t supervisor_update(supervisor_t *sv,
 /* Local explicit request, not a wire command. Only succeeds from FAILSAFE
  * after uninterrupted healthy observation; clears receipt/health history,
  * preserves sequence high-water marks, and returns to safe INIT.
- * Owner must atomically invalidate queued pre-rearm events: receipt ticks
- * equal to the new epoch cannot distinguish events within the same tick. */
+ * Increments generation, rejecting queued pre-rearm events even in the same tick.
+ * The owner must serialize generation capture with update/rearm. Generation must
+ * not wrap; reset the whole queue/core before UINT64_MAX is exhausted. */
 bool supervisor_rearm(supervisor_t *sv, uint64_t now_ticks);
 
 /* Only FRESH permits new simulated output; HOLD policy is a port decision.
