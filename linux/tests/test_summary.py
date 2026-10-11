@@ -48,6 +48,17 @@ class SummaryTests(unittest.TestCase):
         self.assertEqual(report["counts"]["rx_crc_errors"], 1)
         self.assertEqual(report["counts"]["source_ipc_dropped"], 1)
 
+    def test_real_uart_without_rx(self):
+        (self.run / "rx.csv").unlink()
+        (self.run / "config.json").write_text('{"serial":"/dev/ttyAMA0"}')
+        write_csv(self.run / "echo.csv", "accepted", [(1,), (0,)])
+        write_csv(self.run / "mcu_status.csv", "state", [(3,)])
+        report = summary.summarize(self.run)
+        self.assertEqual(report["counts"]["echo_accepted"], 1)
+        self.assertEqual(report["counts"]["mcu_status"], 1)
+        self.assertNotIn("send_to_rx_us", report["latency_us"])
+        self.assertIn("UNVERIFIED ON HARDWARE", report["evidence"])
+
     def test_empty_percentiles(self):
         self.assertIsNone(summary.distribution([])["p99"])
 

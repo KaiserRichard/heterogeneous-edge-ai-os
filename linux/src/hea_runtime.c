@@ -78,6 +78,9 @@ int hea_options_parse(int argc, char **argv, struct hea_options *o)
     static const struct option opts[] = {
         {"socket", required_argument, NULL, 's'}, {"output", required_argument, NULL, 'o'},
         {"serial", required_argument, NULL, 'd'}, {"csv", required_argument, NULL, 'l'},
+        {"echo-ms", required_argument, NULL, 1000},
+        {"status-csv", required_argument, NULL, 1001},
+        {"echo-csv", required_argument, NULL, 1002},
         {"serial-fd", required_argument, NULL, 'a'},
         {"socket-fd", required_argument, NULL, 'i'}, {"output-fd", required_argument, NULL, 'u'},
         {"period-ms", required_argument, NULL, 'p'}, {"heartbeat-ms", required_argument, NULL, 'h'},
@@ -88,11 +91,14 @@ int hea_options_parse(int argc, char **argv, struct hea_options *o)
         {NULL, 0, NULL, 0}
     };
     memset(o, 0, sizeof(*o)); o->period_ms = 100; o->heartbeat_ms = 20;
-    o->work_us = 20000; o->baud = 921600; o->cpu = -1; o->serial_fd = -1;
+    o->echo_ms = 1000; o->work_us = 20000; o->baud = 921600; o->cpu = -1; o->serial_fd = -1;
     o->socket_fd = -1; o->output_fd = -1;
     int ch;
     while ((ch = getopt_long(argc, argv, "", opts, NULL)) != -1) {
         switch (ch) {
+        case 1000: o->echo_ms = number(optarg, 3600000); break;
+        case 1001: o->status_csv = optarg; break;
+        case 1002: o->echo_csv = optarg; break;
         case 's': o->socket_path = optarg; break;
         case 'o': o->output_path = optarg; break;
         case 'd': o->serial_path = optarg; break;
@@ -117,7 +123,8 @@ int hea_options_parse(int argc, char **argv, struct hea_options *o)
             if (optind > 0 && !strcmp(argv[optind - 1], "--help")) {
                 puts("See linux/README.md. Options: --socket PATH --output PATH --serial PATH\n"
                      "--csv PATH --period-ms N --heartbeat-ms N --work-us N --durations PATH\n"
-                     "--count N --baud N --fifo-priority N --cpu N --policy fifo|latest");
+                     "--count N --baud N --fifo-priority N --cpu N --policy fifo|latest\n"
+                     "--echo-ms N (default 1000, 0 disables) --status-csv PATH --echo-csv PATH");
                 return 1;
             }
             return -1;

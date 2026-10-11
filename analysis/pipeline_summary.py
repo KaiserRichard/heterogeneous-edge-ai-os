@@ -68,6 +68,19 @@ def summarize(run):
     if state.startswith("INVALID"):
         return {"validity": state, "excluded": True}
     bridge = indexed(rows(run / "bridge.csv"), "bridge CSV")
+    config_path = run / "config.json"
+    config = json.loads(config_path.read_text()) if config_path.exists() else {}
+    if config.get("serial"):
+        echoes = rows(run / "echo.csv", required=False) or []
+        statuses = rows(run / "mcu_status.csv", required=False) or []
+        return {"evidence": "real UART; UNVERIFIED ON HARDWARE", "validity": state,
+                "excluded": False, "counts": {"bridge_sent": len(bridge),
+                "mcu_status": len(statuses), "echo_received": len(echoes),
+                "echo_accepted": sum(r["accepted"] == "1" for r in echoes)},
+                "latency_us": {"done_to_send_us": distribution([
+                    (int(r["t_send_ns"]) - int(r["t_done_ns"])) / 1000
+                    for r in bridge.values()])},
+                "aoi_scope": "MCU_STATUS does not identify inference reception; no cross-domain AoI inferred"}
     rx_records = rows(run / "rx.csv")
     rx = indexed([r for r in rx_records if r["type"] == "INFERENCE" and r["crc_ok"] == "1"], "rx CSV")
     source_records = rows(run / "source.csv", required=False)

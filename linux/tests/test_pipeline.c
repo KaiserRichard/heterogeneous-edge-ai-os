@@ -163,7 +163,7 @@ static void run_case(int full_pipeline)
     }
     char *bridge_args[] = {"build/san/hea_bridge", "--serial", tty,
         connected_ipc ? "--socket-fd" : "--socket", connected_ipc ? result_read : socket_path,
-        "--csv", bridge_csv, "--baud", "115200", "--heartbeat-ms", "5", "--policy", "fifo", NULL};
+        "--csv", bridge_csv, "--baud", "115200", "--heartbeat-ms", "5", "--policy", "fifo", "--echo-ms", "0", "--status-csv", "/dev/null", "--echo-csv", "/dev/null", NULL};
     pid_t bridge = launch(bridge_args, master, slave, 0); ready(connected_ipc ? bridge_csv : socket_path);
     if (!full_pipeline) {
         int sender = connected_ipc ? result_pair[0] : hea_socket_sender();
@@ -204,6 +204,69 @@ static void run_case(int full_pipeline)
     close(master); close(slave);
     if (connected_ipc) for (unsigned i = 0; i < 2u; ++i) { close(result_pair[i]); close(input_pair[i]); }
 }
+static void fake_mcu(void)
+{
+    int master, slave, pair[2]; char tty[128], fd[32];
+    assert(!openpty(&master, &slave, tty, NULL, NULL));
+    assert(!hea_serial_configure(slave, 115200));
+    assert(!socketpair(AF_UNIX, SOCK_DGRAM, 0, pair));
+    snprintf(fd, sizeof(fd), "%d", pair[1]);
+    char status[256], echo[256], tx[256];
+    path(status, sizeof(status), "status.csv"); path(echo, sizeof(echo), "echo.csv");
+    path(tx, sizeof(tx), "fake-tx.csv");
+    char *args[] = {"build/san/hea_bridge", "--serial", tty, "--socket-fd", fd,
+        "--csv", tx, "--status-csv", status, "--echo-csv", echo,
+        "--echo-ms", "20", "--baud", "115200", NULL};
+    pid_t bridge = launch(args, master, slave, 0); ready(status);
+    uint8_t payload[64], wire[HEA_MAX_FRAME];
+    struct hea_mcu_status_extended x = {{123, 3, 4, 5}, 6, 7, 8, 9, 10, 11};
+    uint8_t len = hea_pack_mcu_status(&x.base, payload);
+    size_t n = hea_encode(HEA_MSG_MCU_STATUS, 40, payload, len, wire, sizeof(wire));
+    wire[n-1] ^= 1; assert(write(master, wire, n) == (ssize_t)n);
+    wire[n-1] ^= 1; assert(write(master, wire, 3) == 3);
+    assert(write(master, wire+3, n-3) == (ssize_t)(n-3));
+    len = hea_pack_mcu_status_extended(&x, payload);
+    n = hea_encode(HEA_MSG_MCU_STATUS, 41, payload, len, wire, sizeof(wire));
+    assert(write(master, wire, n) == (ssize_t)n);
+    struct hea_parser parser; hea_parser_init(&parser);
+    unsigned replies = 0;
+    uint64_t start = hea_now(CLOCK_MONOTONIC);
+    uint64_t raw_start = hea_raw_now();
+    while (replies < 3 && hea_now(CLOCK_MONOTONIC)-start < UINT64_C(2000000000)) {
+        uint8_t bytes[256]; ssize_t nr = read(master, bytes, sizeof(bytes));
+        if (nr < 0) { assert(errno == EAGAIN || errno == EINTR); pause_ms(1); continue; }
+        for (ssize_t i = 0; i < nr; ++i) {
+            if (!hea_parser_feed(&parser, bytes[i]) || parser.frame.type != HEA_MSG_ECHO_REQ) continue;
+            struct hea_echo_req req; assert(!hea_unpack_echo_req(&parser.frame, &req));
+            uint32_t t2 = (uint32_t)((uint64_t)UINT32_MAX - 10000u + (hea_raw_now()-raw_start)/1000u);
+            struct hea_echo_resp resp = {req.linux_t1_ns, t2, t2};
+            len = hea_pack_echo_resp(&resp, payload);
+            n = hea_encode(HEA_MSG_ECHO_RESP, parser.frame.seq, payload, len, wire, sizeof(wire));
+            assert(write(master, wire, n) == (ssize_t)n); ++replies;
+        }
+    }
+    assert(replies == 3); pause_ms(10); finish(bridge, 1);
+    FILE *f = fopen(status, "r"); assert(f); char line[1024];
+    assert(fgets(line, sizeof(line), f)); assert(fgets(line, sizeof(line), f));
+    assert(strstr(line, ",123,3,4,5,0,,,,,,"));
+    assert(fgets(line, sizeof(line), f)); assert(strstr(line, ",123,3,4,5,1,6,7,8,9,10,11"));
+    assert(!fgets(line, sizeof(line), f)); fclose(f);
+    f = fopen(echo, "r"); assert(f); assert(fgets(line, sizeof(line), f));
+    unsigned count = 0;
+    while (fgets(line, sizeof(line), f)) {
+        unsigned commas = 0; for (char *c = line; *c; ++c) if (*c == ',') ++commas;
+        unsigned seq_read, accepted;
+        uint64_t t1, t4, t2ext, t3ext, reference, delay;
+        uint32_t t2raw, t3raw; double offset;
+        assert(sscanf(line, "%u,%" SCNu64 ",%" SCNu32 ",%" SCNu32 ",%" SCNu64 ",%" SCNu64 ",%" SCNu64 ",%u,%" SCNu64 ",%lf,%" SCNu64,
+            &seq_read, &t1, &t2raw, &t3raw, &t4, &t2ext, &t3ext, &accepted, &reference, &offset, &delay) == 11);
+        assert(commas == 19 && accepted == 1 && t4 >= t1 && t3ext >= t2ext);
+        assert(delay <= (t4/1000u-t1/1000u)-(t3ext-t2ext));
+        ++count;
+    }
+    assert(count == 3); fclose(f);
+    puts("PASS: fake MCU base/v3 diagnostics, CRC recovery, echo estimator and timer wrap over openpty"); close(master); close(slave); close(pair[0]); close(pair[1]);
+}
 int main(void)
 {
     assert(mkdtemp(directory)); assert(!atexit(cleanup));
@@ -216,7 +279,7 @@ int main(void)
         puts("SKIP: named Unix socket bind denied by sandbox; exercising the same datagram ABI via socketpair");
     } else unlink(a.sun_path);
     close(probe);
-    run_case(0); run_case(1);
+    run_case(0); run_case(1); fake_mcu();
 #ifdef __linux__
     assert(!hea_sleep_until(hea_now(CLOCK_MONOTONIC) + 1000000u));
     puts("PASS: Linux absolute CLOCK_MONOTONIC sleep and RAW timestamps exercised");

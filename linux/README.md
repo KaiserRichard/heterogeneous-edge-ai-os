@@ -206,3 +206,5 @@ KNOWN: host checks are software verification, with a macOS clock fallback.
 UNKNOWN: Ubuntu aarch64 execution, Linux real-time permission/affinity behavior,
 the Pi runner, physical UART throughput and STM32 timing until run on those
 targets. No Pi benchmark numbers are supplied by this implementation ticket.
+
+Real UART and E4 commands: see [scripts/pi/UART.md](../scripts/pi/UART.md). Physical UART, GPIO pairing and faults are UNVERIFIED ON HARDWARE. Bridge options `--echo-ms`, `--status-csv`, `--echo-csv` control periodic sync and receive logs.
