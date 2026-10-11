@@ -1,0 +1,15 @@
+stress-ng: info:  [43447] setting to a 2 mins, 10 secs run per stressor
+stress-ng: info:  [43447] dispatching hogs: 1 stream
+stress-ng: info:  [43447] note: /proc/sys/kernel/sched_autogroup_enabled is 1 and this can impact scheduling throughput for processes not attached to a tty. Setting this to 0 may improve performance metrics
+stress-ng: info:  [43457] stream: stressor loosely based on a variant of the STREAM benchmark code
+stress-ng: info:  [43457] stream: do NOT submit any of these results to the STREAM benchmark results
+stress-ng: info:  [43457] stream: Using cache size of 2048K
+stress-ng: info:  [43457] stream: memory rate: 4850.07 MB read/sec, 3233.38 MB write/sec, 423.81 double precision Mflop/sec (instance 0)
+stress-ng: metrc: [43447] stressor       bogo ops real time  usr time  sys time   bogo ops/s     bogo ops/s
+stress-ng: metrc: [43447]                           (secs)    (secs)    (secs)   (real time) (usr+sys time)
+stress-ng: metrc: [43447] stream            13066    130.01    129.79      0.01       100.50         100.66
+stress-ng: info:  [43447] skipped: 0
+stress-ng: info:  [43447] passed: 1: stream (1)
+stress-ng: info:  [43447] failed: 0
+stress-ng: info:  [43447] metrics untrustworthy: 0
+stress-ng: info:  [43447] successful run completed in 2 mins, 10.01 secs

@@ -1,0 +1,15 @@
+C1_cache2M_c2:2
+C1_cache2M_c2:3
+B1_stream_c2:2
+CPU_c23:2
+B2_memrate_c23:3
+B1_stream_c2:3
+B0_idle:2
+B1_stream_c2:1
+B2_memrate_c23:2
+C1_cache2M_c2:1
+B2_memrate_c23:1
+CPU_c23:3
+B0_idle:1
+CPU_c23:1
+B0_idle:3

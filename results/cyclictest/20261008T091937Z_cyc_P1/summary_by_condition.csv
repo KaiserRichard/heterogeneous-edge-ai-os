@@ -1,0 +1,6 @@
+condition,runs,invalid_runs,p50_us,p95_us,p99_us,p99_9_us,max_us,kernel,governor,max_temp_c,throttled
+P1_B0_idle,3,0,3,3,9,15,92,6.8.0-1064-raspi,performance,55.65,0x0
+P1_B1_stream_c2,3,0,5,18,39,51,211,6.8.0-1064-raspi,performance,61.15,0x0
+P1_B2_memrate_c23,3,0,5,113,239,588,1094,6.8.0-1064-raspi,performance,61.7,0x0
+P1_C1_cache2M_c2,3,0,3,19,35,52,233,6.8.0-1064-raspi,performance,63.9,0x0
+P1_CPU_c23,3,0,3,4,11,17,73,6.8.0-1064-raspi,performance,61.7,0x0
