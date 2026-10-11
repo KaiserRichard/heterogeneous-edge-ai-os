@@ -20,6 +20,7 @@ run=""
 source_options=()
 infer_options=()
 bridge_options=()
+lock_memory=0
 original_args=("$@")
 usage() {
   cat <<'EOF'
@@ -29,6 +30,7 @@ Usage: scripts/pi/run_pipeline.sh [--duration SECONDS] [--policy fifo|latest]
   [--serial DEVICE] [--sync-gpio N] [--echo-ms N] [--baud N] [--run-dir PATH] [--drain-seconds N]
   [--source-priority N] [--source-cpu N] [--infer-priority N] [--infer-cpu N]
   [--bridge-priority N] [--bridge-cpu N]
+  [--mlock] (Linux C source/bridge and stub inference; fail if locking fails)
 Defaults: stub stage, 1 ONNX thread, 10 s, FIFO, source 100 ms, heartbeat 20 ms, work 20000 CPU us, 921600 baud.
 PYTHON selects the ONNX interpreter (default python3); ONNX requires --model PATH.
 Set HEA_COOLER to record the cooler description. Requires Linux, make, python3; PTY mode also requires socat.
@@ -39,6 +41,7 @@ drain_seconds=1
 while (($#)); do
   case "$1" in
     --help) usage; exit 0 ;;
+    --mlock) lock_memory=1; source_options+=(--mlock); bridge_options+=(--mlock); shift ;;
     --serial|--sync-gpio|--echo-ms|--stage|--model|--threads|--duration|--policy|--period-ms|--heartbeat-ms|--work-us|--durations|--baud|--run-dir|--drain-seconds|--source-priority|--source-cpu|--infer-priority|--infer-cpu|--bridge-priority|--bridge-cpu)
       (($# >= 2)) || { echo "missing value for $1" >&2; exit 2; }
       key="$1"; value="$2"; shift 2
@@ -152,6 +155,7 @@ config = dict(evidence=("real UART: UNVERIFIED ON HARDWARE" if serial else "soft
 (Path(run) / "config.json").write_text(json.dumps(config, indent=2) + "\n")
 PY
 if [[ "$stage" == stub ]]; then
+  if ((lock_memory)); then infer_options+=(--mlock); fi
   if [[ -n "$durations" ]]; then
     cp "$durations" "$run/durations.txt"
     infer_options+=(--durations "$run/durations.txt")
@@ -200,15 +204,18 @@ if [[ "$stage" == stub ]]; then
   launch hea_infer_stub --socket "$ipc_dir/source.sock" --output "$ipc_dir/bridge.sock" --csv "$run/infer.csv" "${infer_options[@]}" > "$run/infer.stdout.log" 2> "$run/infer.stderr.log"
   infer_pid=$launched_pid
 else
-  onnx_command=("$infer_python" "$repo/linux/inference/infer_server.py" --model "$model" --threads "$threads" --socket "$ipc_dir/source.sock" --output "$ipc_dir/bridge.sock" "${infer_options[@]}")
+  onnx_command=("$infer_python" "$repo/linux/inference/infer_server.py" --model "$model" --threads "$threads" --socket "$ipc_dir/source.sock" --output "$ipc_dir/bridge.sock" --csv "$run/infer.csv" "${infer_options[@]}")
   printf '%q ' "${onnx_command[@]}" >> "$run/process_commands.txt"
   printf '\n' >> "$run/process_commands.txt"
   "${onnx_command[@]}" > "$run/infer.stdout.log" 2> "$run/infer.stderr.log" &
   infer_pid=$!
 fi
+printf '%s\n' "$infer_pid" > "$run/infer.pid"
 wait_ready "$ipc_dir/source.sock" "$infer_pid" socket
 launch hea_source --output "$ipc_dir/source.sock" --period-ms "$period_ms" --csv "$run/source.csv" "${source_options[@]}" > "$run/source.stdout.log" 2> "$run/source.stderr.log"
 source_pid=$launched_pid
+printf '%s\n' "$source_pid" > "$run/source.pid"
+python3 -c 'import time; print(time.clock_gettime_ns(time.CLOCK_MONOTONIC_RAW))' > "$run/window_start_ns"
 sleep "$duration" & timer_pid=$!
 while kill -0 "$timer_pid" 2>/dev/null; do
   for pid in "$source_pid" "$infer_pid" "$bridge_pid" "$rx_pid" "$socat_pid" "$gpio_pid"; do
@@ -218,6 +225,7 @@ while kill -0 "$timer_pid" 2>/dev/null; do
   sleep 0.1
 done
 wait "$timer_pid"; timer_pid=""
+python3 -c 'import time; print(time.clock_gettime_ns(time.CLOCK_MONOTONIC_RAW))' > "$run/window_end_ns"
 stop_pid "$source_pid"; source_pid=""
 sleep "$drain_seconds"
 stop_pid "$infer_pid"; infer_pid=""

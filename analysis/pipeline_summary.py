@@ -63,8 +63,8 @@ def validity(run):
     return "OK"
 
 
-def summarize(run):
-    state = validity(run)
+def summarize(run, state=None):
+    state = validity(run) if state is None else state
     if state.startswith("INVALID"):
         return {"validity": state, "excluded": True}
     bridge = indexed(rows(run / "bridge.csv"), "bridge CSV")

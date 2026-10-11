@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Sequential Unix datagram inference stage with fixed deterministic image input."""
 import argparse
+import csv
+import errno
 import os
 import signal
 import socket
@@ -11,7 +13,7 @@ from bench_common import SOURCE_RECORD, clock, pack_result, parse_cpu, pin_cpu, 
 from model_runtime import Model, add_runtime_args, classify, load_image, preprocess
 
 
-def serve(model, np, image, source_path, bridge_path, now, max_frames=None):
+def serve(model, np, image, source_path, bridge_path, now, max_frames=None, samples=None):
     """Bind without deleting existing endpoints; unlink only our own bound socket."""
     source_path = Path(source_path)
     handled = 0
@@ -32,9 +34,17 @@ def serve(model, np, image, source_path, bridge_path, now, max_frames=None):
                 t_done_ns = now()  # Completion includes preprocessing + postprocessing.
                 if t_done_ns < t_input_ns:
                     raise ValueError('input timestamp is ahead of completion; check clock domains')
-                sender.sendto(pack_result(frame_id, t_input_ns, t_done_ns,
-                                          class_id % 256, int(confidence * 100 + 0.5)),
-                              str(bridge_path))
+                status = 'sent'
+                try:
+                    sender.sendto(pack_result(frame_id, t_input_ns, t_done_ns,
+                                              class_id % 256, int(confidence * 100 + 0.5)),
+                                  socket.MSG_DONTWAIT, str(bridge_path))
+                except OSError as exc:
+                    if exc.errno not in (errno.EAGAIN, errno.EWOULDBLOCK, errno.ENOBUFS):
+                        raise
+                    status = 'dropped'
+                if samples is not None:
+                    samples.writerow((frame_id, t_input_ns, t_done_ns, status))
                 handled += 1
         finally:
             source_path.unlink()
@@ -47,6 +57,7 @@ def main(argv=None):
     parser.add_argument('--socket', '--source-socket', dest='source_socket', required=True)
     parser.add_argument('--output', '--bridge-socket', dest='bridge_socket', required=True)
     parser.add_argument('--fifo-priority', type=int, choices=range(100), default=0)
+    parser.add_argument('--csv', help='log every completion, including IPC drops')
     parser.add_argument('--max-frames', type=int, help='exit after N valid frames; default unlimited')
     args = parser.parse_args(argv)
     if args.seed < 0 or (args.max_frames is not None and args.max_frames < 1):
@@ -71,7 +82,14 @@ def main(argv=None):
 
     signal.signal(signal.SIGTERM, stop)
     try:
-        serve(model, np, image, args.source_socket, args.bridge_socket, now, args.max_frames)
+        if args.csv:
+            with open(args.csv, 'w', newline='') as stream:
+                samples = csv.writer(stream)
+                samples.writerow(('frame_id', 't_input_ns', 't_done_ns', 'status'))
+                serve(model, np, image, args.source_socket, args.bridge_socket, now,
+                      args.max_frames, samples)
+        else:
+            serve(model, np, image, args.source_socket, args.bridge_socket, now, args.max_frames)
     except KeyboardInterrupt:
         pass
 

@@ -136,10 +136,30 @@ class ServerMockTests(unittest.TestCase):
                 patch.object(Path, 'unlink') as unlink, \
                 contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(infer_server.serve(model, None, None, 'source', 'bridge', lambda: 200, 1), 1)
-        data, target = sender.sendto.call_args.args
+        data, flags, target = sender.sendto.call_args.args
+        self.assertEqual(flags, socket.MSG_DONTWAIT)
         self.assertEqual(RESULT_RECORD.unpack(data), (99, 100, 200, 231, 26))
         self.assertEqual(target, 'bridge')
         unlink.assert_called_once()
+
+    def test_completion_csv_includes_nonblocking_ipc_drop(self):
+        import csv
+        from unittest.mock import MagicMock
+        receiver, sender = MagicMock(), MagicMock()
+        receiver.__enter__.return_value = receiver
+        sender.__enter__.return_value = sender
+        receiver.recv.return_value = SOURCE_RECORD.pack(99, 100)
+        sender.sendto.side_effect = BlockingIOError(errno.EAGAIN, 'full queue')
+        model = SimpleNamespace(run=lambda tensor: 'logits')
+        output = io.StringIO()
+        with patch.object(infer_server.socket, 'socket', side_effect=[receiver, sender]), \
+                patch.object(infer_server, 'preprocess', return_value='tensor'), \
+                patch.object(infer_server, 'classify', return_value=(1, 0.5)), \
+                patch.object(Path, 'unlink'):
+            self.assertEqual(infer_server.serve(model, None, None, 's', 'b', lambda: 200,
+                                               1, csv.writer(output)), 1)
+        self.assertEqual(list(csv.reader(io.StringIO(output.getvalue()))),
+                         [['99', '100', '200', 'dropped']])
 
     def test_c_pipeline_options(self):
         with patch.dict(sys.modules, {'numpy': SimpleNamespace(),
