@@ -70,7 +70,7 @@ failed=0
 while IFS=: read -r condition repetition; do
   d="$out/${condition}_r${repetition}"
   mkdir "$d"
-  cmd=(sudo -n cyclictest --policy=other -p 0 -m -t1 -a 0 -i 1000 -D "${secs}s" -h 20000 -q)
+  cmd=(sudo -n cyclictest --policy=other -m -t1 -a 0 -i 1000 -D "${secs}s" -h 20000 -q)
   if [[ $profile == P1 ]]; then
     cmd=(sudo -n cyclictest --policy=fifo -p 50 -m -t1 -a 0 -i 1000 -D "${secs}s" -h 20000 -q)
   fi
@@ -92,6 +92,8 @@ while IFS=: read -r condition repetition; do
     "${stress[@]}" > "$d/stress.log" 2>&1 & sp=$!
     sleep 5
   fi
+  # Evidence that the measured thread really runs in the intended class (TS vs FF).
+  ( sleep 3; ps -L -o tid=,cls=,rtprio=,psr=,comm= -C cyclictest ) > "$d/sched_check.txt" 2>&1 &
   rc=0
   "${cmd[@]}" > "$d/cyclictest_hist.txt" 2> "$d/cyclictest.err" || rc=$?
   echo "$rc" > "$d/exit_code"

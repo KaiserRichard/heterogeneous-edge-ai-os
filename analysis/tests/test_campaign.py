@@ -108,7 +108,7 @@ class CampaignTests(unittest.TestCase):
                     self.assertEqual(before["cooler"], "synthetic cooler")
                     self.assertEqual(before["git_commit"], "synthetic_commit")
                     command = (run / "cyclictest_cmd.txt").read_text()
-                    self.assertIn("sudo -n cyclictest --policy=other -p 0" if profile == "P0" else "sudo -n cyclictest --policy=fifo -p 50", command)
+                    self.assertIn("sudo -n cyclictest --policy=other -m" if profile == "P0" else "sudo -n cyclictest --policy=fifo -p 50", command)
                     self.assertIn("-m -t1 -a 0", command)
                     self.assertIn("-D 1s", command)
                     self.assertIn("SYNTHETIC TEST DATA", (run / "cyclictest_hist.txt").read_text())
