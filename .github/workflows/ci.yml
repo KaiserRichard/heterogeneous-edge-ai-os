@@ -16,6 +16,8 @@ jobs:
         run: make -C protocol test
       - name: Supervisor receipt-silence tests (gcc, ASan/UBSan)
         run: make -C stm32 test
+      - name: Linux pipeline build and tests (gcc, ASan/UBSan, PTY)
+        run: make -C linux all test
       - name: Shell script syntax
         run: for f in scripts/pi/*.sh; do bash -n "$f"; done
   mcu-builds:
