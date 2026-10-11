@@ -1,0 +1,17 @@
+# SYNTHETIC TEST DATA: not a Pi measurement.
+# /dev/cpu_dma_latency set to 0us
+T: 0 (12345) P: 0 I:1000 C:1000 Min:1 Act:2 Avg:1 Max:5
+# Histogram
+000000 000000
+000001 000500
+000002 000450
+000003 000040
+000004 000009
+000005 000001
+# Total: 000001000
+# Min Latencies: 00001
+# Avg Latencies: 00001
+# Max Latencies: 00005
+# Histogram Overflows: 00000
+# Histogram Overflow at cycle number:
+# Thread 0:
