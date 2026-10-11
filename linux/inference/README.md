@@ -127,7 +127,7 @@ Start the bridge receiver first, then:
 ```sh
 python linux/inference/infer_server.py \
     --model offline-bundle/mobilenetv2-12.onnx --threads 2 --cpu 0,1 \
-    --source-socket /tmp/hea-infer.sock --bridge-socket /tmp/hea-bridge.sock
+    --socket /tmp/hea-infer.sock --output /tmp/hea-bridge.sock
 ```
 
 One blocking Unix datagram receiver processes one input at a time. No application
@@ -137,20 +137,26 @@ and timestamps only; this workload runs the same deterministic image per frame.
 The first pipeline frame therefore includes first-run effects. `--max-frames N`
 allows a finite integration run; default is unlimited.
 
-KNOWN: `linux/include/hea_ipc.h` is absent on this branch. The requested fallback
-contract is therefore defined here and in `bench_common.py`, with little-endian
-fields, no native padding:
+The source of truth is `linux/include/hea_ipc.h` and the pack/unpack functions
+in `linux/src/hea_ipc.c`: explicit little-endian fields with no padding.
 
 | Datagram | Python struct | Size | Fields in order |
 |---|---|---|---|
-| source → inference | `<QQ` | 16 bytes | frame_id u64, t_input_ns u64 |
-| inference → bridge | `<QQQIf` | 32 bytes | frame_id u64, t_input_ns u64, t_done_ns u64, class_id u32, confidence IEEE-754 f32 |
+| source → inference | `<IQ` | 12 bytes | frame_id u32, t_input_ns u64 |
+| inference → bridge | `<IQQBB` | 22 bytes | frame_id u32, t_input_ns u64, t_done_ns u64, class_id u8, confidence u8 |
+
+`--socket` binds the destination passed to C `hea_source --output`.
+`--output` sends results to the path bound by C `hea_bridge --socket`.
+The old names `--source-socket` and `--bridge-socket` remain aliases.
+`--cpu` and `--fifo-priority 0..99` apply before ONNX workers are created;
+nonzero priority requires Linux and scheduling permissions, with failures visible.
 
 `t_input_ns` is copied unchanged. Source, inference, and bridge must use the same
 Pi `CLOCK_MONOTONIC_RAW` clock; the Mac fallback is for software verification only.
 `t_done_ns` is sampled after preprocessing, inference and stable-softmax
-postprocessing, before packing/sending. `class_id` is the zero-based ImageNet
-argmax (0–999); confidence is softmax probability (0–1) for the zoo logits.
+postprocessing, before packing/sending. The zero-based ImageNet argmax (0–999)
+is stored as `class_id % 256`: this known limitation aliases distinct classes.
+Softmax confidence is rounded to the nearest integer percentage (half up), 0..100.
 Malformed datagram lengths are reported/dropped, including oversized datagrams;
 future input timestamps are rejected. Missing bridge, inference errors or send
 errors fail visibly rather than silently discarding valid results. SIGINT/SIGTERM
@@ -159,12 +165,19 @@ startup. After SIGKILL, manually remove a stale socket only after confirming its
 owner is gone. Socket queues may block/drop under load; this is not a lossless IPC
 or authenticated input contract.
 
-This layout **must be reconciled with the C pipeline** when its IPC header is
-added. It is distinct from `protocol/PROTOCOL.md` UART framing: the bridge must
-explicitly map u64 frame IDs to the protocol's u32 input sequence, map class IDs
-(the UART u8 cannot represent every ImageNet class), quantize confidence to a
-percentage, and calculate age-at-send on the same clock. Those mappings require
-an explicit pipeline decision; these datagrams must not be sent directly to UART.
+The C bridge maps these records to `protocol/PROTOCOL.md` UART framing;
+IPC datagrams must not be sent directly to UART. Run the full software pipeline
+on the Pi with an existing ONNX environment:
+
+```sh
+PYTHON=.venv/bin/python scripts/pi/run_pipeline.sh --stage onnx \
+    --model offline-bundle/mobilenetv2-12.onnx --threads 2
+```
+
+The runner defaults to `--stage stub`. ONNX mode uses the same socket paths,
+startup/liveness checks and shutdown sequence. Stub workload options affect only
+stub mode. ONNX emits no `infer.csv`; analysis uses bridge timestamps, so results
+lost before bridge dispatch are excluded from inference latency samples.
 
 ## Local verification and evidence
 
@@ -181,11 +194,12 @@ bundle hashes/target selection, sweep metadata/throttle flags, and stressor clea
 Script tests use fake downloads and fake inference, never performance samples.
 Linux affinity tests skip on macOS. Real socket tests also skip if the sandbox
 denies Unix socket binding; mock IPC tests still run. Optional NumPy numerical
-tests skip when NumPy is absent. No C implementation is introduced, so C99
-compiler/sanitizer checks are not applicable to this ticket.
+tests skip when NumPy is absent. The cross-language test compiles `linux/tests/ipc_vectors.c` with the existing
+C compiler and compares Python records against production C packer output,
+without importing ONNX Runtime.
 
 UNKNOWN until target verification: real-model execution, full offline wheel
 resolution/download, Pi latency distributions, thermal behavior under stress,
-and interoperability with the future C pipeline. Fake-model tests establish only
+and real-model interoperability with the C pipeline on the Pi. Fake-model tests establish only
 software behavior, not real inference performance. This ticket does not complete
 the source/bridge/logger or item 2.5 experiments and supplies no measurement data.

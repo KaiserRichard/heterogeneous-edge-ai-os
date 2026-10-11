@@ -11,7 +11,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from bench_common import (RESULT_RECORD, SOURCE_RECORD, clock, pack_result,
                           parse_cpu, percentile, pin_cpu, sha256, summarize,
-                          unpack_source, write_csv)
+                          unpack_source, unpack_result, write_csv)
 
 
 class PercentileTests(unittest.TestCase):
@@ -67,34 +67,42 @@ class CsvTests(unittest.TestCase):
 
 class RecordTests(unittest.TestCase):
     def test_source_golden_bytes(self):
-        data = bytes.fromhex('08070605040302011817161514131211')
-        self.assertEqual(SOURCE_RECORD.size, 16)
-        self.assertEqual(unpack_source(data), (0x0102030405060708, 0x1112131415161718))
+        data = bytes.fromhex('040302011817161514131211')
+        self.assertEqual(SOURCE_RECORD.size, 12)
+        self.assertEqual(unpack_source(data), (0x01020304, 0x1112131415161718))
         self.assertEqual(SOURCE_RECORD.pack(*unpack_source(data)), data)
 
     def test_result_golden_bytes(self):
-        data = pack_result(1, 2, 3, 0x01020304, 0.5)
-        self.assertEqual(RESULT_RECORD.size, 32)
-        self.assertEqual(data.hex(), '010000000000000002000000000000000300000000000000040302010000003f')
-        self.assertEqual(RESULT_RECORD.unpack(data), (1, 2, 3, 0x01020304, 0.5))
+        data = pack_result(1, 2, 3, 255, 50)
+        self.assertEqual(RESULT_RECORD.size, 22)
+        self.assertEqual(data.hex(), '0100000002000000000000000300000000000000ff32')
+        self.assertEqual(unpack_result(data), (1, 2, 3, 255, 50))
 
-    def test_u64_and_u32_boundaries(self):
-        value = (1 << 64) - 1
-        self.assertEqual(unpack_source(SOURCE_RECORD.pack(value, value)), (value, value))
-        self.assertEqual(RESULT_RECORD.unpack(pack_result(value, value, value, (1 << 32) - 1, 1)),
-                         (value, value, value, (1 << 32) - 1, 1))
-        with self.assertRaises(struct.error):
-            pack_result(1 << 64, 0, 0, 0, 0)
-        with self.assertRaises(struct.error):
-            pack_result(0, 0, 0, -1, 0)
+    def test_boundaries(self):
+        frame, stamp = (1 << 32) - 1, (1 << 64) - 1
+        self.assertEqual(unpack_source(SOURCE_RECORD.pack(frame, stamp)), (frame, stamp))
+        self.assertEqual(unpack_result(pack_result(frame, stamp, stamp, 255, 100)),
+                         (frame, stamp, stamp, 255, 100))
+        for args in ((1 << 32, 0, 0, 0, 0), (0, 0, 0, 256, 0)):
+            with self.assertRaises(struct.error):
+                pack_result(*args)
 
-    def test_bad_sizes_and_confidence(self):
-        for length in (0, 15, 17, 100):
-            with self.subTest(length=length), self.assertRaises(ValueError):
+    def test_bad_sizes_and_values(self):
+        for length in (0, 11, 13, 100):
+            with self.assertRaises(ValueError):
                 unpack_source(bytes(length))
-        for confidence in (-0.1, 1.1, math.nan, math.inf):
-            with self.subTest(confidence=confidence), self.assertRaises(ValueError):
+        for length in (0, 21, 23, 100):
+            with self.assertRaises(ValueError):
+                unpack_result(bytes(length))
+        for confidence in (-1, 101, 0.5, math.nan, math.inf):
+            with self.assertRaises(ValueError):
                 pack_result(0, 0, 0, 0, confidence)
+        for data in (RESULT_RECORD.pack(0, 2, 1, 0, 0),
+                     RESULT_RECORD.pack(0, 0, 0, 0, 101)):
+            with self.assertRaises(ValueError):
+                unpack_result(data)
+        with self.assertRaises(ValueError):
+            pack_result(0, 2, 1, 0, 0)
 
 
 class PlatformTests(unittest.TestCase):

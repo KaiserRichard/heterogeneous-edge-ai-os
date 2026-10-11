@@ -107,7 +107,7 @@ class ServerTests(unittest.TestCase):
                 thread.join(2)
                 self.assertFalse(thread.is_alive())
                 self.assertEqual(errors, [])
-                self.assertEqual(RESULT_RECORD.unpack(record), (42, 100, 200, 999, 0.5))
+                self.assertEqual(RESULT_RECORD.unpack(record), (42, 100, 200, 231, 50))
                 self.assertEqual(calls, ['tensor'])
                 self.assertEqual(stderr.getvalue().count('dropping malformed'), 2)
                 self.assertFalse(source.exists())
@@ -132,14 +132,30 @@ class ServerMockTests(unittest.TestCase):
         model = SimpleNamespace(run=lambda tensor: 'logits')
         with patch.object(infer_server.socket, 'socket', side_effect=[receiver, sender]), \
                 patch.object(infer_server, 'preprocess', return_value='tensor'), \
-                patch.object(infer_server, 'classify', return_value=(12, 0.25)), \
+                patch.object(infer_server, 'classify', return_value=(999, 0.255)), \
                 patch.object(Path, 'unlink') as unlink, \
                 contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(infer_server.serve(model, None, None, 'source', 'bridge', lambda: 200, 1), 1)
         data, target = sender.sendto.call_args.args
-        self.assertEqual(RESULT_RECORD.unpack(data), (99, 100, 200, 12, 0.25))
+        self.assertEqual(RESULT_RECORD.unpack(data), (99, 100, 200, 231, 26))
         self.assertEqual(target, 'bridge')
         unlink.assert_called_once()
+
+    def test_c_pipeline_options(self):
+        with patch.dict(sys.modules, {'numpy': SimpleNamespace(),
+                                     'onnxruntime': SimpleNamespace()}), \
+                patch.object(infer_server, 'pin_cpu') as affinity, \
+                patch.object(infer_server, 'Model') as model, \
+                patch.object(infer_server, 'load_image'), \
+                patch.object(infer_server, 'clock', return_value=(lambda: 1, 'synthetic')), \
+                patch.object(infer_server, 'serve') as serve, \
+                patch.object(infer_server.signal, 'signal'), \
+                contextlib.redirect_stderr(io.StringIO()):
+            infer_server.main(['--socket', 'source', '--output', 'bridge',
+                               '--model', 'fixture.onnx', '--threads', '2', '--cpu', '1'])
+        affinity.assert_called_once_with({1})
+        self.assertEqual(model.call_args.args[1:], ('fixture.onnx', 2))
+        self.assertEqual(serve.call_args.args[3:5], ('source', 'bridge'))
 
     def test_cleanup_on_send_failure(self):
         from unittest.mock import MagicMock

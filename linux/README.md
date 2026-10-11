@@ -1,6 +1,6 @@
 # Pi-only pipeline
 
-DESIGN: four independent C99 processes make scheduling, IPC residence and serial
+DESIGN: four independent processes (C99, with an optional Python ONNX stage) make scheduling, IPC residence and serial
 dispatch measurable. Source → inference and inference → bridge use Unix datagrams;
 the bridge owns one event loop and one wire sequence shared by heartbeat and
 inference. FIFO (default) preserves order in a bounded 256-record queue and drops
@@ -9,7 +9,7 @@ Serial writes are nonblocking and partial frames finish before another frame sta
 heartbeats take priority between frames. This implements the queue comparison in
 SYSTEM_GUIDE Part 2a without changing the shared protocol or adding threads.
 
-## Socket ABI (for the separate Python ONNX ticket)
+## Socket ABI
 
 The receiver binds `--socket PATH`; its producer sends one record per AF_UNIX,
 SOCK_DGRAM datagram to that path. Paths must be unused and fit `sockaddr_un.sun_path`.
@@ -22,6 +22,9 @@ All fields are little-endian, without padding:
 | Result | `<IQQBB` | frame_id u32, t_input_ns u64, t_done_ns u64, class_id u8, confidence u8 | 22 |
 
 `confidence` is an integer percentage 0..100, matching `hea_proto`.
+The ONNX stage rounds softmax confidence to the nearest percentage (half up).
+Known limitation: ImageNet has 1000 classes but the ABI class field is u8;
+ONNX stores `class_id % 256`, so distinct ImageNet classes can share a wire ID.
 Frame IDs start at zero, increase per generated input and must not repeat within
 one run. Datagrams of the wrong size, confidence >100, or done before input are
 rejected. The bridge also rejects done/input times in the future at dispatch.
@@ -46,6 +49,7 @@ deadline; Linux sleep/scheduler/affinity checks are skipped on macOS.
 ```sh
 make -C linux all
 make -C linux test
+python3 -m unittest discover -s linux/inference/tests -v
 ```
 
 Native Ubuntu 24.04 aarch64/Pi builds use the system C compiler and libc; tests
@@ -130,8 +134,22 @@ scripts/pi/run_pipeline.sh --duration 10 --policy latest --work-us 50000 \
   --source-cpu 0 --infer-cpu 1 --bridge-cpu 2 --bridge-priority 50
 ```
 
-The second example requires permission to use SCHED_FIFO. The script builds the
-programs, creates socat's raw PTY pair, starts rx → bridge → stub → source,
+For real inference, use an existing Python environment with the harness's
+NumPy/ONNX Runtime dependencies and a local model:
+
+```sh
+PYTHON=.venv/bin/python scripts/pi/run_pipeline.sh --stage onnx \
+  --model offline-bundle/mobilenetv2-12.onnx --threads 2
+```
+
+`--stage stub` is the default; `--stage onnx` runs `linux/inference/infer_server.py`
+with `--model PATH` (required) and `--threads N` (1..4, default 1).
+`PYTHON` selects the ONNX interpreter, default `python3`. Inference CPU and
+priority options also apply to ONNX. `--work-us`/`--durations` affect only stub mode.
+See `inference/README.md` for input and model details.
+
+The second stub example requires permission to use SCHED_FIFO. The script builds the
+programs, creates socat's raw PTY pair, starts rx → bridge → selected inference stage → source,
 checks startup/liveness, runs for the requested source duration, and stops them
 in producer-to-consumer order. Default inference drain is one second
 (`--drain-seconds N`), followed by 200 ms each for bridge and rx. Drain time
@@ -140,7 +158,9 @@ discarded, not assumed delivered. Each process is given five seconds to stop
 before SIGKILL. Cleanup also runs on startup failure, SIGINT and SIGTERM.
 
 Default output: `results/YYYY-MM-DD/pipeline-HHMMSS-PID/`; `--run-dir PATH` selects
-a new directory (existing directories are refused). It contains all four CSVs,
+a new directory (existing directories are refused). Stub mode contains all four CSVs; ONNX mode omits `infer.csv` and uses
+bridge records for inference latency, excluding results lost before dispatch.
+It contains
 stderr counters, socat logs, exact script/process commands, before/after
 `collect_metadata.sh` snapshots, `config.json`, copied durations if used,
 `summary.json`, `validity`, `exit_code`, and DONE or FAILED. Set `HEA_COOLER` to
@@ -178,6 +198,9 @@ shutdown discards and missing deliveries separately; these overlap and must not
 be added together. Absent upstream CSVs/counters yield null, not invented counts.
 Nonzero before/after throttling flags exclude the run from latency summaries;
 unavailable metadata is labeled UNKNOWN. Empty samples produce null percentiles.
+
+Python ABI tests compile a tiny helper against the C pack functions and compare
+input/result bytes; they require only Python standard library and a C compiler.
 
 KNOWN: host checks are software verification, with a macOS clock fallback.
 UNKNOWN: Ubuntu aarch64 execution, Linux real-time permission/affinity behavior,

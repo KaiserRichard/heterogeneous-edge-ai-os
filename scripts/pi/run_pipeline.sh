@@ -2,6 +2,10 @@
 # Pi-only software timing run. No sudo, system configuration changes, or pushes.
 set -euo pipefail
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+stage=stub
+model=""
+threads=1
+infer_python="${PYTHON:-python3}"
 duration=10
 policy=fifo
 period_ms=100
@@ -18,10 +22,12 @@ usage() {
   cat <<'EOF'
 Usage: scripts/pi/run_pipeline.sh [--duration SECONDS] [--policy fifo|latest]
   [--period-ms N] [--heartbeat-ms N] [--work-us N | --durations FILE]
+  [--stage stub|onnx] [--model PATH] [--threads N]
   [--baud N] [--run-dir PATH] [--drain-seconds N]
   [--source-priority N] [--source-cpu N] [--infer-priority N] [--infer-cpu N]
   [--bridge-priority N] [--bridge-cpu N]
-Defaults: 10 s, FIFO, source 100 ms, heartbeat 20 ms, work 20000 CPU us, 921600 baud.
+Defaults: stub stage, 1 ONNX thread, 10 s, FIFO, source 100 ms, heartbeat 20 ms, work 20000 CPU us, 921600 baud.
+PYTHON selects the ONNX interpreter (default python3); ONNX requires --model PATH.
 Set HEA_COOLER to record the cooler description. Requires Linux, socat, make, python3.
 EOF
 }
@@ -29,10 +35,13 @@ drain_seconds=1
 while (($#)); do
   case "$1" in
     --help) usage; exit 0 ;;
-    --duration|--policy|--period-ms|--heartbeat-ms|--work-us|--durations|--baud|--run-dir|--drain-seconds|--source-priority|--source-cpu|--infer-priority|--infer-cpu|--bridge-priority|--bridge-cpu)
+    --stage|--model|--threads|--duration|--policy|--period-ms|--heartbeat-ms|--work-us|--durations|--baud|--run-dir|--drain-seconds|--source-priority|--source-cpu|--infer-priority|--infer-cpu|--bridge-priority|--bridge-cpu)
       (($# >= 2)) || { echo "missing value for $1" >&2; exit 2; }
       key="$1"; value="$2"; shift 2
       case "$key" in
+        --stage) stage="$value" ;;
+        --model) model="$value" ;;
+        --threads) threads="$value" ;;
         --duration) duration="$value" ;;
         --policy) policy="$value" ;;
         --period-ms) period_ms="$value" ;;
@@ -57,6 +66,12 @@ done
 }
 [[ "$drain_seconds" =~ ^[0-9]+$ && ${#drain_seconds} -le 2 ]] || { echo "invalid drain duration" >&2; exit 2; }
 [[ "$policy" == fifo || "$policy" == latest ]] || { echo "invalid policy" >&2; exit 2; }
+[[ "$stage" == stub || "$stage" == onnx ]] || { echo "invalid stage" >&2; exit 2; }
+if [[ "$stage" == onnx ]]; then
+  [[ -f "$model" ]] || { echo "--stage onnx requires --model PATH to an existing file" >&2; exit 2; }
+  [[ "$threads" =~ ^[1-4]$ ]] || { echo "--threads must be 1..4" >&2; exit 2; }
+  command -v "$infer_python" >/dev/null || { echo "missing dependency: $infer_python" >&2; exit 2; }
+fi
 [[ "$(uname -s)" == Linux ]] || { echo "run_pipeline.sh requires the Linux Pi target; use make -C linux test on macOS" >&2; exit 2; }
 for tool in socat make python3; do command -v "$tool" >/dev/null || { echo "missing dependency: $tool" >&2; exit 2; }; done
 if [[ -n "$durations" ]]; then
@@ -113,19 +128,22 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 printf '%q ' "$0" "${original_args[@]}" > "$run/command.txt"
 printf '\n' >> "$run/command.txt"
-python3 - "$run" "${HEA_COOLER:-unknown}" "$duration" "$drain_seconds" "$policy" "$period_ms" "$heartbeat_ms" "$work_us" "$baud" <<'PY'
+python3 - "$run" "${HEA_COOLER:-unknown}" "$duration" "$drain_seconds" "$policy" "$period_ms" "$heartbeat_ms" "$work_us" "$baud" "$stage" "$model" "$threads" <<'PY'
 import json, sys
 from pathlib import Path
-run, cooler, duration, drain, policy, period, hb, work, baud = sys.argv[1:]
+run, cooler, duration, drain, policy, period, hb, work, baud, stage, model, threads = sys.argv[1:]
 config = dict(evidence="software PTY stand-in, no physical UART/STM32", cooler=cooler,
               duration_seconds=int(duration), drain_seconds=int(drain), policy=policy,
-              period_ms=int(period), heartbeat_ms=int(hb), work_us=int(work), baud=int(baud))
+              period_ms=int(period), heartbeat_ms=int(hb), work_us=int(work), baud=int(baud),
+              stage=stage, model=model if stage == "onnx" else None, threads=int(threads))
 (Path(run) / "config.json").write_text(json.dumps(config, indent=2) + "\n")
 PY
-if [[ -n "$durations" ]]; then
-  cp "$durations" "$run/durations.txt"
-  infer_options+=(--durations "$run/durations.txt")
-else infer_options+=(--work-us "$work_us"); fi
+if [[ "$stage" == stub ]]; then
+  if [[ -n "$durations" ]]; then
+    cp "$durations" "$run/durations.txt"
+    infer_options+=(--durations "$run/durations.txt")
+  else infer_options+=(--work-us "$work_us"); fi
+fi
 (cd "$repo" && bash scripts/pi/collect_metadata.sh) > "$run/meta_before.json" 2> "$run/meta_before.stderr.log"
 # Short socket paths avoid the AF_UNIX path-length limit for deeply nested checkouts.
 ipc_dir="$(mktemp -d /tmp/hea-pipeline.XXXXXX)"
@@ -154,8 +172,16 @@ wait_ready "$run/rx.csv" "$rx_pid" file
 launch hea_bridge --serial "$ipc_dir/tx" --baud "$baud" --socket "$ipc_dir/bridge.sock" --csv "$run/bridge.csv" --policy "$policy" --heartbeat-ms "$heartbeat_ms" "${bridge_options[@]}" > "$run/bridge.stdout.log" 2> "$run/bridge.stderr.log"
 bridge_pid=$launched_pid
 wait_ready "$ipc_dir/bridge.sock" "$bridge_pid" socket
-launch hea_infer_stub --socket "$ipc_dir/source.sock" --output "$ipc_dir/bridge.sock" --csv "$run/infer.csv" "${infer_options[@]}" > "$run/infer.stdout.log" 2> "$run/infer.stderr.log"
-infer_pid=$launched_pid
+if [[ "$stage" == stub ]]; then
+  launch hea_infer_stub --socket "$ipc_dir/source.sock" --output "$ipc_dir/bridge.sock" --csv "$run/infer.csv" "${infer_options[@]}" > "$run/infer.stdout.log" 2> "$run/infer.stderr.log"
+  infer_pid=$launched_pid
+else
+  onnx_command=("$infer_python" "$repo/linux/inference/infer_server.py" --model "$model" --threads "$threads" --socket "$ipc_dir/source.sock" --output "$ipc_dir/bridge.sock" "${infer_options[@]}")
+  printf '%q ' "${onnx_command[@]}" >> "$run/process_commands.txt"
+  printf '\n' >> "$run/process_commands.txt"
+  "${onnx_command[@]}" > "$run/infer.stdout.log" 2> "$run/infer.stderr.log" &
+  infer_pid=$!
+fi
 wait_ready "$ipc_dir/source.sock" "$infer_pid" socket
 launch hea_source --output "$ipc_dir/source.sock" --period-ms "$period_ms" --csv "$run/source.csv" "${source_options[@]}" > "$run/source.stdout.log" 2> "$run/source.stderr.log"
 source_pid=$launched_pid

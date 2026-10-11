@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Sequential Unix datagram inference stage with fixed deterministic image input."""
 import argparse
+import os
 import signal
 import socket
 import sys
@@ -31,7 +32,8 @@ def serve(model, np, image, source_path, bridge_path, now, max_frames=None):
                 t_done_ns = now()  # Completion includes preprocessing + postprocessing.
                 if t_done_ns < t_input_ns:
                     raise ValueError('input timestamp is ahead of completion; check clock domains')
-                sender.sendto(pack_result(frame_id, t_input_ns, t_done_ns, class_id, confidence),
+                sender.sendto(pack_result(frame_id, t_input_ns, t_done_ns,
+                                          class_id % 256, int(confidence * 100 + 0.5)),
                               str(bridge_path))
                 handled += 1
         finally:
@@ -42,8 +44,9 @@ def serve(model, np, image, source_path, bridge_path, now, max_frames=None):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     add_runtime_args(parser)
-    parser.add_argument('--source-socket', required=True)
-    parser.add_argument('--bridge-socket', required=True)
+    parser.add_argument('--socket', '--source-socket', dest='source_socket', required=True)
+    parser.add_argument('--output', '--bridge-socket', dest='bridge_socket', required=True)
+    parser.add_argument('--fifo-priority', type=int, choices=range(100), default=0)
     parser.add_argument('--max-frames', type=int, help='exit after N valid frames; default unlimited')
     args = parser.parse_args(argv)
     if args.seed < 0 or (args.max_frames is not None and args.max_frames < 1):
@@ -51,6 +54,10 @@ def main(argv=None):
     if args.source_socket == args.bridge_socket:
         parser.error('source and bridge sockets must differ')
     pin_cpu(parse_cpu(args.cpu) if args.cpu else None)
+    if args.fifo_priority:
+        if not sys.platform.startswith('linux'):
+            raise RuntimeError('--fifo-priority requires Linux')
+        os.sched_setscheduler(0, os.SCHED_FIFO, os.sched_param(args.fifo_priority))
     import numpy as np
     import onnxruntime as ort
 

@@ -8,8 +8,8 @@ import sys
 import time
 from pathlib import Path
 
-SOURCE_RECORD = struct.Struct('<QQ')
-RESULT_RECORD = struct.Struct('<QQQIf')
+SOURCE_RECORD = struct.Struct('<IQ')
+RESULT_RECORD = struct.Struct('<IQQBB')
 
 
 def percentile(values, percent):
@@ -80,6 +80,18 @@ def unpack_source(data):
 
 
 def pack_result(frame_id, t_input_ns, t_done_ns, class_id, confidence):
-    if not math.isfinite(confidence) or not 0 <= confidence <= 1:
-        raise ValueError('confidence must be finite and in [0, 1]')
+    """Pack C ABI fields; confidence is an integer percentage."""
+    if not isinstance(confidence, int) or not 0 <= confidence <= 100:
+        raise ValueError('confidence must be an integer in [0, 100]')
+    if t_done_ns < t_input_ns:
+        raise ValueError('completion timestamp precedes input')
     return RESULT_RECORD.pack(frame_id, t_input_ns, t_done_ns, class_id, confidence)
+
+
+def unpack_result(data):
+    if len(data) != RESULT_RECORD.size:
+        raise ValueError(f'result record must be {RESULT_RECORD.size} bytes')
+    record = RESULT_RECORD.unpack(data)
+    if record[4] > 100 or record[2] < record[1]:
+        raise ValueError('invalid confidence or completion timestamp')
+    return record
