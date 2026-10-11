@@ -84,6 +84,17 @@ struct hea_mcu_status {
     uint16_t rx_crc_errors;
 };
 
+/* Optional v3 MCU_STATUS diagnostics; base packer stays nine bytes. */
+struct hea_mcu_status_extended {
+    struct hea_mcu_status base;
+    uint32_t last_capture_us;
+    uint32_t capture_count;
+    uint32_t rx_dropped;
+    uint32_t uart_errors;
+    uint32_t queue_dropped;
+    uint32_t capture_lost;
+};
+
 struct hea_frame {
     uint8_t version;
     uint8_t type;
@@ -154,6 +165,9 @@ uint8_t hea_pack_echo_resp(const struct hea_echo_resp *m, uint8_t *buf);
 int hea_unpack_echo_resp(const struct hea_frame *f, struct hea_echo_resp *m);
 uint8_t hea_pack_mcu_status(const struct hea_mcu_status *m, uint8_t *buf);
 int hea_unpack_mcu_status(const struct hea_frame *f, struct hea_mcu_status *m);
+
+uint8_t hea_pack_mcu_status_extended(const struct hea_mcu_status_extended *m, uint8_t *buf);
+int hea_unpack_mcu_status_extended(const struct hea_frame *f, struct hea_mcu_status_extended *m);
 
 #ifdef __cplusplus
 }

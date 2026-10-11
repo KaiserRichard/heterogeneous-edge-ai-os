@@ -331,8 +331,45 @@ static void test_random_noise_recovers(void)
     CHECK(p.stats.crc_errors == 0u && p.stats.len_errors == 1u);
 }
 
+static void test_status_extension(void)
+{
+    struct hea_mcu_status_extended in = {{123, HEA_MCU_HOLD, 4, 5},
+        UINT32_C(0x12345678), 7, 8, 9, 10, UINT32_MAX}, out;
+    struct hea_mcu_status base;
+    uint8_t payload[HEA_MAX_PAYLOAD], wire[HEA_MAX_FRAME];
+    uint8_t len = hea_pack_mcu_status_extended(&in, payload);
+    CHECK(len == 33 && payload[9] == 0x78 && payload[12] == 0x12);
+    struct hea_parser p;
+    struct hea_frame f;
+    hea_parser_init(&p);
+    size_t n = hea_encode(HEA_MSG_MCU_STATUS, 42, payload, len, wire, sizeof wire);
+    CHECK(feed_all(&p, wire, n, &f) == 1);
+    CHECK(hea_unpack_mcu_status(&f, &base) == 0 && base.state == HEA_MCU_HOLD);
+    CHECK(hea_unpack_mcu_status_extended(&f, &out) == 0);
+    CHECK(out.base.mcu_us == 123 && out.base.missed_heartbeats == 4 && out.base.rx_crc_errors == 5);
+    CHECK(out.last_capture_us == in.last_capture_us && out.capture_count == 7);
+    CHECK(out.rx_dropped == 8 && out.uart_errors == 9 && out.queue_dropped == 10);
+    CHECK(out.capture_lost == UINT32_MAX);
+    for (unsigned length = 0; length <= HEA_MAX_PAYLOAD; ++length) {
+        f.len = (uint8_t)length;
+        CHECK((hea_unpack_mcu_status(&f, &base) == 0) == (length == 9 || length == 33));
+        CHECK((hea_unpack_mcu_status_extended(&f, &out) == 0) == (length == 33));
+    }
+    f.len = 33;
+    for (uint8_t version = 1; version <= 4; ++version) {
+        f.version = version;
+        CHECK((hea_unpack_mcu_status(&f, &base) == 0) == (version == 3));
+        CHECK((hea_unpack_mcu_status_extended(&f, &out) == 0) == (version == 3));
+    }
+    f.version = HEA_PROTO_VERSION;
+    f.type = HEA_MSG_ECHO_RESP;
+    CHECK(hea_unpack_mcu_status_extended(&f, &out) == -1);
+    CHECK(hea_pack_mcu_status(&in.base, payload) == 9);
+}
+
 int main(void)
 {
+    test_status_extension();
     test_crc_known_vector();
     test_roundtrip_all_types();
     test_empty_payload_and_limits();

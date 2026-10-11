@@ -268,11 +268,38 @@ uint8_t hea_pack_mcu_status(const struct hea_mcu_status *m, uint8_t *b)
 
 int hea_unpack_mcu_status(const struct hea_frame *f, struct hea_mcu_status *m)
 {
-    if (check(f, HEA_MSG_MCU_STATUS, 9))
+    if (check(f, HEA_MSG_MCU_STATUS, 9) &&
+        !(f->version == HEA_PROTO_VERSION && !check(f, HEA_MSG_MCU_STATUS, 33)))
         return -1;
     m->mcu_us = get_u32(&f->payload[0]);
     m->state = f->payload[4];
     m->missed_heartbeats = get_u16(&f->payload[5]);
     m->rx_crc_errors = get_u16(&f->payload[7]);
+    return 0;
+}
+
+uint8_t hea_pack_mcu_status_extended(const struct hea_mcu_status_extended *m, uint8_t *b)
+{
+    hea_pack_mcu_status(&m->base, b);
+    put_u32(b + 9, m->last_capture_us);
+    put_u32(b + 13, m->capture_count);
+    put_u32(b + 17, m->rx_dropped);
+    put_u32(b + 21, m->uart_errors);
+    put_u32(b + 25, m->queue_dropped);
+    put_u32(b + 29, m->capture_lost);
+    return 33;
+}
+
+int hea_unpack_mcu_status_extended(const struct hea_frame *f, struct hea_mcu_status_extended *m)
+{
+    if (f->version != HEA_PROTO_VERSION || check(f, HEA_MSG_MCU_STATUS, 33))
+        return -1;
+    hea_unpack_mcu_status(f, &m->base);
+    m->last_capture_us = get_u32(f->payload + 9);
+    m->capture_count = get_u32(f->payload + 13);
+    m->rx_dropped = get_u32(f->payload + 17);
+    m->uart_errors = get_u32(f->payload + 21);
+    m->queue_dropped = get_u32(f->payload + 25);
+    m->capture_lost = get_u32(f->payload + 29);
     return 0;
 }

@@ -18,3 +18,7 @@ $(BUILD):
 
 clean:
 	rm -rf $(BUILD)
+
+.PHONY: firmware
+firmware:
+	$(MAKE) -C firmware
