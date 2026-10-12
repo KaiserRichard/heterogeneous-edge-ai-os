@@ -1,0 +1,7 @@
+{
+  "fault": "F5",
+  "rep": 2,
+  "status": "NOT_DONE",
+  "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+  "reason": "bridge has no documented runtime inference-only suppression control; HEARTBEAT must remain active"
+}

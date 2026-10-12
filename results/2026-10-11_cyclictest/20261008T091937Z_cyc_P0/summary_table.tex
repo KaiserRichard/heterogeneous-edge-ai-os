@@ -1,0 +1,14 @@
+% Requires \usepackage{booktabs}. Latencies in microseconds.
+% VALID runs only; percentile columns are medians of per-run percentiles.
+% -- denotes unknown; overflow percentiles are never substituted with max.
+\begin{tabular}{lrrrrllrl}
+\toprule
+condition & runs & P50 & P99 & max (us) & kernel & governor & max temp (C) & throttled \\
+\midrule
+P0\_B0\_idle & 3 & 53 & 57 & 2659 & 6.8.0-1064-raspi & performance & 56.2 & 0x0 \\
+P0\_B1\_stream\_c2 & 3 & 56 & 300 & 3565 & 6.8.0-1064-raspi & performance & 62.25 & 0x0 \\
+P0\_B2\_memrate\_c23 & 3 & 55 & 613 & 5170 & 6.8.0-1064-raspi & performance & 62.25 & 0x0 \\
+P0\_C1\_cache2M\_c2 & 3 & 54 & 203 & 4780 & 6.8.0-1064-raspi & performance & 65 & 0x0 \\
+P0\_CPU\_c23 & 3 & 54 & 68 & 2636 & 6.8.0-1064-raspi & performance & 62.8 & 0x0 \\
+\bottomrule
+\end{tabular}

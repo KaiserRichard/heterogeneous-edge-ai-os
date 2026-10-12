@@ -1,0 +1,1 @@
+scripts/pi/run_pipeline.sh --serial /dev/ttyAMA0 --baud 921600 --duration 60 --policy latest --run-dir /home/richard/osbuild/results/hw_smoke2 

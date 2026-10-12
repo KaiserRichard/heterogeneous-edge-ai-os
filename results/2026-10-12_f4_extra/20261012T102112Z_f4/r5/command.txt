@@ -1,0 +1,1 @@
+/home/richard/osbuild/tf/tools/experiments/e4_campaign.sh --single F4 --rearm-command /home/richard/osbuild/rearm_via_mac.sh /home/richard/osbuild/results/20261012T102112Z_f4/r5

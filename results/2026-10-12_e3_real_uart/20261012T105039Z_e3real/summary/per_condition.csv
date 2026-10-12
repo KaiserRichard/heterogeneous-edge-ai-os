@@ -1,0 +1,7 @@
+evidence,input_policy,policy,profile,stressor,total_reps,valid_reps
+"MEASURED (real UART, MCU timestamps)",fifo,fifo,P1,B0_idle,3,0
+"MEASURED (real UART, MCU timestamps)",fifo,latest,P1,B0_idle,3,0
+"MEASURED (real UART, MCU timestamps)",latest,latest,P1,B0_idle,3,0
+"MEASURED (real UART, MCU timestamps)",fifo,fifo,P1,B2_memrate_c23,3,0
+"MEASURED (real UART, MCU timestamps)",fifo,latest,P1,B2_memrate_c23,3,0
+"MEASURED (real UART, MCU timestamps)",latest,latest,P1,B2_memrate_c23,3,0

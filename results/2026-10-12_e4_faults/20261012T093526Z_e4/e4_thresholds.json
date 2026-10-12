@@ -1,0 +1,10 @@
+{
+  "values": {
+    "heartbeat_timeout_us": null,
+    "result_hold_us": null,
+    "result_failsafe_us": null,
+    "rearm_healthy_us": null,
+    "transit_bound_us": null
+  },
+  "source": "/home/richard/osbuild/results/20261012T093526Z_e4/supervisor_thresholds.json"
+}

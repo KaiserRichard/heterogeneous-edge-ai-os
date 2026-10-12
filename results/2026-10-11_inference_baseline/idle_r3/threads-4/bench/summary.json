@@ -1,0 +1,76 @@
+{
+  "config": {
+    "model": "/home/richard/osbuild/wheels/mobilenetv2-12.onnx",
+    "model_sha256": "c0c3f76d93fa3fd6580652a45618618a220fced18babf65774ed169de0432ad5",
+    "ort_version": "1.31.0",
+    "numpy_version": "2.5.4",
+    "python_version": "3.12.3",
+    "threads": 4,
+    "inter_op_num_threads": 1,
+    "execution_mode": "ORT_SEQUENTIAL",
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "affinity": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "clock": "CLOCK_MONOTONIC_RAW",
+    "seed": 12345,
+    "image": null,
+    "image_sha256": null,
+    "input_shape": [
+      1,
+      3,
+      224,
+      224
+    ],
+    "input_dtype": "float32",
+    "preprocessing": "nearest resize 256->224; RGB/255; ImageNet mean/std; NCHW",
+    "warmup": 50,
+    "runs": 1000,
+    "argv": [
+      "/home/richard/osbuild/src/linux/inference/infer_bench.py",
+      "--threads",
+      "4",
+      "--output",
+      "/home/richard/osbuild/results/20261008T085429Z_inference_livepower/idle_r3/threads-4/bench",
+      "--model",
+      "/home/richard/osbuild/wheels/mobilenetv2-12.onnx",
+      "--warmup",
+      "50",
+      "--runs",
+      "1000"
+    ],
+    "utc": "2026-10-08T09:09:55.577676+00:00"
+  },
+  "cold_start_ns": 106813685,
+  "summary": {
+    "cold_start": {
+      "count": 1,
+      "p50_ns": 106813685.0,
+      "p95_ns": 106813685.0,
+      "p99_ns": 106813685.0,
+      "max_ns": 106813685,
+      "mean_ns": 106813685.0
+    },
+    "preprocessing": {
+      "count": 1000,
+      "p50_ns": 2484027.5,
+      "p95_ns": 5500254.0,
+      "p99_ns": 5733638.33,
+      "max_ns": 11571371,
+      "mean_ns": 2724306.011
+    },
+    "inference": {
+      "count": 1000,
+      "p50_ns": 31480990.5,
+      "p95_ns": 41131550.89999999,
+      "p99_ns": 56143778.59999999,
+      "max_ns": 98673685,
+      "mean_ns": 33362054.616
+    }
+  }
+}

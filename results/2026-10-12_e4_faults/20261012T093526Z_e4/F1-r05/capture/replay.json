@@ -1,0 +1,4 @@
+{
+  "t_rx_pi_ns": "decoder replay time; use chunks.csv for original byte capture",
+  "mapping": "pre-fault pipeline echo estimator, not replay t_mcu_pi_est_ns"
+}

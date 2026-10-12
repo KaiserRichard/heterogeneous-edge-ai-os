@@ -1,0 +1,14 @@
+preview/
+main.pdf
+build.out
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.fls
+*.fdb_latexmk
+*.xdv
+*.synctex.gz
+*.vrb

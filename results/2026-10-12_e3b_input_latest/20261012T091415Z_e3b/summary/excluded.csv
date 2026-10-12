@@ -1,0 +1,10 @@
+run,experiment,profile,stressor,policy,input_policy,validity
+E3B_P1_B0_idle_fifo_r1,E3B,P1,B0_idle,latest,fifo,INVALID: live throttling/power bits (0xF)
+E3B_P1_B0_idle_latest_r2,E3B,P1,B0_idle,latest,latest,INVALID: live throttling/power bits (0xF)
+E3B_P1_B0_idle_latest_r3,E3B,P1,B0_idle,latest,latest,INVALID: live throttling/power bits (0xF)
+E3B_P1_B2_memrate_c23_fifo_r1,E3B,P1,B2_memrate_c23,latest,fifo,INVALID: live throttling/power bits (0xF)
+E3B_P1_B2_memrate_c23_fifo_r2,E3B,P1,B2_memrate_c23,latest,fifo,INVALID: live throttling/power bits (0xF)
+E3B_P1_B2_memrate_c23_fifo_r3,E3B,P1,B2_memrate_c23,latest,fifo,INVALID: live throttling/power bits (0xF)
+E3B_P1_B2_memrate_c23_latest_r1,E3B,P1,B2_memrate_c23,latest,latest,INVALID: live throttling/power bits (0xF)
+E3B_P1_B2_memrate_c23_latest_r2,E3B,P1,B2_memrate_c23,latest,latest,INVALID: live throttling/power bits (0xF)
+E3B_P1_B2_memrate_c23_latest_r3,E3B,P1,B2_memrate_c23,latest,latest,INVALID: live throttling/power bits (0xF)

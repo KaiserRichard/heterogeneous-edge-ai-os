@@ -1,0 +1,23 @@
+{
+  "experiment": "E3_REAL",
+  "reps": 3,
+  "seconds": 60,
+  "seed": 42,
+  "stage": "onnx",
+  "model": "/home/richard/osbuild/wheels/mobilenetv2-12.onnx",
+  "python": "/home/richard/osbuild/venv/bin/python",
+  "model_sha256": "c0c3f76d93fa3fd6580652a45618618a220fced18babf65774ed169de0432ad5",
+  "rearm_command": "bash /home/richard/osbuild/rearm_via_mac.sh",
+  "serial": "/dev/ttyAMA0",
+  "baud": 921600,
+  "rms_bound_us": 200,
+  "monitor_period_seconds": 0.5,
+  "evidence": "MEASURED (real UART, MCU timestamps)",
+  "source_cpu": 1,
+  "source_priority": 60,
+  "bridge_cpu": 1,
+  "bridge_priority": 70,
+  "inference_cpu": 0,
+  "inference_policy": "SCHED_OTHER",
+  "threads": 1
+}

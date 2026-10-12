@@ -1,0 +1,16 @@
+condition,run,status,reason,samples,overflows,min_us,avg_us,avg_source,p50_us,p95_us,p99_us,p99_9_us,max_us,kernel,governor,max_temp_c,throttled
+P1_B0_idle,B0_idle_r1,VALID,,120000,0,2,3.139575,histogram,3,3,10,15,25,6.8.0-1064-raspi,performance,55.65,0x0
+P1_B0_idle,B0_idle_r2,VALID,,120000,0,2,3.1192,histogram,3,3,9,14,73,6.8.0-1064-raspi,performance,55.1,0x0
+P1_B0_idle,B0_idle_r3,VALID,,120000,0,2,3.1414,histogram,3,3,8,18,92,6.8.0-1064-raspi,performance,55.65,0x0
+P1_B1_stream_c2,B1_stream_c2_r1,VALID,,120000,0,3,7.010208333333333,histogram,5,18,42,56,189,6.8.0-1064-raspi,performance,60.6,0x0
+P1_B1_stream_c2,B1_stream_c2_r2,VALID,,120000,0,2,6.698583333333334,histogram,5,19,39,51,211,6.8.0-1064-raspi,performance,60.6,0x0
+P1_B1_stream_c2,B1_stream_c2_r3,VALID,,120000,0,2,6.508191666666667,histogram,5,16,36,47,90,6.8.0-1064-raspi,performance,61.15,0x0
+P1_B2_memrate_c23,B2_memrate_c23_r1,VALID,,120000,0,2,27.682108333333332,histogram,6,138,249,588,886,6.8.0-1064-raspi,performance,61.7,0x0
+P1_B2_memrate_c23,B2_memrate_c23_r2,VALID,,119991,0,2,21.938512055070795,histogram,5,95,168,511,1094,6.8.0-1064-raspi,performance,61.15,0x0
+P1_B2_memrate_c23,B2_memrate_c23_r3,VALID,,119998,0,3,25.477799629993832,histogram,4,113,239,684,1021,6.8.0-1064-raspi,performance,61.7,0x0
+P1_C1_cache2M_c2,C1_cache2M_c2_r1,VALID,,120000,0,2,4.909958333333333,histogram,3,19,35,52,86,6.8.0-1064-raspi,performance,62.8,0x0
+P1_C1_cache2M_c2,C1_cache2M_c2_r2,VALID,,120000,0,2,4.4533,histogram,3,18,29,46,78,6.8.0-1064-raspi,performance,63.9,0x0
+P1_C1_cache2M_c2,C1_cache2M_c2_r3,VALID,,120000,0,2,5.275408333333333,histogram,3,19,40,105,233,6.8.0-1064-raspi,performance,62.8,0x0
+P1_CPU_c23,CPU_c23_r1,VALID,,120000,0,2,3.2464333333333335,histogram,3,4,10,16,73,6.8.0-1064-raspi,performance,61.7,0x0
+P1_CPU_c23,CPU_c23_r2,VALID,,120000,0,2,3.2493666666666665,histogram,3,4,11,17,40,6.8.0-1064-raspi,performance,61.7,0x0
+P1_CPU_c23,CPU_c23_r3,VALID,,120000,0,2,3.211508333333333,histogram,3,4,11,18,31,6.8.0-1064-raspi,performance,61.7,0x0

@@ -1,0 +1,6 @@
+Run command: /home/richard/osbuild/tn/tools/experiments/e4_campaign.sh /home/richard/osbuild/tn/results/la-20261012-230413-13501-5 --single F1 --marker-gpio 27 --serial /dev/ttyAMA0 --rearm-command true --wait-go /home/richard/osbuild/tn/results/la-20261012-230413-13501-5.go
+Wall-time estimate: >= 0.1 min measured windows; allow about 2.2 min with startup/rearm/timeouts plus initial build. F5 uses acknowledged SIGUSR1 inference suppression.
+make: Entering directory '/home/richard/osbuild/tn/linux'
+make: Nothing to be done for 'all'.
+make: Leaving directory '/home/richard/osbuild/tn/linux'
+F1-r01: FAILED: transition during the required 20 s steady FRESH phase

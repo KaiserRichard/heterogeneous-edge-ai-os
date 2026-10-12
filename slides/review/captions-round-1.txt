@@ -1,0 +1,35 @@
+Caption audit — round 1 (45 pages)
+
+p4: 1
+p5: 2
+p6: 3
+p7: 4
+p8: 5
+p9: 6
+p10: 6 (repeat)
+p12: 7
+p13: 7 (repeat)
+p14: 8
+p15: 8 (repeat)
+p16: 9
+p17: 10, 11
+p18: 12
+p19: 13
+p20: 13 (repeat)
+p22: 14
+p23: 15
+p24: 16
+p25: 17
+p26: 18
+p27: 19
+p28: 20
+p29: 21
+p30: 22
+p31: 23
+p35: 24
+p36: 24 (repeat)
+p40: 25
+p42: 14 (recap)
+p43: 26
+
+Repeated figures retain the original caption verbatim. New figures advance 1–26; only repetitions reuse an earlier number.

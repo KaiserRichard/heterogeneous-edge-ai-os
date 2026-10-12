@@ -1,0 +1,16 @@
+condition,run,status,reason,samples,overflows,min_us,avg_us,avg_source,p50_us,p95_us,p99_us,p99_9_us,max_us,kernel,governor,max_temp_c,throttled
+P0_B0_idle,B0_idle_r1,VALID,,119993,0,15,55.2449809572225,histogram,53,54,61,686,2659,6.8.0-1064-raspi,performance,56.2,0x0
+P0_B0_idle,B0_idle_r2,VALID,,119998,0,12,14.51465857764296,histogram,12,14,29,674,2023,6.8.0-1064-raspi,performance,55.65,0x0
+P0_B0_idle,B0_idle_r3,VALID,,119999,0,8,55.35098625821882,histogram,53,54,57,678,1100,6.8.0-1064-raspi,performance,55.65,0x0
+P0_B1_stream_c2,B1_stream_c2_r1,VALID,,119614,0,17,65.74549801862658,histogram,56,69,285,1563,2607,6.8.0-1064-raspi,performance,62.25,0x0
+P0_B1_stream_c2,B1_stream_c2_r2,VALID,,119608,0,14,66.04416928633536,histogram,56,70,300,1573,3565,6.8.0-1064-raspi,performance,59.5,0x0
+P0_B1_stream_c2,B1_stream_c2_r3,VALID,,119593,0,11,66.11325077554706,histogram,56,67,316,1918,3029,6.8.0-1064-raspi,performance,61.15,0x0
+P0_B2_memrate_c23,B2_memrate_c23_r1,VALID,,119272,0,13,78.4279126701992,histogram,57,117,533,2092,3611,6.8.0-1064-raspi,performance,61.7,0x0
+P0_B2_memrate_c23,B2_memrate_c23_r2,VALID,,119194,0,9,88.26085205631156,histogram,55,186,664,1974,3587,6.8.0-1064-raspi,performance,62.25,0x0
+P0_B2_memrate_c23,B2_memrate_c23_r3,VALID,,119109,0,9,79.20030392329714,histogram,55,109,613,2128,5170,6.8.0-1064-raspi,performance,61.7,0x0
+P0_C1_cache2M_c2,C1_cache2M_c2_r1,VALID,,119620,0,8,62.92701053335563,histogram,54,74,225,1491,3431,6.8.0-1064-raspi,performance,63.9,0x0
+P0_C1_cache2M_c2,C1_cache2M_c2_r2,VALID,,119676,0,11,62.16844647214145,histogram,54,73,203,1463,4780,6.8.0-1064-raspi,performance,65.0,0x0
+P0_C1_cache2M_c2,C1_cache2M_c2_r3,VALID,,119730,0,8,60.88891672930761,histogram,54,73,118,1363,2537,6.8.0-1064-raspi,performance,63.9,0x0
+P0_CPU_c23,CPU_c23_r1,VALID,,119894,0,8,57.446035664837275,histogram,54,54,66,914,2411,6.8.0-1064-raspi,performance,62.8,0x0
+P0_CPU_c23,CPU_c23_r2,VALID,,119905,0,8,57.244009841124225,histogram,54,54,68,933,2629,6.8.0-1064-raspi,performance,61.7,0x0
+P0_CPU_c23,CPU_c23_r3,VALID,,119906,0,8,57.48332026754291,histogram,54,54,69,905,2636,6.8.0-1064-raspi,performance,61.15,0x0

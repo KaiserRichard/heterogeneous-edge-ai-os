@@ -1,0 +1,1 @@
+bash /home/richard/osbuild/ec/scripts/pi/run_pipeline.sh --duration 60 --period-ms 100 --policy latest --stage onnx --threads 1 --source-cpu 1 --infer-cpu 0 --bridge-cpu 1 --run-dir /home/richard/osbuild/results/20261008T103412Z_e_onnx/E1_P0_B1_stream_c2_latest_r3/pipeline --model /home/richard/osbuild/wheels/mobilenetv2-12.onnx

@@ -1,0 +1,31 @@
+% MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)
+\begin{tabular}{llrrrrrlr}
+\multicolumn{9}{l}{MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)} \\
+Fault & Metric & $n$ valid & $n$ samples & P50 ($\mu$s) & P95 ($\mu$s) & Max ($\mu$s) & Threshold & $\Delta$P50 ($\mu$s) \\
+\hline
+F1 & detection\_us & 5 & 5 & 83341.819 & 83560.559 & 83560.559 & not directly comparable (unknown/N.A.) & -- \\
+F1 & detection\_mcu\_us & 5 & 5 & 98165.000 & 98641.000 & 98641.000 & heartbeat\_timeout\_us (unknown/N.A.) & -- \\
+F1 & failsafe\_us & 5 & 5 & 85356.597 & 86208.538 & 86208.538 & not directly comparable (unknown/N.A.) & -- \\
+F1 & failsafe\_mcu\_us & 5 & 5 & 100456.000 & 100641.000 & 100641.000 & heartbeat\_timeout\_us (unknown/N.A.) & -- \\
+F1 & recovery\_us & 5 & 5 & 442986.752 & 692927.374 & 692927.374 & not directly comparable (unknown/N.A.) & -- \\
+F2 & detection\_us & 5 & 5 & 83150.937 & 83714.859 & 83714.859 & not directly comparable (unknown/N.A.) & -- \\
+F2 & detection\_mcu\_us & 5 & 5 & 98465.000 & 98596.000 & 98596.000 & heartbeat\_timeout\_us (unknown/N.A.) & -- \\
+F2 & failsafe\_us & 5 & 5 & 85714.684 & 86112.568 & 86112.568 & not directly comparable (unknown/N.A.) & -- \\
+F2 & failsafe\_mcu\_us & 5 & 5 & 100577.000 & 100596.000 & 100596.000 & heartbeat\_timeout\_us (unknown/N.A.) & -- \\
+F2 & recovery\_us & 5 & 5 & 9649016.374 & 9799935.236 & 9799935.236 & not directly comparable (unknown/N.A.) & -- \\
+F3 & detection\_us & 5 & 5 & 83646.385 & 85914.097 & 85914.097 & not directly comparable (unknown/N.A.) & -- \\
+F3 & detection\_mcu\_us & 5 & 5 & 175754.000 & 175815.000 & 175815.000 & result\_hold\_us (unknown/N.A.) & -- \\
+F3 & failsafe\_us & 5 & 5 & 383620.027 & 385887.839 & 385887.839 & not directly comparable (unknown/N.A.) & -- \\
+F3 & failsafe\_mcu\_us & 5 & 5 & 475754.000 & 475815.000 & 475815.000 & result\_failsafe\_us (unknown/N.A.) & -- \\
+F3 & recovery\_us & 5 & 5 & 9648959.172 & 9799633.698 & 9799633.698 & not directly comparable (unknown/N.A.) & -- \\
+F4 & detection\_us & 2 & 2 & 87277.344 & 87871.299 & 87871.299 & not directly comparable (unknown/N.A.) & -- \\
+F4 & detection\_mcu\_us & 2 & 2 & 100639.000 & 100931.000 & 100931.000 & heartbeat\_timeout\_us (unknown/N.A.) & -- \\
+F4 & failsafe\_us & 2 & 2 & 87277.344 & 87871.299 & 87871.299 & not directly comparable (unknown/N.A.) & -- \\
+F4 & failsafe\_mcu\_us & 2 & 2 & 100639.000 & 100931.000 & 100931.000 & heartbeat\_timeout\_us (unknown/N.A.) & -- \\
+F4 & recovery\_us & 2 & 2 & 9546824.674 & 9547165.800 & 9547165.800 & not directly comparable (unknown/N.A.) & -- \\
+F5 & detection\_us & 0 & 0 & -- & -- & -- & not directly comparable (unknown/N.A.) & -- \\
+F5 & detection\_mcu\_us & 0 & 0 & -- & -- & -- & result\_hold\_us (unknown/N.A.) & -- \\
+F5 & failsafe\_us & 0 & 0 & -- & -- & -- & not directly comparable (unknown/N.A.) & -- \\
+F5 & failsafe\_mcu\_us & 0 & 0 & -- & -- & -- & result\_failsafe\_us (unknown/N.A.) & -- \\
+F5 & recovery\_us & 0 & 0 & -- & -- & -- & not directly comparable (unknown/N.A.) & -- \\
+\end{tabular}

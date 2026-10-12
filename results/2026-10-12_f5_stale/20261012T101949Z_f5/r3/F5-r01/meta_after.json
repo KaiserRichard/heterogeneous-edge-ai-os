@@ -1,0 +1,12 @@
+{
+  "utc": "2026-10-12T10:20:16Z",
+  "host": "wbr-pi5",
+  "kernel": "6.8.0-1064-raspi",
+  "git_commit": "f4ef6386bb28b8a5a1d3bbdca2dabed2f03b11d3",
+  "git_dirty": false,
+  "governor": "performance",
+  "cpu_khz": {"cpu0":2400000,"cpu1":2400000,"cpu2":2400000,"cpu3":2400000},
+  "temp_millic": 49050,
+  "throttled": "0x50000",
+  "loadavg": "0.12 0.10 0.08"
+}

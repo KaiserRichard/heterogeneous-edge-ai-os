@@ -1,0 +1,1 @@
+/home/richard/osbuild/venv/bin/python /home/richard/osbuild/src/linux/inference/infer_bench.py --threads 3 --output /home/richard/osbuild/results/20261008T083143Z_inference/cpu23_r3/threads-3/bench --model /home/richard/osbuild/wheels/mobilenetv2-12.onnx --warmup 50 --runs 1000 

@@ -1,0 +1,3 @@
+st-flash 1.8.0
+2026-10-12T23:04:05 INFO common.c: STM32F446: 128 KiB SRAM, 512 KiB flash in at least 128 KiB pages.
+2026-10-12T23:04:05 INFO common.c: Go to Thumb mode
