@@ -3,8 +3,8 @@
 Draft from retained evidence. The project now has a Linux workload and telemetry
 pipeline, a shared UART protocol, and an external FreeRTOS supervisor. The evidence
 shows Linux timing under contention, an upstream freshness problem, and MCU state
-transitions during injected faults. It does not yet establish physical end-to-end
-AoI, a worst-case reaction bound, or robot safety.
+transitions during injected faults. FLAGGED real-UART observations now extend the reception-age pattern to STM32.
+They do not establish clean physical AoI, a worst-case reaction bound, or robot safety.
 
 This report fulfils the stage-report purpose in `docs/STAGE_PI_ONLY_BRIEF.md`,
 section 2.6, using the filename requested for this ticket. It includes later
@@ -18,6 +18,7 @@ IPC, freshness, and independent supervision. Inference is a workload.
 | Label | Meaning here |
 |---|---|
 | MEASURED | Recorded target observations or statistics reported by the supplied measurement summaries. The environment and validity exclusions still apply. |
+| FLAGGED | Retained diagnostic observations from INVALID runs; excluded from clean comparison claims. |
 | CALCULATED | Arithmetic from stated configuration or retained raw observations; the calculation is described. |
 | INFERRED | An explanation supported by observations, without a controlled proof of the cause. |
 | ASSUMED | A configured experimental choice or provisional allowance, not a measured bound. |
@@ -59,7 +60,8 @@ observations, without closing every item in that README.
 | Inference baseline | MEASURED: 1,000 timed calls per run after 50 warm-ups; CALCULATED from listed cells: 21/24 runs accepted, 3 excluded. | Same stock kernel, ondemand governor, affinity CPUs 0–3; CPU stress on CPUs 2–3. Reject any live `get_throttled & 0xF` sample in the 0.5 s power log. |
 | E1–E3 software campaign | CALCULATED from per_run.csv: E1 15/15, E2 18/18, E3 12/12 accepted; 3 repeats per cell, ASSUMED nominal source window 60 s. | Same stock kernel, performance governor, pty receiver on the Pi; no physical UART or MCU. Require complete monitor/applied-setting evidence, successful pipeline/stressors, no live `0xF` bits and no new sticky bits. Pre-existing sticky bits alone do not exclude. |
 | E3b input-policy campaign | CALCULATED from validity records: 3/12 accepted. Idle FIFO 2/3, idle latest 1/3; loaded FIFO 0/3 and loaded latest 0/3. | Software/pty. All loaded runs and the other idle runs are INVALID for live power/throttle bits. Flagged raw observations below are excluded from clean comparison summaries. |
-| E4 physical faults | MEASURED: 17/25 campaign entries valid; F1/F2/F3 each 5/5; F4 2/5; the original F5 entries were unperformed. Separate F5 campaign: MEASURED 5/5. Combined executed exposure: CALCULATED 22/25 valid, 3 invalid. | MCU plus Pi timestamps, no logic analyzer. Power gating plus usable clock/event records and a healthy pre-fault state; ASSUMED clock-sync residual RMS acceptance ceiling 200 µs. |
+| E3 real UART | FLAGGED: 0/18 valid; three repeats in each of six load/policy cells. | 16/18 live power flags; all nine memrate runs exceed 200 µs RMS; 14/18 have no STATE_EVENT. Empty-event rejection is a validity-rule limitation, not proof of bad freshness. |
+| E4 physical faults | MEASURED: 17/25 campaign entries valid; F1/F2/F3 each 5/5; F4 2/5; the original F5 entries were unperformed. Separate F5 campaign: MEASURED 5/5. Extra F4: 5/9 accepted for short-window transitions. Combined retained attempts: CALCULATED 27/34 accepted, 7 excluded (including 3 startup failures). Original F4 2/5 plus extra 5/9 gives 7/14; acceptance scopes differ. | MCU plus Pi timestamps, no logic analyzer. Power gating plus usable clock/event records and a healthy pre-fault state; ASSUMED clock-sync residual RMS acceptance ceiling 200 µs. |
 | F5 stale results, heartbeat alive | MEASURED: 5/5 retained short-window runs; SIGUSR1 inference suppression for about 1 s. No live power events or new sticky bits. | MCU/Pi state timestamps; shorter steady/observation windows than original E4, no recovery qualification. Accepted for the measured stale-result transitions, not the original 20 s steady / 10 s observation gate. |
 | Hardware smoke | CALCULATED: 6 retained smoke directories, all marked excluded by their summary.json. | These summaries flag before/after throttling. Keep their link/diagnostic observations visible; do not call them clean timing runs or apply the newer live-bit rule retrospectively. |
 
@@ -234,6 +236,71 @@ valid repeats are in the run-count table. No clean loaded E3b comparison exists.
 The corrected policy is implemented; its benefit under clean power remains
 UNKNOWN. Source: the same campaign's `E3B_P1_B0_idle_*/pipeline/rx.csv` and `validity`.
 
+### E3 real UART / STM32 — Round 14, all FLAGGED
+
+CALCULATED from raw `inf_rx.csv`, nearest-rank `ceil(p*n)` over all logged
+receptions, including drain. `age_mcu_us` is STM32-computed source age including
+the ASSUMED 5 ms transit allowance. `aoi_mapped_us` is mapped MCU receipt minus
+Pi `t_input`; it is a different measurement with clock-fit uncertainty. Neither
+table reports time-average held-value AoI. All 18 runs remain INVALID / FLAGGED.
+
+| Load | Input / bridge | Repeat | Receptions | MCU age P50 / P99, ms | Mapped age P50 / P99, ms |
+|---|---|---:|---:|---:|---:|
+| idle | fifo / fifo | 1 | 601 | 52.685 / 72.760 | 47.854 / 68.257 |
+| idle | fifo / fifo | 2 | 601 | 53.438 / 73.463 | 48.344 / 68.421 |
+| idle | fifo / fifo | 3 | 601 | 53.706 / 89.010 | 48.598 / 83.632 |
+| idle | fifo / latest | 1 | 602 | 52.854 / 65.607 | 47.761 / 60.752 |
+| idle | fifo / latest | 2 | 602 | 52.562 / 60.748 | 47.565 / 56.194 |
+| idle | fifo / latest | 3 | 601 | 54.008 / 62.271 | 49.113 / 57.275 |
+| idle | latest / latest | 1 | 602 | 53.118 / 59.727 | 48.030 / 54.323 |
+| idle | latest / latest | 2 | 602 | 53.083 / 60.704 | 47.964 / 55.301 |
+| idle | latest / latest | 3 | 602 | 53.208 / 64.860 | 48.137 / 60.159 |
+| memrate | fifo / fifo | 1 | 433 | 9412.861 / 17995.587 | 9408.471 / 17991.042 |
+| memrate | fifo / fifo | 2 | 447 | 8900.786 / 16784.222 | 8895.885 / 16779.707 |
+| memrate | fifo / fifo | 3 | 440 | 9405.502 / 17389.963 | 9400.958 / 17385.575 |
+| memrate | fifo / latest | 1 | 429 | 9380.214 / 18520.423 | 9375.129 / 18515.654 |
+| memrate | fifo / latest | 2 | 439 | 8638.846 / 17483.123 | 8633.728 / 17478.095 |
+| memrate | fifo / latest | 3 | 428 | 9207.069 / 18588.409 | 9202.044 / 18583.201 |
+| memrate | latest / latest | 1 | 449 | 189.510 / 253.305 | 184.895 / 248.357 |
+| memrate | latest / latest | 2 | 476 | 183.432 / 260.011 | 178.599 / 255.572 |
+| memrate | latest / latest | 3 | 427 | 196.503 / 254.537 | 191.875 / 249.705 |
+
+The real-link endpoint reproduces the E3/E3b pattern: idle age is about 53 ms;
+input FIFO accumulates seconds of age under memrate on CPUs 2,3 even with bridge
+latest-value; input latest-value keeps reception age near the 200 ms HOLD
+threshold. This is a FLAGGED observation, not a clean causal comparison.
+With stale inputs, the supervisor correctly refuses data under configured
+HOLD/FAILSAFE source-age thresholds of 200/500 ms. Loaded FIFO/FIFO r1 records
+one FRESH→HOLD reason 9 and one HOLD→FAILSAFE reason 10; its reception states
+are 1 FRESH, 4 HOLD, 428 FAILSAFE. Other loaded FIFO runs have no events and
+report FAILSAFE at every reception; a new transition cannot be inferred.
+
+Latest/latest loaded reception age is near HOLD, so occasional HOLD is expected
+for a freshly armed supervisor. **It is not measured as occasional HOLD here:**
+all three loaded latest/latest event files are empty and all reception states
+are FAILSAFE. Reception ages strictly above 200 ms are respectively
+r1: 182/449 (40.5%), r2: 156/476 (32.8%), r3: 193/427 (45.2%). These are reception-age fractions, not HOLD occupancy or transition rates.
+
+Only four runs contain events: idle FIFO/FIFO r1 and r3, idle FIFO/latest r3,
+and loaded FIFO/FIFO r1. Each logs INIT→FRESH, FRESH→HOLD (9), HOLD→FAILSAFE
+(10). Idle tails must not be counted as loaded-policy HOLD. All reception/event
+lost counters are zero. The other 14 runs lack transitions: the runner's
+“state occupancy unknown” rejection is a validity-rule limitation because
+steady FRESH can have no transitions. In these specific empty-event captures,
+reception states are FAILSAFE, so absence of transitions does not prove FRESH.
+No time occupancy is reconstructed from missing events.
+
+Validity reasons overlap: live power/throttle bits in 16/18, clock-sync RMS
+above 200 µs in all nine memrate runs, and missing STATE_EVENT in 14/18.
+Idle FIFO/FIFO r1 also flags negative age (12 negative mapped samples, retained
+in the mapped quantiles). Pi supply: 5 V / 3 A. No run is promoted to VALID.
+
+Sources: `scratch/e3-real/results/e3_real/*_e3real/E3_REAL_P1_*/pipeline/{inf_rx,state_events}.csv`,
+per-run `condition.json`, `settings.json`, and `validity`.
+Reproduction: `PYTHONPATH=slides_course python3 slides_course/qa/round14_evidence.py`
+from repository root. Calculated records and SHA-256 source manifest:
+`slides_course/qa/round14-{computed,source-hashes}.json`.
+
 ## Physical faults: state timing, not output timing
 
 E4 records transitions using STM32 TIM2 inside the state machine. Select the
@@ -241,7 +308,7 @@ MCU-local reference by **transition reason**, not injected fault: source-age
 HOLD/FAILSAFE (9/10) uses last accepted INFERENCE; heartbeat timeout (3) uses
 last accepted HEARTBEAT. Mapped durations start at Pi fault onset through the
 echo estimator. These references differ. The first transition and FAILSAFE
-are reported separately, even when they are the same event (accepted F4).
+are reported separately, even when they are the same event (six of seven accepted F4 runs).
 
 MEASURED, ms, nearest-rank P50 / P95 / max over valid runs, rounded from µs.
 P95 equals max for these small samples.
@@ -251,7 +318,7 @@ P95 equals max for these small samples.
 | F1 bridge kill -9; 5/5 | FRESH→HOLD / 9 | 175.317 / 175.535 / 175.535 | 3 (heartbeat) | 100.456 / 100.641 / 100.641 | 83.342 / 83.561 / 83.561 | 85.357 / 86.209 / 86.209 |
 | F2 bridge SIGSTOP; 5/5 | FRESH→HOLD / 9 | 175.206 / 175.709 / 175.709 | 3 (heartbeat) | 100.577 / 100.596 / 100.596 | 83.151 / 83.715 / 83.715 | 85.715 / 86.113 / 86.113 |
 | F3 inference SIGSTOP; 5/5 | FRESH→HOLD / 9 | 175.754 / 175.815 / 175.815 | 10 (source age) | 475.754 / 475.815 / 475.815 | 83.646 / 85.914 / 85.914 | 383.620 / 385.888 / 385.888 |
-| F4 FIFO-99 hog on bridge core; 2/5 | FRESH→FAILSAFE / 3 | 100.639 / 100.931 / 100.931 | 3 (heartbeat) | 100.639 / 100.931 / 100.931 | 87.277 / 87.871 / 87.871 | 87.277 / 87.871 / 87.871 |
+| F4 FIFO-99 hog; 7/14 attempts | Six direct FAILSAFE / 3; one HOLD / 9 | 100.639 / 175.229 / 175.229 | 3 (heartbeat) | 100.556 / 100.931 / 100.931 | 85.625 / 87.871 / 87.871 | 87.277 / 97.344 / 97.344 |
 | F5 SIGUSR1 inference suppression; 5/5 | FRESH→HOLD / 9 | 175.596 / 175.917 / 175.917 | 10 (source age) | 475.596 / 475.917 / 475.917 | 83.608 / 85.563 / 85.563 | 383.603 / 385.558 / 385.558 |
 
 Sources: raw `scratch/fw-rx-fix/results/e4/20261012T093526Z_e4/F*/pipeline/state_events.csv`
@@ -284,10 +351,11 @@ pre-existing sticky bits do not invalidate them.
 F1/F2 HOLD reason 9 is a source-age transition about 175 ms after inference;
 its roughly 98 ms heartbeat age was previously misinterpreted as heartbeat
 detection. Heartbeat timeout is HOLD→FAILSAFE reason 3 at 100.128–100.641 ms
-from the last accepted heartbeat, matching the configured 100 ms. The accepted
-F4 records instead show direct FRESH→FAILSAFE reason 3 at 100.639–100.931 ms;
-no preceding HOLD is recorded. This exception follows the raw events rather
-than assuming the same sequence for every fault.
+from the last accepted heartbeat, matching the configured 100 ms. Original accepted F4 records show direct FRESH→FAILSAFE reason 3. With the
+new runs, six of seven accepted F4 runs go directly to FAILSAFE and one first
+enters HOLD reason 9. The mixed local-first summary therefore combines two
+references and must not be interpreted as a heartbeat-latency distribution.
+Combined heartbeat FAILSAFE spans 100.405–100.931 ms.
 
 Result age = receipt elapsed + age-at-send + the ASSUMED 5 ms transit allowance;
 the 175/475 ms receipt durations do not redefine configured 200/500 ms source-age
@@ -301,9 +369,39 @@ safe-pin activation delay remains UNKNOWN without an independent capture.
 There is no physical actuator or independent MCU watchdog in this port.
 
 MEASURED: all accepted runs report **0 false transitions** during the checked
-pre-fault interval. Accepted-run maximum residual RMS spans **55.123–77.609 µs**.
+pre-fault interval. Original E4 accepted-run maximum residual RMS spans **55.123–77.609 µs**; extra F4 values are listed below.
 Sources: the same `e4_runs.csv`; `scratch/fw-rx-fix/stm32/firmware/README.md`.
 These observations do not establish a false-trip rate or worst-case safety bound.
+
+### Extra F4 attempts — Round 14
+
+All nine raw power logs retain only pre-existing `0x50000`: no live bits and
+no new sticky bits. Five runs pass the **short-window transition-only** checks:
+complete run, power coverage without gaps above 0.75 s, clock RMS ≤200 µs,
+FRESH before the steady interval, no pre-fault false transitions, zero lost
+events, and observed reason-3 FAILSAFE. They do not meet the original 20 s
+steady / 10 s observation / recovery protocol; the old strict summary parser
+rejects their absent recovery fields. Pooling here describes transition samples,
+not equal-exposure reliability or recovery performance.
+
+| Batch / repeat | Transition acceptance | Max fit RMS, µs | HB→FAILSAFE, ms | Exclusion / sequence |
+|---|---|---:|---:|---|
+| 20261012T102112Z_f4/r1 | VALID | 46.951 | 100.405 | HOLD 9 then FAILSAFE 3 |
+| 20261012T102112Z_f4/r2 | VALID | 85.423 | 100.533 | Direct FAILSAFE 3 |
+| 20261012T102112Z_f4/r3 | VALID | 57.505 | 100.525 | Direct FAILSAFE 3 |
+| 20261012T102112Z_f4/r4 | INVALID | 70.125 | Not observed | no FRESH STATE_EVENT plus clock fit before startup/recovery deadline |
+| 20261012T102112Z_f4/r5 | INVALID | 71.366 | Not observed | no FRESH STATE_EVENT plus clock fit before startup/recovery deadline |
+| 20261012T102112Z_f4/r6 | INVALID | 52.339 | Not observed | no FRESH STATE_EVENT plus clock fit before startup/recovery deadline |
+| 20261012T105039Z_f4b/r1 | INVALID | 213.413 | 100.545 | clock RMS >200 us |
+| 20261012T105039Z_f4b/r2 | VALID | 79.403 | 100.556 | Direct FAILSAFE 3 |
+| 20261012T105039Z_f4b/r3 | VALID | 70.352 | 100.818 | Direct FAILSAFE 3 |
+
+The first batch accepts 3/6 attempts; the second accepts 2/3. Extra accepted
+heartbeat FAILSAFE is 100.405–100.818 ms. Original F4 2/5 plus extra 5/9 is
+7/14 retained attempts (7/11 completed fault runs; 3 failed startups excluded).
+The accepted first-batch r1 HOLD occurs 175.229 ms after inference, before
+heartbeat FAILSAFE at 100.405 ms after heartbeat. These intervals use different
+reference events. Sources: `scratch/e3-real/results/e4_f4_more/{20261012T102112Z_f4,20261012T105039Z_f4b}/r*/F4-r01/{run.json,power.csv,pipeline/state_events.csv,pipeline/echo.csv}`.
 
 ## Problems found and how they were traced
 
@@ -316,7 +414,7 @@ These observations do not establish a false-trip rate or worst-case safety bound
 | DMA correction | MEASURED smoke6 has 0 UART/CRC errors in the nominal ASSUMED 60 s run. CALCULATED from raw status: 616 records, all split UART error counters, drops, event losses and clock-fallback flags zero. This smoke is power-flagged, so it establishes a retained link observation, not clean timing or a lossless guarantee. |
 | E3 backlog upstream of replacement | Advancing inference completions arrived slower than source releases while bridge replacements stayed zero. INFERRED input queue overload. E3b adds latest-value before inference; raw observations support the mechanism, but all loaded reruns fail power validity. |
 | F4 clock-sync starvation | A higher-priority FIFO hog starved the bridge. MEASURED excluded RMS maxima: 226.585 / 445.817 / 346.040 µs, exceeding the ASSUMED 200 µs gate; one also has live power flags. MCU events remain recorded, but all invalid runs are excluded from both timing summaries. The fault also disrupts its mapped-time observer. |
-| Corrected transition interpretation; tick-rate issue closed | The earlier roughly 98 ms value measures heartbeat age at source-age HOLD (reason 9), not heartbeat timeout. Recompute each local interval using its event reason. F1/F2 HOLD is about 175 ms after INFERENCE; heartbeat FAILSAFE reason 3 is 100.128–100.641 ms after HEARTBEAT. Accepted F4 is direct FAILSAFE reason 3. MEASURED F5 r5 SysTick/TIM2 self-check: -8 ppm over a 1000 ms window (`tick_rate_ppm`, `tick_window_ms`). There is no tick-rate bug behind this value. Independent absolute clock/GPIO calibration remains pending. |
+| Corrected transition interpretation; tick-rate issue closed | The earlier roughly 98 ms value measures heartbeat age at source-age HOLD (reason 9), not heartbeat timeout. Recompute each local interval using its event reason. F1/F2 HOLD is about 175 ms after INFERENCE; heartbeat FAILSAFE reason 3 is 100.128–100.641 ms after HEARTBEAT. Original accepted F4 is direct FAILSAFE reason 3; one extra accepted run first enters HOLD (see Round 14). MEASURED F5 r5 SysTick/TIM2 self-check: -8 ppm over a 1000 ms window (`tick_rate_ppm`, `tick_window_ms`). There is no tick-rate bug behind this value. Independent absolute clock/GPIO calibration remains pending. |
 
 Sources: this ticket's cyclictest incident description; `scratch/pi-timing-tools/tools/timing/cyclictest_campaign.sh`, `scratch/pi-timing-tools/results/cyclictest/SUMMARY.md`, and `scratch/pi-timing-tools/results/cyclictest/20261008T091937Z_cyc_P0/B0_idle_r1/sched_check.txt`; `scratch/inference-baseline/results/20261008T085429Z_inference_livepower/SUMMARY.md`; `scratch/fw-rx-fix/results/hw_bringup/hw_smoke{1,2,3_hsi,4_batt,5_oldfw,6_dma}/mcu_status.csv`, `echo.csv`, `config.json`, and `summary.json`; `scratch/fw-rx-fix/stm32/firmware/README.md`; E3/E3b sources above; `scratch/fw-rx-fix/results/e4/20261012T093526Z_e4/e4_runs.csv`; main-checkout `slides_course/REVIEW_LOG.md`, rounds 11–13. UART/CRC pairs are cumulative counters at the final retained status, not normalized equal-duration error rates.
 
@@ -333,6 +431,7 @@ Additional correction sources: `scratch/tick-f5/results/f5/20261012T101949Z_f5/r
 |---|---|---|
 | Power and repetitions | Selected clean runs under the documented supply; flagged runs preserved. | Clean loaded E3b evidence, long-tail bounds, or broad statistical confidence from the small repeat count. |
 | Software transport | Linux scheduling, IPC and freshness measurements using pty. | Physical UART serialization, MCU reception AoI, electrical reliability, or a pty-to-hardware latency equivalence. |
+| Physical E3 | FLAGGED STM32 reception-age pattern across 18 invalid runs. | Clean power/clock-valid comparison, measured latest-policy HOLD occupancy, or independent held-value AoI. |
 | Physical E4 | MCU-local and mapped state-transition observations. | Independently measured safe-output timing; no logic analyzer yet, no calibrated transit/rearm/false-trip margin; F5 has 5/5 shorter-window stale-result observations. |
 | Firmware | External supervisor, static RTOS resources, GPIO state indication. | Proven stack margins, unrestricted DMA losslessness, automatic recovery from lost MCO, independent hardware watchdog, or actuator safety. |
 | WBR method | Timestamp each stage; separate liveness from freshness; place latest-value before costly work; record actual priorities/power; use fault injection and an independent observer. | Transferring this rig's latency numbers, thresholds, baud accuracy, or safe-state definition to another workload, MCU and control loop. |
@@ -348,7 +447,7 @@ access to its separate Pi (`docs/ROADMAP.md`).
 ## Next steps
 
 - [ ] Restore clean power, retain supply/rail/cooling metadata, and rerun loaded
-  E3b. Reach the planned valid-repeat gate; keep failed runs and raw data.
+  E3b and real-UART E3; fix empty-event validity handling and confirm rearm/state initialization. Reach the planned valid-repeat gate; keep failed runs and raw data.
 - [ ] Independently measure SysTick, TIM2 and state GPIO edges for absolute
   calibration; the internal -8 ppm check closes the suspected tick-rate bug.
 - [ ] Capture fault onset, MCU decision and safe GPIO output on one analyzer
@@ -362,7 +461,7 @@ access to its separate Pi (`docs/ROADMAP.md`).
   exposure and false-trip/rearm assessment.
 - [ ] Populate run-time threshold snapshots; calibrate transit allowance, rearm
   health and false-trip margins against workload timing. Preserve the latch.
-- [ ] Run physical E1–E3 and obtain MCU held-value AoI with independent clock
+- [ ] Run physical E1/E2, repeat FLAGGED physical E3, and obtain MCU held-value AoI with independent clock
   validation. Keep reception misses, time violations, skips and missing inputs
   separate. Extend exposure before discussing rare-event bounds.
 - [ ] If evaluating quotas or packaged P3, hold workload and queue policy
