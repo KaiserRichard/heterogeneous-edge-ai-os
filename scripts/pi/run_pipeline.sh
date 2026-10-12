@@ -11,6 +11,7 @@ threads=1
 infer_python="${PYTHON:-python3}"
 duration=10
 policy=fifo
+input_policy=fifo
 period_ms=100
 heartbeat_ms=20
 work_us=20000
@@ -25,6 +26,7 @@ original_args=("$@")
 usage() {
   cat <<'EOF'
 Usage: scripts/pi/run_pipeline.sh [--duration SECONDS] [--policy fifo|latest]
+  [--input-policy fifo|latest] (inference input, default fifo; --policy controls bridge)
   [--period-ms N] [--heartbeat-ms N] [--work-us N | --durations FILE]
   [--stage stub|onnx] [--model PATH] [--threads N]
   [--serial DEVICE] [--sync-gpio N] [--echo-ms N] [--baud N] [--run-dir PATH] [--drain-seconds N]
@@ -42,7 +44,7 @@ while (($#)); do
   case "$1" in
     --help) usage; exit 0 ;;
     --mlock) lock_memory=1; source_options+=(--mlock); bridge_options+=(--mlock); shift ;;
-    --serial|--sync-gpio|--echo-ms|--stage|--model|--threads|--duration|--policy|--period-ms|--heartbeat-ms|--work-us|--durations|--baud|--run-dir|--drain-seconds|--source-priority|--source-cpu|--infer-priority|--infer-cpu|--bridge-priority|--bridge-cpu)
+    --serial|--sync-gpio|--echo-ms|--stage|--model|--threads|--duration|--policy|--input-policy|--period-ms|--heartbeat-ms|--work-us|--durations|--baud|--run-dir|--drain-seconds|--source-priority|--source-cpu|--infer-priority|--infer-cpu|--bridge-priority|--bridge-cpu)
       (($# >= 2)) || { echo "missing value for $1" >&2; exit 2; }
       key="$1"; value="$2"; shift 2
       case "$key" in
@@ -54,6 +56,7 @@ while (($#)); do
         --threads) threads="$value" ;;
         --duration) duration="$value" ;;
         --policy) policy="$value" ;;
+        --input-policy) input_policy="$value" ;;
         --period-ms) period_ms="$value" ;;
         --heartbeat-ms) heartbeat_ms="$value" ;;
         --work-us) work_us="$value" ;;
@@ -76,6 +79,8 @@ done
 }
 [[ "$drain_seconds" =~ ^[0-9]+$ && ${#drain_seconds} -le 2 ]] || { echo "invalid drain duration" >&2; exit 2; }
 [[ "$policy" == fifo || "$policy" == latest ]] || { echo "invalid policy" >&2; exit 2; }
+[[ "$input_policy" == fifo || "$input_policy" == latest ]] || { echo "invalid input policy" >&2; exit 2; }
+infer_options+=(--input-policy "$input_policy")
 [[ "$stage" == stub || "$stage" == onnx ]] || { echo "invalid stage" >&2; exit 2; }
 if [[ "$stage" == onnx ]]; then
   [[ -f "$model" ]] || { echo "--stage onnx requires --model PATH to an existing file" >&2; exit 2; }
@@ -144,12 +149,12 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 printf '%q ' "$0" "${original_args[@]}" > "$run/command.txt"
 printf '\n' >> "$run/command.txt"
-python3 - "$run" "${HEA_COOLER:-unknown}" "$duration" "$drain_seconds" "$policy" "$period_ms" "$heartbeat_ms" "$work_us" "$baud" "$stage" "$model" "$threads" "$serial" <<'PY'
+python3 - "$run" "${HEA_COOLER:-unknown}" "$duration" "$drain_seconds" "$policy" "$period_ms" "$heartbeat_ms" "$work_us" "$baud" "$stage" "$model" "$threads" "$serial" "$input_policy" <<'PY'
 import json, sys
 from pathlib import Path
-run, cooler, duration, drain, policy, period, hb, work, baud, stage, model, threads, serial = sys.argv[1:]
+run, cooler, duration, drain, policy, period, hb, work, baud, stage, model, threads, serial, input_policy = sys.argv[1:]
 config = dict(evidence=("real UART: UNVERIFIED ON HARDWARE" if serial else "software PTY stand-in, no physical UART/STM32"), cooler=cooler,
-              duration_seconds=int(duration), drain_seconds=int(drain), policy=policy,
+              duration_seconds=int(duration), drain_seconds=int(drain), policy=policy, input_policy=input_policy,
               period_ms=int(period), heartbeat_ms=int(hb), work_us=int(work), baud=int(baud),
               serial=serial or None, stage=stage, model=model if stage == "onnx" else None, threads=int(threads))
 (Path(run) / "config.json").write_text(json.dumps(config, indent=2) + "\n")

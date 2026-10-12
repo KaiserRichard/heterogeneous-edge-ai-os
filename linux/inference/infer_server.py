@@ -3,6 +3,7 @@
 import argparse
 import csv
 import errno
+import json
 import os
 import signal
 import socket
@@ -13,22 +14,50 @@ from bench_common import SOURCE_RECORD, clock, pack_result, parse_cpu, pin_cpu, 
 from model_runtime import Model, add_runtime_args, classify, load_image, preprocess
 
 
-def serve(model, np, image, source_path, bridge_path, now, max_frames=None, samples=None):
+def receive_input(receiver, input_policy='fifo', samples=None):
+    """Wait for a valid record; latest drains to the last valid arrival, not max ID.
+
+    Skips have no completion timestamp because no inference was performed.
+    Malformed datagrams never replace the current valid candidate.
+    """
+    if input_policy not in ('fifo', 'latest'):
+        raise ValueError('input policy must be fifo or latest')
+    newest = None
+    skipped = 0
+    while True:
+        flags = socket.MSG_DONTWAIT if newest is not None else 0
+        try:
+            # One extra byte detects oversized records after truncation.
+            data = receiver.recv(SOURCE_RECORD.size + 1, flags)
+        except BlockingIOError:
+            return newest, skipped
+        try:
+            record = unpack_source(data)
+        except ValueError as exc:
+            print(f'dropping malformed source datagram: {exc}', file=sys.stderr)
+            continue
+        if newest is not None:
+            skipped += 1
+            if samples is not None:
+                samples.writerow((*newest, '', 'skipped_stale'))
+        newest = record
+        if input_policy == 'fifo':
+            return newest, skipped
+
+
+def serve(model, np, image, source_path, bridge_path, now, max_frames=None, samples=None,
+          input_policy='fifo'):
     """Bind without deleting existing endpoints; unlink only our own bound socket."""
     source_path = Path(source_path)
     handled = 0
+    skipped = 0
     with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as receiver, \
             socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as sender:
         receiver.bind(str(source_path))
         try:
             while max_frames is None or handled < max_frames:
-                # One extra byte ensures oversized records cannot look valid after truncation.
-                data = receiver.recv(SOURCE_RECORD.size + 1)
-                try:
-                    frame_id, t_input_ns = unpack_source(data)
-                except ValueError as exc:
-                    print(f'dropping malformed source datagram: {exc}', file=sys.stderr)
-                    continue
+                (frame_id, t_input_ns), stale = receive_input(receiver, input_policy, samples)
+                skipped += stale
                 output = model.run(preprocess(np, image))
                 class_id, confidence = classify(np, output)
                 t_done_ns = now()  # Completion includes preprocessing + postprocessing.
@@ -48,6 +77,7 @@ def serve(model, np, image, source_path, bridge_path, now, max_frames=None, samp
                 handled += 1
         finally:
             source_path.unlink()
+            print(json.dumps(dict(processed=handled, skipped=skipped)), file=sys.stderr)
     return handled
 
 
@@ -57,7 +87,8 @@ def main(argv=None):
     parser.add_argument('--socket', '--source-socket', dest='source_socket', required=True)
     parser.add_argument('--output', '--bridge-socket', dest='bridge_socket', required=True)
     parser.add_argument('--fifo-priority', type=int, choices=range(100), default=0)
-    parser.add_argument('--csv', help='log every completion, including IPC drops')
+    parser.add_argument('--input-policy', choices=('fifo', 'latest'), default='fifo')
+    parser.add_argument('--csv', help='log completions, IPC drops and skipped_stale inputs')
     parser.add_argument('--max-frames', type=int, help='exit after N valid frames; default unlimited')
     args = parser.parse_args(argv)
     if args.seed < 0 or (args.max_frames is not None and args.max_frames < 1):
@@ -87,9 +118,10 @@ def main(argv=None):
                 samples = csv.writer(stream)
                 samples.writerow(('frame_id', 't_input_ns', 't_done_ns', 'status'))
                 serve(model, np, image, args.source_socket, args.bridge_socket, now,
-                      args.max_frames, samples)
+                      args.max_frames, samples, args.input_policy)
         else:
-            serve(model, np, image, args.source_socket, args.bridge_socket, now, args.max_frames)
+            serve(model, np, image, args.source_socket, args.bridge_socket, now, args.max_frames,
+                  input_policy=args.input_policy)
     except KeyboardInterrupt:
         pass
 

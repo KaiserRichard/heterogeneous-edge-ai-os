@@ -11,7 +11,7 @@ struct hea_options {
     uint64_t echo_ms;
     uint64_t period_ms, heartbeat_ms, work_us, count;
     unsigned baud;
-    int priority, cpu, latest, serial_fd, socket_fd, output_fd, lock_memory;
+    int priority, cpu, latest, input_latest, serial_fd, socket_fd, output_fd, lock_memory;
 };
 extern volatile sig_atomic_t hea_stop;
 int hea_options_parse(int argc, char **argv, struct hea_options *o);

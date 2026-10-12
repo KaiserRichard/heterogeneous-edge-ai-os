@@ -20,7 +20,7 @@
 #endif
 
 #define N 32u
-static pid_t children[8];
+static pid_t children[16];
 static size_t child_count;
 static int connected_ipc;
 static char directory[] = "build/pipeline-test-XXXXXX";
@@ -267,6 +267,58 @@ static void fake_mcu(void)
     assert(count == 3); fclose(f);
     puts("PASS: fake MCU base/v3 diagnostics, CRC recovery, echo estimator and timer wrap over openpty"); close(master); close(slave); close(pair[0]); close(pair[1]);
 }
+static void inference_input_policy(void)
+{
+    for (unsigned mode = 0; mode < 3u; ++mode) {
+        int input[2], output[2];
+        assert(!socketpair(AF_UNIX, SOCK_DGRAM, 0, input));
+        assert(!socketpair(AF_UNIX, SOCK_DGRAM, 0, output));
+        char in_fd[32], out_fd[32], csv_path[256];
+        snprintf(in_fd, sizeof(in_fd), "%d", input[1]);
+        snprintf(out_fd, sizeof(out_fd), "%d", output[0]);
+        path(csv_path, sizeof(csv_path), mode == 2u ? "latest.csv" : mode == 1u ? "fifo.csv" : "default.csv");
+        uint8_t bytes[HEA_INPUT_SIZE + 1u];
+        uint64_t timestamp = hea_raw_now();
+        /* Queue a burst before launch: deterministic drain, including ID wrap. */
+        struct hea_input records[] = {{UINT32_MAX - 1u, timestamp}, {UINT32_MAX, timestamp}, {0, timestamp}};
+        for (unsigned i = 0; i < 3u; ++i) {
+            hea_input_pack(&records[i], bytes);
+            assert(send(input[0], bytes, HEA_INPUT_SIZE, 0) == HEA_INPUT_SIZE);
+            if (i == 0u) assert(send(input[0], bytes, 1, 0) == 1);
+        }
+        assert(send(input[0], bytes, sizeof(bytes), 0) == (ssize_t)sizeof(bytes));
+        struct hea_input future = {1, timestamp + UINT64_C(60000000000)};
+        hea_input_pack(&future, bytes);
+        assert(send(input[0], bytes, HEA_INPUT_SIZE, 0) == HEA_INPUT_SIZE);
+        char *args[] = {"build/san/hea_infer_stub", "--socket-fd", in_fd, "--output-fd", out_fd,
+            "--csv", csv_path, "--work-us", "0", "--count", "1",
+            mode ? "--input-policy" : NULL, mode == 2u ? "latest" : "fifo", NULL};
+        pid_t infer = launch(args, -1, -1, 0);
+        finish(infer, 0);
+        uint8_t result_bytes[HEA_RESULT_SIZE];
+        assert(recv(output[1], result_bytes, sizeof(result_bytes), MSG_DONTWAIT) == HEA_RESULT_SIZE);
+        struct hea_result result;
+        assert(!hea_result_unpack(&result, result_bytes, sizeof(result_bytes)));
+        assert(result.frame_id == records[mode == 2u ? 2u : 0u].frame_id);
+        assert(result.t_input_ns == timestamp && result.t_done_ns >= timestamp);
+        FILE *f = fopen(csv_path, "r"); assert(f);
+        char line[256]; assert(fgets(line, sizeof(line), f));
+        unsigned skipped = 0, completed = 0;
+        while (fgets(line, sizeof(line), f)) {
+            if (strstr(line, "skipped_stale")) {
+                uint32_t id; uint64_t ti;
+                assert(sscanf(line, "%" SCNu32 ",%" SCNu64, &id, &ti) == 2);
+                assert(skipped < 2u && id == records[skipped].frame_id && ti == timestamp);
+                assert(strstr(line, ",,0,skipped_stale"));
+                ++skipped;
+            } else { assert(strstr(line, ",sent")); ++completed; }
+        }
+        fclose(f);
+        assert(completed == 1u && skipped == (mode == 2u ? 2u : 0u));
+        for (unsigned i = 0; i < 2u; ++i) { close(input[i]); close(output[i]); }
+    }
+    puts("PASS: inference default/FIFO/latest socketpair bursts, skipped IDs, malformed/future rejection and ID wrap");
+}
 int main(void)
 {
     assert(mkdtemp(directory)); assert(!atexit(cleanup));
@@ -279,7 +331,7 @@ int main(void)
         puts("SKIP: named Unix socket bind denied by sandbox; exercising the same datagram ABI via socketpair");
     } else unlink(a.sun_path);
     close(probe);
-    run_case(0); run_case(1); fake_mcu();
+    run_case(0); run_case(1); fake_mcu(); inference_input_policy();
 #ifdef __linux__
     assert(!hea_sleep_until(hea_now(CLOCK_MONOTONIC) + 1000000u));
     puts("PASS: Linux absolute CLOCK_MONOTONIC sleep and RAW timestamps exercised");

@@ -42,6 +42,9 @@ def plan(experiment, reps, worst=None):
         conditions = [('P0', stressor, 'latest') for stressor in STRESSORS]
     elif experiment == 'E2':
         conditions = [(p, s, 'latest') for p in ('P0', 'P1') for s in ['B0_idle'] + worst[:2]]
+    elif experiment == 'E3B':
+        # In this experiment q is the input policy; bridge is fixed to latest.
+        conditions = [('P1', s, q) for s in ('B0_idle', 'B2_memrate_c23') for q in ('fifo', 'latest')]
     else:
         conditions = [('P1', s, q) for s in ['B0_idle', worst[0]] for q in ('fifo', 'latest')]
     result = [(p, s, q, rep) for rep in range(1, reps + 1) for p, s, q in conditions]
@@ -174,11 +177,14 @@ def stop_process(process, elevated=False, group=False):
 
 def execute_run(args, experiment, condition):
     profile, stressor, policy, repetition = condition
+    input_policy = policy if experiment == 'E3B' else 'fifo'
+    bridge_policy = 'latest' if experiment == 'E3B' else policy
     run = args.out / f'{experiment}_{profile}_{stressor}_{policy}_r{repetition}'
     run.mkdir()
     stress = stress_commands(stressor)
     json_write(run / 'condition.json', dict(experiment=experiment, profile=profile, stressor=stressor,
-               policy=policy, repetition=repetition, exact_load=' ; '.join(shlex.join(c) for c in stress) or 'idle'))
+               policy=bridge_policy, input_policy=input_policy, repetition=repetition,
+               exact_load=' ; '.join(shlex.join(c) for c in stress) or 'idle'))
     snapshot(run / 'meta_before.json')
     stop = threading.Event()
     evidence = []
@@ -190,7 +196,8 @@ def execute_run(args, experiment, condition):
     stressor_ok = True
     rc = 1
     command = ['bash', str(ROOT / 'scripts/pi/run_pipeline.sh'), '--duration', str(args.seconds),
-               '--period-ms', '100', '--policy', policy, '--stage', args.stage, '--threads', '1',
+               '--period-ms', '100', '--policy', bridge_policy, '--input-policy', input_policy,
+               '--stage', args.stage, '--threads', '1',
                '--source-cpu', '1', '--infer-cpu', '0', '--bridge-cpu', '1',
                '--run-dir', str(run / 'pipeline')]
     if args.model:
@@ -258,7 +265,7 @@ def positive(value):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('experiment', choices=['E1', 'E2', 'E3', 'ALL'])
+    parser.add_argument('experiment', choices=['E1', 'E2', 'E3', 'E3B', 'ALL'])
     parser.add_argument('out', type=Path)
     parser.add_argument('reps', type=positive, nargs='?', default=3)
     parser.add_argument('seconds', type=positive, nargs='?', default=60)
@@ -294,10 +301,11 @@ def main():
                    source_period_ms=100, python=args.python, p2='not done: systemd quota/delegation not validated',
                    evidence=e_summary.EVIDENCE, ranking='E1 median per-run delivery P99; ties: max then stressor name'))
         (args.out / 'platform.txt').write_text(capture(['stress-ng', '--version']) + '\n' + capture(['lscpu']) + '\n')
-        experiments = ['E1', 'E2', 'E3'] if args.experiment == 'ALL' else (['E1', args.experiment] if args.experiment != 'E1' else ['E1'])
+        experiments = (['E1', 'E2', 'E3', 'E3B'] if args.experiment == 'ALL' else
+                       [args.experiment] if args.experiment in ('E1', 'E3B') else ['E1', args.experiment])
         worst = None
         for experiment in experiments:
-            if experiment != 'E1':
+            if experiment in ('E2', 'E3'):
                 worst = e_summary.worst_stressors(args.out)
                 json_write(args.out / 'worst_stressors.json', worst)
             order = plan(experiment, args.reps, worst)

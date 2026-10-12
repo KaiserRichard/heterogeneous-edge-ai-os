@@ -29,13 +29,14 @@ def write_csv(path, fields, rows):
         writer.writerows(rows)
 
 
-def fixture(root, experiment='E1', stressor='B0_idle', rep=1, ages=(100, 101, 150, 151)):
-    run = root / f'{experiment}_P0_{stressor}_latest_r{rep}'
+def fixture(root, experiment='E1', stressor='B0_idle', rep=1, ages=(100, 101, 150, 151), input_policy='fifo'):
+    profile = 'P1' if experiment == 'E3B' else 'P0'
+    run = root / f'{experiment}_{profile}_{stressor}_latest_{input_policy}_r{rep}'
     run.mkdir()
     p = run / 'pipeline'
     p.mkdir()
-    write_json(run / 'condition.json', dict(experiment=experiment, profile='P0', stressor=stressor,
-               policy='latest', repetition=rep, exact_load='synthetic_test_load'))
+    write_json(run / 'condition.json', dict(experiment=experiment, profile=profile, stressor=stressor,
+               policy='latest', input_policy=input_policy, repetition=rep, exact_load='synthetic_test_load'))
     for name in ('meta_before.json', 'meta_after.json'):
         write_json(run / name, {'throttled': '0x0'})
     write_json(run / 'execution.json', {'stressor_ok': True, 'settings_ok': True, 'monitor_ok': True})
@@ -78,6 +79,55 @@ class SummaryTests(unittest.TestCase):
         self.assertEqual(result['cpu_percent'], 30)
         self.assertEqual(result['rss_mib'], 12)
         self.assertAlmostEqual(result['uninitialized_seconds'], .1)
+
+    def test_e3b_skips_are_separate_from_completions_and_input_policies_group_separately(self):
+        fifo = fixture(self.root, experiment='E3B')
+        latest = fixture(self.root, experiment='E3B', input_policy='latest')
+        # Synthetic skips have no t_done_ns. They must not enter service samples.
+        for run in (fifo, latest):
+            with (run / 'pipeline/source.csv').open('a') as stream:
+                stream.write('10,900000000,sent\n11,950000000,sent\n')
+        with (latest / 'pipeline/infer.csv').open('a') as stream:
+            stream.write('10,900000000,,skipped_stale\n11,950000000,,skipped_stale\n')
+        result = e_summary.summarize_run(latest)
+        self.assertTrue(result['valid'], result['validity'])
+        self.assertEqual(result['infer_completed'], 4)
+        self.assertEqual(result['infer_skipped_stale'], 2)
+        self.assertEqual(result['service_p99_ms'], 10)
+        self.assertEqual(result['infer_ipc_dropped'], 0)
+        self.assertEqual(result['rx_received'], 4)
+        self.assertEqual(result['end_to_end_missing'], 2)
+        self.assertEqual((result['delivery_p50_ms'], result['delivery_p99_ms']), (101, 151))
+        self.assertEqual((result['misses_100'], result['misses_150']), (3, 1))
+        # Analytic held AoI: 100->301, 101->350, 150->351, 151->400 ms.
+        self.assertAlmostEqual(result['aoi_time_average_ms'], 239.33333333333333)
+        self.assertEqual(result['aoi_peak_ms'], 400)
+        _, conditions = e_summary.write_summary(self.root)
+        self.assertEqual(len(conditions), 2)
+        self.assertEqual({r['input_policy'] for r in conditions}, {'fifo', 'latest'})
+        with (self.root / 'summary/E3B_table.csv').open() as stream:
+            rows = list(csv.DictReader(stream))
+        row = next(r for r in rows if r['Input policy'] == 'latest')
+        self.assertEqual(row['Bridge policy'], 'latest')
+        self.assertEqual(row['Reception AoI P50'], '101 ms')
+        self.assertEqual(row['Reception AoI P99'], '151 ms')
+        self.assertEqual(row['Skipped count'], '2')
+        self.assertEqual(row['Deadline misses'], '3/1 of 4')
+        self.assertEqual(row['Delivered count'], '4')
+        (latest / 'exit_code').write_text('1')
+        _, conditions = e_summary.write_summary(self.root)
+        self.assertEqual(next(r for r in conditions if r['input_policy'] == 'latest')['valid_reps'], 0)
+        self.assertIn(latest.name, (self.root / 'summary/excluded.csv').read_text())
+
+    def test_historical_campaign_defaults_to_fifo_input(self):
+        run = fixture(self.root)
+        config = e_summary.read_json(run / 'condition.json')
+        del config['input_policy']
+        write_json(run / 'condition.json', config)
+        result = e_summary.summarize_run(run)
+        self.assertTrue(result['valid'])
+        self.assertEqual(result['input_policy'], 'fifo')
+        self.assertEqual(result['infer_skipped_stale'], 0)
 
     def test_transient_live_bits_excluded_even_with_clean_endpoints(self):
         run = fixture(self.root)
@@ -228,25 +278,40 @@ class RunnerTests(unittest.TestCase):
                     patch.object(campaign.os, 'SCHED_FIFO', 1, create=True), \
                     patch.object(campaign.os, 'SCHED_OTHER', 0, create=True):
                 campaign.execute_run(args, 'E2', ('P1', 'CPU_c23', 'latest', 1))
+                campaign.execute_run(args, 'E3B', ('P1', 'B2_memrate_c23', 'fifo', 1))
+                campaign.execute_run(args, 'E3B', ('P1', 'B2_memrate_c23', 'latest', 1))
             run = next(out.iterdir())
             self.assertEqual((run / 'validity').read_text().strip(), 'OK')
-            self.assertEqual(len(commands), 3)
+            self.assertEqual(len(commands), 9)
             self.assertEqual([c[2] for c in commands[:2]], ['2', '3'])
-            pipeline_command = commands[-1]
+            pipeline_command = commands[2]
             self.assertEqual(pipeline_command[:3], ['sudo', '-n', 'env'])
             self.assertEqual(pipeline_command[pipeline_command.index('--source-priority') + 1], '60')
             self.assertEqual(pipeline_command[pipeline_command.index('--bridge-priority') + 1], '70')
             self.assertIn('--mlock', pipeline_command)
             self.assertNotIn('--infer-priority', pipeline_command)
+            self.assertEqual(pipeline_command[pipeline_command.index('--input-policy') + 1], 'fifo')
+            for index, policy in ((5, 'fifo'), (8, 'latest')):
+                cmd = commands[index]
+                self.assertEqual(cmd[cmd.index('--policy') + 1], 'latest')
+                self.assertEqual(cmd[cmd.index('--input-policy') + 1], policy)
+                self.assertEqual(cmd[cmd.index('--source-priority') + 1], '60')
+                self.assertEqual(cmd[cmd.index('--bridge-priority') + 1], '70')
+            for run in out.glob('E3B*'):
+                condition = json.loads((run / 'condition.json').read_text())
+                self.assertEqual(condition['policy'], 'latest')
+                self.assertIn(condition['input_policy'], ('fifo', 'latest'))
             self.assertEqual(sudo.call_args.args[0][:4], ['sudo', '-n', 'chown', '-R'])
 
     def test_fixed_seed_matrix_and_independent_stress_cores(self):
         worst = ['B2_memrate_c23', 'CPU_c23']
-        for experiment, count in [('E1', 15), ('E2', 18), ('E3', 12)]:
+        for experiment, count in [('E1', 15), ('E2', 18), ('E3', 12), ('E3B', 12)]:
             order = campaign.plan(experiment, 3, worst)
             self.assertEqual(len(order), count)
             self.assertEqual(order, campaign.plan(experiment, 3, worst))
             self.assertEqual(len(set(order)), count)
+        self.assertEqual(set(campaign.plan('E3B', 1)), {
+            ('P1', s, q, 1) for s in ('B0_idle', 'B2_memrate_c23') for q in ('fifo', 'latest')})
         commands = campaign.stress_commands('B2_memrate_c23')
         self.assertEqual([c[2] for c in commands], ['2', '3'])
         self.assertTrue(all('--memrate' in c and '--memrate-bytes' in c for c in commands))
@@ -273,6 +338,24 @@ class RunnerTests(unittest.TestCase):
                 self.assertEqual(campaign.main(), 2)
                 run.assert_called_once_with(['sudo', '-n', 'true'])
                 self.assertFalse(out.exists())
+
+    def test_e3b_standalone_does_not_run_or_rank_e1(self):
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as temp:
+            out = Path(temp) / 'new'
+            with patch.object(sys, 'argv', ['e_campaign', 'E3B', str(out), '3']), \
+                    patch.object(campaign.platform, 'system', return_value='Linux'), \
+                    patch.object(campaign.shutil, 'which', return_value='/synthetic/bin'), \
+                    patch.object(campaign.subprocess, 'run', return_value=MagicMock(returncode=0)), \
+                    patch.object(campaign, 'capture', return_value='synthetic'), \
+                    patch.object(campaign, 'execute_run') as execute, \
+                    patch.object(e_summary, 'worst_stressors') as rank, \
+                    patch.object(e_summary, 'write_summary', return_value=([{'valid': True}], [])), \
+                    patch('builtins.print'):
+                self.assertEqual(campaign.main(), 0)
+                rank.assert_not_called()
+                self.assertEqual(execute.call_count, 12)
+                self.assertTrue(all(call.args[1] == 'E3B' for call in execute.call_args_list))
+                self.assertFalse((out / 'E1_order.json').exists())
 
 
 if __name__ == '__main__':

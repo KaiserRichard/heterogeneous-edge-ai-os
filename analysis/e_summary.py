@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""E1/E2/E3 campaign reports, standard library only. No illustrative results."""
+"""E1/E2/E3/E3B campaign reports, standard library only. No illustrative results."""
 import argparse
 import csv
 import json
@@ -16,6 +16,9 @@ COLUMNS = {
     'E2': ['Profile', 'Service latency', 'Delivery latency', 'CPU', 'RAM', 'Drops', 'Overflows', 'Exact load'],
     'E3': ['Policy', 'Time-average AoI', 'Peak AoI', 'Age-violation time', 'Deadline misses',
            'Generated count', 'Delivered count', 'Replaced count'],
+    'E3B': ['Input policy', 'Bridge policy', 'Time-average AoI', 'Peak AoI',
+            'Reception AoI P50', 'Reception AoI P99', 'Skipped count',
+            'Deadline misses', 'Delivered count'],
 }
 
 
@@ -107,6 +110,7 @@ def held_age(events, start, end):
 
 def summarize_run(run):
     config = read_json(run / 'condition.json')
+    config.setdefault('input_policy', 'fifo')  # Historical campaigns used FIFO input.
     result = dict(config, run=run.name, validity=validity(run))
     result['valid'] = result['validity'] == 'OK'
     if not result['valid']:
@@ -125,7 +129,7 @@ def summarize_run(run):
                     raise ValueError(f'no {label} samples')
                 result[f'{label}_{stat}_ms'] = value / 1000
         counts = report['counts']
-        for key in ('source_generated', 'source_ipc_dropped', 'infer_completed', 'infer_ipc_dropped',
+        for key in ('source_generated', 'source_ipc_dropped', 'infer_completed', 'infer_ipc_dropped', 'infer_skipped_stale',
                     'rx_received', 'bridge_overwritten', 'bridge_queue_dropped', 'bridge_discarded_on_stop',
                     'end_to_end_missing', 'bridge_to_rx_missing', 'rx_crc_errors'):
             if counts[key] is None:
@@ -160,12 +164,12 @@ def summarize_run(run):
 def aggregate(runs):
     groups = {}
     for r in runs:
-        key = tuple(r[k] for k in ('experiment', 'profile', 'stressor', 'policy'))
+        key = tuple(r.get(k, 'fifo') for k in ('experiment', 'profile', 'stressor', 'policy', 'input_policy'))
         groups.setdefault(key, []).append(r)
     output = []
     for key, members in sorted(groups.items()):
         valid = [r for r in members if r['valid']]
-        row = dict(zip(('experiment', 'profile', 'stressor', 'policy'), key))
+        row = dict(zip(('experiment', 'profile', 'stressor', 'policy', 'input_policy'), key))
         row.update(valid_reps=len(valid), total_reps=len(members), exact_load=members[0]['exact_load'])
         for field in sorted({k for r in valid for k, v in r.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}):
             if field == 'repetition':
@@ -195,6 +199,14 @@ def table_row(r):
         return dict(zip(COLUMNS[r['experiment']], [r['stressor'] if r['experiment'] == 'E1' else r['profile'],
                     latency('service'), latency('delivery'), fmt(r.get('cpu_percent')) + ' %',
                     fmt(r.get('rss_mib')) + ' MiB', fmt(r.get('drops')), fmt(r.get('overflows')), r['exact_load']]))
+    if r['experiment'] == 'E3B':
+        return dict(zip(COLUMNS['E3B'], [r.get('input_policy', 'fifo'), r['policy'],
+                    fmt(r.get('aoi_time_average_ms')) + ' ms (initialized)',
+                    fmt(r.get('aoi_peak_ms')) + ' ms',
+                    fmt(r.get('delivery_p50_ms')) + ' ms', fmt(r.get('delivery_p99_ms')) + ' ms',
+                    fmt(r.get('infer_skipped_stale')),
+                    f"{fmt(r.get('misses_100'))}/{fmt(r.get('misses_150'))} of {fmt(r.get('deadline_denominator'))}",
+                    fmt(r.get('rx_received'))]))
     return dict(zip(COLUMNS['E3'], [r['policy'], fmt(r.get('aoi_time_average_ms')) + ' ms (initialized)',
                 fmt(r.get('aoi_peak_ms')) + ' ms',
                 f"{fmt(r.get('violation_100_seconds'))}/{fmt(r.get('violation_150_seconds'))} s",
@@ -215,7 +227,7 @@ def latex_table(records, columns, per_run=False):
     for data in records:
         # Excluded per-run measurements remain in the manifest/raw files.
         view = data if not per_run or data['valid'] else {k: data[k] for k in
-                ('experiment', 'profile', 'stressor', 'policy', 'exact_load')}
+                ('experiment', 'profile', 'stressor', 'policy', 'input_policy', 'exact_load')}
         row = table_row(view)
         label = (f"{data['run']}; {data['validity']}" if per_run else
                  f"{data['profile']} / {data['stressor']}; valid reps {data['valid_reps']}/{data['total_reps']}")
@@ -235,7 +247,7 @@ def write_summary(campaign):
     csv_write(dest / 'per_run.csv', runs)
     csv_write(dest / 'per_condition.csv', conditions)
     csv_write(dest / 'excluded.csv', [r for r in runs if not r['valid']],
-              ['run', 'experiment', 'profile', 'stressor', 'policy', 'validity'])
+              ['run', 'experiment', 'profile', 'stressor', 'policy', 'input_policy', 'validity'])
     for experiment, columns in COLUMNS.items():
         members = [r for r in conditions if r['experiment'] == experiment]
         # E2/E3 keep identical deck columns; partition matched stressors in LaTeX.
@@ -253,12 +265,16 @@ def write_summary(campaign):
         'CPU = median aggregate source/inference/bridge utilization (100% = one core); RAM = peak summed RSS. '
         'Drops = source/inference IPC drops + bridge queue drops; overflows = bridge queue drops (same events). '
         'Replaced = bridge overwritten; shutdown discards and missing deliveries are separately retained.\n\n'
-        'E3 held-value AoI follows the freshest informative delivery, integrates stalls and final tail in the declared RAW-clock window. '
+        'E3/E3B held-value AoI follows the freshest informative delivery, integrates stalls and final tail in the declared RAW-clock window. '
         'Before the first informative delivery AoI is undefined: uninitialized_seconds is retained; the time-average denominator '
         'is initialized_seconds. No zero-filled full-window AoI is claimed. '
         'Age-violation time columns use strict >100/>150 ms. Deadline misses are reception AoI >100/>150 ms, '
         'denominator all CRC-valid inference receptions including drain; missing deliveries are separately reported, not counted as receptions. '
         'Source period is 100 ms; measurement window excludes shutdown drain.\n\n'
+        'E3B fixes bridge policy to latest and compares input fifo/latest under P1 on idle and B2_memrate_c23. '
+        'Reception P50/P99 use the same joined CRC-valid receptions as delivery latency. Skipped count is infer.csv '
+        'status=skipped_stale; these records have no completion timestamp and are excluded from service latency/completion counts. '
+        'Skips are separate from IPC drops, bridge replacements and deadline misses; reception counts include drain.\n\n'
         'Validity requires complete monitor and applied-settings evidence, successful pipeline/stressors, no live bits (0xF), '
         'and no new sticky bits. Pre-existing sticky flags alone do not exclude a run. Exclusions remain on disk. '
         'CSV tables retain the exact deck columns; E2/E3 CSV row order and condition identities are in per_condition.csv; '
