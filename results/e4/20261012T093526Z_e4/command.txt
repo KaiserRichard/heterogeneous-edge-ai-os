@@ -1,0 +1,1 @@
+/home/richard/osbuild/rx/tools/experiments/e4_campaign.sh --rearm-command /home/richard/osbuild/rearm_via_mac.sh /home/richard/osbuild/results/20261012T093526Z_e4 5
