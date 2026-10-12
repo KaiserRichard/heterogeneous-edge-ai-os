@@ -130,6 +130,21 @@ def signal_fault(pid, fault, meta, marker=None):
                 marker.set(0)
 
 
+def stale_fault(pipeline, meta, marker=None):
+    """F5: acknowledge effective bridge controls, preserving heartbeat traffic."""
+    if marker:
+        marker.set(1)
+    try:
+        meta["suppress_request_pi_ns"] = raw()
+        meta["onset_pi_ns"] = pipeline.toggle_inference(True)
+        time.sleep(1)
+    finally:
+        meta["resume_request_pi_ns"] = raw()
+        meta["fault_end_pi_ns"] = pipeline.toggle_inference(False)
+        if marker:
+            marker.set(0)
+
+
 class Monitor:
     def __init__(self, directory):
         self.directory = directory
@@ -214,10 +229,12 @@ class Pipeline:
         bridge = self.launch("hea_bridge", ["--serial-fd", self.fd, "--baud", self.args.baud,
             "--socket", self.ipc / "bridge.sock", "--csv", self.directory / "bridge.csv",
             "--status-csv", self.directory / "mcu_status.csv", "--echo-csv", self.directory / "echo.csv",
+            "--control-csv", self.directory / "bridge_control.csv",
             *event_options, "--echo-ms", 500,
             "--heartbeat-ms", 20, "--policy", "latest", "--cpu", self.args.bridge_core], (self.fd,))
         self.ready(self.ipc / "bridge.sock", bridge)
         self.ready(self.directory / "state_events.csv", bridge)
+        self.ready(self.directory / "bridge_control.csv", bridge)
         # Validate the parallel branch's schema before any fault is attempted.
         summary.read_csv(self.directory / "state_events.csv", summary.EVENT_COLUMNS)
         infer = self.launch("hea_infer_stub", ["--socket", self.ipc / "source.sock", "--output", self.ipc / "bridge.sock",
@@ -229,6 +246,23 @@ class Pipeline:
     def check(self):
         if any(p.poll() is not None for p in self.processes.values()):
             raise RuntimeError(f"pipeline exited unexpectedly: {self.directory}")
+
+    def toggle_inference(self, suppressed):
+        path = self.directory / "bridge_control.csv"
+        initial = len(summary.read_csv(path))
+        self.processes["hea_bridge"].send_signal(signal.SIGUSR1)
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline:
+            self.check()
+            lines = path.read_text().splitlines(keepends=True)
+            if lines and not lines[-1].endswith("\n"):
+                lines.pop()
+            records = list(csv.DictReader(lines))
+            for row in records[initial:]:
+                if int(row["suppressed"]) == int(suppressed):
+                    return int(row["t_pi_ns"])
+            time.sleep(.005)
+        raise RuntimeError("bridge SIGUSR1 control acknowledgement timed out")
 
     def records(self):
         # Ignore a partially written final line while the line-buffered bridge runs.
@@ -363,10 +397,6 @@ def one_run(directory, fault, rep, args):
     directory.mkdir()
     meta = dict(fault=fault, rep=rep, status="FAILED",
                 evidence="UNVERIFIED ON HARDWARE" if getattr(args, "single", None) else summary.EVIDENCE)
-    if fault == "F5":
-        meta.update(status="NOT_DONE", reason="bridge has no documented runtime inference-only suppression control; HEARTBEAT must remain active")
-        save(directory / "run.json", meta)
-        return
     save(directory / "run.json", meta)
     monitor = Monitor(directory)
     pipeline = recovery = marker = None
@@ -392,6 +422,8 @@ def one_run(directory, fault, rep, args):
                 completed = subprocess.run(["sudo", "-n", sys.executable, str(Path(__file__).resolve()), "--hog", str(args.bridge_core), str(args.marker_gpio) if args.marker_gpio is not None else "-", str(args.wait_go) if args.wait_go else "-"],
                                            text=True, capture_output=True, check=True, timeout=100 if args.wait_go else 5)
                 meta.update(json.loads(completed.stdout))
+            elif fault == "F5":
+                stale_fault(pipeline, meta, marker)
             else:
                 signal_fault(target.pid, fault, meta, marker)
             until = meta["onset_pi_ns"] + (2 if args.single else 10) * 1_000_000_000
@@ -459,7 +491,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("outdir", type=Path, help="new campaign directory; refuses overwrite")
     parser.add_argument("reps", type=int, nargs="?", default=5)
-    parser.add_argument("--single", choices=("F1", "F2", "F4"))
+    parser.add_argument("--single", choices=("F1", "F2", "F3", "F4", "F5"))
     parser.add_argument("--marker-gpio", type=int)
     parser.add_argument("--wait-go", type=Path, help="single-mode release file; writes FILE.ready when FRESH")
     parser.add_argument("--serial", default="/dev/ttyAMA0")
@@ -481,12 +513,11 @@ def main():
         parser.error("--wait-go requires --single")
     if args.marker_gpio is not None and args.marker_gpio < 0:
         parser.error("marker GPIO must be nonnegative")
-    # Four executed faults; F5 is explicitly NOT_DONE on this bridge API.
-    minimum = 4 if args.single else 4 * args.reps * 32
-    budget = 120 + args.ready_timeout if args.single else 4 * args.reps * (32 + 2 * args.ready_timeout + 30 + 10)
+    minimum = 4 if args.single else 5 * args.reps * 32
+    budget = 120 + args.ready_timeout if args.single else 5 * args.reps * (32 + 2 * args.ready_timeout + 30 + 10)
     command = [str(REPO / "tools/experiments/e4_campaign.sh")] + [s for s in sys.argv[1:] if s != "--estimate-only"]
     print("Run command: " + shlex.join(command), flush=True)
-    print(f"Wall-time estimate: >= {minimum / 60:.1f} min measured windows; allow about {budget / 60:.1f} min with startup/rearm/timeouts plus initial build. F5 NOT DONE.", flush=True)
+    print(f"Wall-time estimate: >= {minimum / 60:.1f} min measured windows; allow about {budget / 60:.1f} min with startup/rearm/timeouts plus initial build. F5 uses acknowledged SIGUSR1 inference suppression.", flush=True)
     if args.estimate_only:
         return 0
     args.outdir = args.outdir.resolve()

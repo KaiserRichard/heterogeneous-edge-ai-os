@@ -217,3 +217,25 @@ selects the destination; `run_pipeline.sh` puts it in the experiment run directo
 MCU status also includes `clock_fallback` and `state_event_lost` for the new
 38-byte diagnostic layout; older nine/33-byte status still decodes. Clock/events
 from the updated firmware are **UNVERIFIED ON HARDWARE**.
+
+
+### Inference-only runtime fault control (F5)
+
+**UNVERIFIED ON HARDWARE.** Send `kill -USR1 <bridge-pid>` to toggle INFERENCE
+suppression. HEARTBEAT, ECHO and UART receive/status logging continue. The handler
+only changes a `sig_atomic_t` flag; the bridge loop applies it and writes
+`bridge_control.csv` (override with `--control-csv PATH`):
+`t_pi_ns,suppressed,pending_inference_bytes`. Times use CLOCK_MONOTONIC_RAW on
+Linux (the portable host test uses the existing MONOTONIC fallback on macOS).
+The timestamp is the effective bridge-loop toggle, not kernel signal delivery.
+Wait for an acknowledgement before the next signal: standard signals coalesce.
+A frame whose first byte was written completes to preserve CRC framing; unsent
+queued results and incoming results during suppression are discarded. Resume
+forwards results completed after the acknowledged resume boundary rather than
+replaying accumulated stale data, including datagrams delayed in kernel IPC. Reset/rearm
+is still needed after latched FAILSAFE. E4 F5 automates a one-second interval and
+uses the last accepted inference timestamp as its MCU-local detection reference.
+
+Status CSV now includes `tick_rate_ppm,tick_window_ms` from 64-byte firmware
+status; old status payloads leave these columns blank. See the protocol and
+firmware READMEs for the startup and ten-second measurement windows.

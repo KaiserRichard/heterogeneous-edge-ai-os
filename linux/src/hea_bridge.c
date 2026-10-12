@@ -34,6 +34,15 @@ static void align_mcu_epoch(struct hea_clock_wrap *wrap, struct hea_clock_filter
     wrap->last_extended = aligned;
 }
 
+/* Signal handler only publishes desired state. CSV/queue work stays in main.
+ * Standard signals coalesce: send the next toggle only after its CSV ack. */
+static volatile sig_atomic_t suppress_requested;
+static void inference_toggle(int sig)
+{
+    (void)sig;
+    suppress_requested = !suppress_requested;
+}
+
 struct pending {
     struct hea_result result;
     uint8_t bytes[HEA_MAX_FRAME];
@@ -87,13 +96,19 @@ int main(int argc, char **argv)
         fprintf(stderr, "hea_bridge requires --socket PATH --serial PATH\n"); return 2;
     }
     hea_signals();
+    struct sigaction toggle;
+    memset(&toggle, 0, sizeof(toggle));
+    toggle.sa_handler = inference_toggle;
+    sigemptyset(&toggle.sa_mask);
+    if (sigaction(SIGUSR1, &toggle, NULL)) hea_fatal("SIGUSR1 sigaction");
     uint32_t session = new_session();
     int serial = hea_serial_get(&o);
     int input = hea_socket_input(&o);
     FILE *csv = hea_csv_open(o.csv_path, "seq,frame_id,t_input_ns,t_done_ns,t_send_ns");
-    FILE *status = hea_csv_open(o.status_csv ? o.status_csv : "mcu_status.csv", "seq,version,t_rx_pi_ns,mcu_us,state,missed_heartbeats,rx_crc_errors,diagnostics_present,last_capture_us,capture_count,rx_dropped,uart_errors,queue_dropped,capture_lost,clock_fallback,state_event_lost,uart_ore,uart_fe,uart_ne,uart_pe,max_irq_masked_cycles");
+    FILE *status = hea_csv_open(o.status_csv ? o.status_csv : "mcu_status.csv", "seq,version,t_rx_pi_ns,mcu_us,state,missed_heartbeats,rx_crc_errors,diagnostics_present,last_capture_us,capture_count,rx_dropped,uart_errors,queue_dropped,capture_lost,clock_fallback,state_event_lost,uart_ore,uart_fe,uart_ne,uart_pe,max_irq_masked_cycles,tick_rate_ppm,tick_window_ms");
     FILE *echo = hea_csv_open(o.echo_csv ? o.echo_csv : "echo.csv", "seq,t1_pi_ns,t2_mcu_us,t3_mcu_us,t4_pi_ns,t2_mcu_extended_us,t3_mcu_extended_us,accepted,reference_pi_us,offset_us,delay_us,drift_ppm,rms_residual_us,sample_count,mapping_offset_us,mapping_drift,t1_mcu_est_us,t2_pi_est_us,t3_pi_est_us,t4_mcu_est_us");
     FILE *events = hea_csv_open(o.state_events_csv ? o.state_events_csv : "state_events.csv", "seq,t_rx_pi_ns,mcu_us,old,new,reason,last_hb_mcu_us,last_inf_mcu_us,lost_count,t_mcu_pi_est_ns");
+    FILE *control = hea_csv_open(o.control_csv ? o.control_csv : "bridge_control.csv", "t_pi_ns,suppressed,pending_inference_bytes");
     struct hea_parser parser; hea_parser_init(&parser);
     struct hea_clock_wrap wrap = {0};
     struct hea_clock_estimate storage[60];
@@ -110,7 +125,23 @@ int main(int argc, char **argv)
     uint64_t next_hb = hea_now(CLOCK_MONOTONIC);
     uint64_t next_echo = next_hb;
     uint64_t echo_interval = o.echo_ms * UINT64_C(1000000);
+    int suppressed = 0;
+    uint64_t resume_after = 0;
     while (!hea_stop) {
+        int requested = suppress_requested;
+        if (requested != suppressed) {
+            suppressed = requested;
+            uint64_t effective = hea_raw_now();
+            /* Never truncate a frame already started on UART. Finish that one;
+             * discard every unsent result, including queued pre-toggle data. */
+            size_t remaining = p.active && !p.heartbeat && !p.echo && p.offset ? p.size - p.offset : 0;
+            if (suppressed) {
+                q.count = 0;
+                if (p.active && !p.heartbeat && !p.echo && !p.offset) p.active = 0;
+            } else resume_after = effective;
+            if (fprintf(control, "%" PRIu64 ",%d,%zu\n", effective, suppressed, remaining) < 0)
+                hea_fatal("control CSV");
+        }
         uint64_t now = hea_now(CLOCK_MONOTONIC);
         uint64_t deadline = o.echo_ms && next_echo < next_hb ? next_echo : next_hb;
         uint64_t wait_ms = now >= deadline ? 0 : (deadline - now + 999999u) / 1000000u;
@@ -141,10 +172,12 @@ int main(int argc, char **argv)
                     else fprintf(status, ",,,,,");
                     if (ext && f->len >= 38) fprintf(status, ",%u,%" PRIu32, x.clock_fallback, x.state_event_lost);
                     else fprintf(status, ",,");
-                    if (ext && f->len == 58) fprintf(status,
+                    if (ext && f->len >= 58) fprintf(status,
                         ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32,
                         x.uart_ore, x.uart_fe, x.uart_ne, x.uart_pe, x.max_irq_masked_cycles);
                     else fprintf(status, ",,,,,");
+                    if (ext && f->len == 64) fprintf(status, ",%" PRId32 ",%u", x.tick_rate_ppm, x.tick_window_ms);
+                    else fprintf(status, ",,");
                     fprintf(status, "\n");
                     if (ferror(status)) hea_fatal("status CSV");
                 } else if (f->type == HEA_MSG_STATE_EVENT) {
@@ -228,6 +261,9 @@ int main(int argc, char **argv)
                 struct hea_result r;
                 if (hea_result_unpack(&r, bytes, (size_t)n)) { ++malformed; continue; }
                 ++received;
+                /* Kernel IPC backlog can outlive suppression: never replay a
+                 * result completed before the acknowledged resume boundary. */
+                if (suppressed || r.t_done_ns < resume_after) continue;
                 if (o.latest && p.active && !p.heartbeat && !p.echo && !p.offset) {
                     p.result = r; ++q.overwritten;
                 } else (void)hea_queue_push(&q, &r);
@@ -238,7 +274,7 @@ int main(int argc, char **argv)
         if (!p.active) {
             p.heartbeat = now >= next_hb;
             p.echo = !p.heartbeat && o.echo_ms && now >= next_echo;
-            if (!p.heartbeat && !p.echo && !hea_queue_pop(&q, &p.result)) continue;
+            if (!p.heartbeat && !p.echo && (suppressed || !hea_queue_pop(&q, &p.result))) continue;
             p.active = 1; p.offset = 0;
         }
         /* Restamp/repack until a first byte is accepted: EAGAIN is not a send. */
@@ -273,7 +309,7 @@ int main(int argc, char **argv)
             session, received, sent, heartbeats, q.overwritten, q.dropped, malformed,
             q.count + (size_t)(p.active && !p.heartbeat && !p.echo));
     close(input); close(serial); hea_socket_cleanup(&o);
-    if (fclose(status) || fclose(echo) || fclose(events)) hea_fatal("close receive CSV");
+    if (fclose(status) || fclose(echo) || fclose(events) || fclose(control)) hea_fatal("close receive CSV");
     if (fclose(csv)) hea_fatal("close bridge CSV");
     return 0;
 }

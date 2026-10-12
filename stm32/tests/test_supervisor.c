@@ -862,8 +862,40 @@ static void test_transition_ring(void)
     CHECK(e.last_hb_mcu_us == base && e.last_inf_mcu_us == base + 1u);
 }
 
+static void test_e4_distinct_hold_and_heartbeat_deadlines(void)
+{
+    /* Reproduce F2-r01 timestamps: HOLD is not the heartbeat timeout. */
+    const supervisor_config_t cfg = {100000, 200000, 500000, 1000000, 5000};
+    supervisor_t sv;
+    CHECK(supervisor_init(&sv, &cfg, 20557399));
+    CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 0, 0, 20557399) == SUPERVISOR_STATE_INIT);
+    supervisor_event_t result = {SUPERVISOR_EVENT_RESULT, true, 1, 0, 20557399,
+                                 sv.generation, 0, false, 20000, true};
+    CHECK(supervisor_update(&sv, &result, 20557399) == SUPERVISOR_STATE_FRESH);
+    CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 2, 0, 20634512) == SUPERVISOR_STATE_FRESH);
+    CHECK(supervisor_update(&sv, NULL, 20733108) == SUPERVISOR_STATE_HOLD);
+    CHECK(sv.last_transition_reason == SUPERVISOR_REASON_SOURCE_AGE_HOLD);
+    CHECK(20733108u - sv.last_heartbeat_ticks == 98596u);
+    CHECK(supervisor_update(&sv, NULL, 20734511) == SUPERVISOR_STATE_HOLD);
+    CHECK(supervisor_update(&sv, NULL, 20734512) == SUPERVISOR_STATE_FAILSAFE);
+    CHECK(sv.last_transition_reason == SUPERVISOR_REASON_HEARTBEAT_TIMEOUT);
+
+    /* F5: continuous heartbeats never renew result age. */
+    CHECK(supervisor_init(&sv, &cfg, 0));
+    CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 0, 0, 0) == SUPERVISOR_STATE_INIT);
+    result.received_at_ticks = 0; result.generation = sv.generation;
+    CHECK(supervisor_update(&sv, &result, 0) == SUPERVISOR_STATE_FRESH);
+    for (uint16_t i = 1; i <= 8; ++i)
+        CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, (uint16_t)(i + 1u), 0,
+                    (uint64_t)i * 20000u) == SUPERVISOR_STATE_FRESH);
+    CHECK(supervisor_update(&sv, NULL, 174999) == SUPERVISOR_STATE_FRESH);
+    CHECK(supervisor_update(&sv, NULL, 175000) == SUPERVISOR_STATE_HOLD);
+    CHECK(sv.last_transition_reason == SUPERVISOR_REASON_SOURCE_AGE_HOLD);
+}
+
 int main(void)
 {
+    test_e4_distinct_hold_and_heartbeat_deadlines();
     test_transition_ring();
     test_sequence_boundaries();
     test_configuration_and_startup();
@@ -887,6 +919,6 @@ int main(void)
     test_age_validation_and_saturation();
     test_age_adapter_versions_and_invalid_data();
     test_mcu_timer_wrap_extension();
-    printf("23 supervisor scenarios passed (%u checks, including exhaustive 16-bit increment wrap).\n", checks);
+    printf("24 supervisor scenarios passed (%u checks, including exhaustive 16-bit increment wrap).\n", checks);
     return 0;
 }

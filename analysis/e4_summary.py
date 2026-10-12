@@ -14,6 +14,16 @@ METRICS = ("detection_us", "detection_mcu_us", "failsafe_us", "failsafe_mcu_us",
 THRESHOLDS = ("heartbeat_timeout_us", "result_hold_us", "result_failsafe_us", "rearm_healthy_us", "transit_bound_us")
 
 
+def timeout_kind(reason):
+    """Compare a transition with the timer that caused it, not the injected fault."""
+    return {"3": "heartbeat", "HEARTBEAT_TIMEOUT": "heartbeat",
+            "2": "result_hold", "RESULT_SILENCE": "result_hold",
+            "4": "result_failsafe", "RESULT_TIMEOUT": "result_failsafe",
+            "9": "source_hold", "SOURCE_AGE_HOLD": "source_hold",
+            "10": "source_failsafe", "SOURCE_AGE_TIMEOUT": "source_failsafe"}.get(
+                str(reason).removeprefix("SUPERVISOR_REASON_"))
+
+
 def read_csv(path, columns=()):
     with path.open(newline="") as stream:
         reader = csv.DictReader(stream)
@@ -110,6 +120,7 @@ def summarize_run(run, rms_bound=200):
                   validity="INVALID", reasons="", false_transitions=None,
                   clock_rms_max_us=None, detection_status="not_observed", failsafe_status="not_observed",
                   detection_reason="", failsafe_reason="", local_reference=("last_inf_mcu_us" if meta["fault"] in ("F3", "F5") else "last_hb_mcu_us"),
+                  detection_reference="", failsafe_reference="",
                   recovery_status="not_observed", **{key: None for key in METRICS})
     if meta["status"] == "NOT_DONE":
         report.update(validity="NOT_DONE", evidence="NOT DONE", reasons=meta["reason"])
@@ -183,7 +194,11 @@ def summarize_run(run, rms_bound=200):
         for prefix, row in (("detection", detect), ("failsafe", failsafe)):
             if row:
                 report[prefix + "_us"] = (row["pi_ns"] - onset) / 1000
-                local = row["mcu_us"] - int(row[local_field])
+                kind = timeout_kind(row["reason"])
+                reference = ("last_hb_mcu_us" if kind == "heartbeat" else
+                             "last_inf_mcu_us" if kind else local_field)
+                report[prefix + "_reference"] = reference
+                local = row["mcu_us"] - int(row[reference])
                 if local < 0:
                     errors.append("MCU-local clock regression")
                 else:
@@ -227,17 +242,25 @@ def fault_table(reports, configured, source):
             values = [r[metric] for r in valid if r[metric] is not None]
             p50, p95, maximum = distribution(values)
             key = None
-            if metric == "detection_mcu_us":
-                key = "result_hold_us" if fault in ("F3", "F5") else "heartbeat_timeout_us"
-            if metric == "failsafe_mcu_us":
-                key = "result_failsafe_us" if fault in ("F3", "F5") else "heartbeat_timeout_us"
+            label = "not directly comparable"
+            if metric in ("detection_mcu_us", "failsafe_mcu_us"):
+                prefix = metric.split("_")[0]
+                kinds = {timeout_kind(r[prefix + "_reason"]) for r in valid if r[metric] is not None}
+                if len(kinds) == 1:
+                    kind = next(iter(kinds))
+                    key = {"heartbeat": "heartbeat_timeout_us", "result_hold": "result_hold_us",
+                           "result_failsafe": "result_failsafe_us"}.get(kind)
+                    if kind in ("source_hold", "source_failsafe"):
+                        label = ("result_hold_us" if kind == "source_hold" else "result_failsafe_us") + " - age_at_send_us - transit_bound_us"
+                elif len(kinds) > 1:
+                    label = "mixed transition reasons; not directly comparable"
             threshold = configured.get(key) if key else None
             table.append(dict(fault=fault, metric=metric, evidence=EVIDENCE if valid else "NO VALID MEASUREMENTS",
                               n_runs=len(runs), n_valid=len(valid), n_samples=len(values),
                               n_invalid=sum(r["validity"] == "INVALID" for r in runs),
                               n_not_done=sum(r["validity"] == "NOT_DONE" for r in runs),
                               p50_us=p50, p95_us=p95, max_us=maximum,
-                              threshold=key or "not directly comparable", threshold_us=threshold,
+                              threshold=key or label, threshold_us=threshold,
                               p50_minus_threshold_us=p50 - threshold if p50 is not None and threshold is not None else None,
                               threshold_source=source))
     return table

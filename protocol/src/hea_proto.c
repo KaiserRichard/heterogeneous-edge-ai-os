@@ -269,7 +269,7 @@ uint8_t hea_pack_mcu_status(const struct hea_mcu_status *m, uint8_t *b)
 int hea_unpack_mcu_status(const struct hea_frame *f, struct hea_mcu_status *m)
 {
     if (check(f, HEA_MSG_MCU_STATUS, 9) &&
-        !(f->version == HEA_PROTO_VERSION && (!check(f, HEA_MSG_MCU_STATUS, 33) || !check(f, HEA_MSG_MCU_STATUS, 38) || !check(f, HEA_MSG_MCU_STATUS, 58))))
+        !(f->version == HEA_PROTO_VERSION && (!check(f, HEA_MSG_MCU_STATUS, 33) || !check(f, HEA_MSG_MCU_STATUS, 38) || !check(f, HEA_MSG_MCU_STATUS, 58) || !check(f, HEA_MSG_MCU_STATUS, 64))))
         return -1;
     m->mcu_us = get_u32(&f->payload[0]);
     m->state = f->payload[4];
@@ -294,12 +294,14 @@ uint8_t hea_pack_mcu_status_extended(const struct hea_mcu_status_extended *m, ui
     put_u32(b + 46, m->uart_ne);
     put_u32(b + 50, m->uart_pe);
     put_u32(b + 54, m->max_irq_masked_cycles);
-    return 58;
+    put_u32(b + 58, (uint32_t)m->tick_rate_ppm);
+    put_u16(b + 62, m->tick_window_ms);
+    return 64;
 }
 
 int hea_unpack_mcu_status_extended(const struct hea_frame *f, struct hea_mcu_status_extended *m)
 {
-    if (f->version != HEA_PROTO_VERSION || (check(f, HEA_MSG_MCU_STATUS, 33) && check(f, HEA_MSG_MCU_STATUS, 38) && check(f, HEA_MSG_MCU_STATUS, 58)))
+    if (f->version != HEA_PROTO_VERSION || (check(f, HEA_MSG_MCU_STATUS, 33) && check(f, HEA_MSG_MCU_STATUS, 38) && check(f, HEA_MSG_MCU_STATUS, 58) && check(f, HEA_MSG_MCU_STATUS, 64)))
         return -1;
     hea_unpack_mcu_status(f, &m->base);
     m->last_capture_us = get_u32(f->payload + 9);
@@ -310,11 +312,16 @@ int hea_unpack_mcu_status_extended(const struct hea_frame *f, struct hea_mcu_sta
     m->capture_lost = get_u32(f->payload + 29);
     m->clock_fallback = f->len >= 38 ? f->payload[33] : 0;
     m->state_event_lost = f->len >= 38 ? get_u32(f->payload + 34) : 0;
-    m->uart_ore = f->len == 58 ? get_u32(f->payload + 38) : 0;
-    m->uart_fe = f->len == 58 ? get_u32(f->payload + 42) : 0;
-    m->uart_ne = f->len == 58 ? get_u32(f->payload + 46) : 0;
-    m->uart_pe = f->len == 58 ? get_u32(f->payload + 50) : 0;
-    m->max_irq_masked_cycles = f->len == 58 ? get_u32(f->payload + 54) : 0;
+    m->uart_ore = f->len >= 58 ? get_u32(f->payload + 38) : 0;
+    m->uart_fe = f->len >= 58 ? get_u32(f->payload + 42) : 0;
+    m->uart_ne = f->len >= 58 ? get_u32(f->payload + 46) : 0;
+    m->uart_pe = f->len >= 58 ? get_u32(f->payload + 50) : 0;
+    m->max_irq_masked_cycles = f->len >= 58 ? get_u32(f->payload + 54) : 0;
+    uint32_t raw_ppm = f->len == 64 ? get_u32(f->payload + 58) : UINT32_C(0x80000000);
+    /* Decode signed LE without implementation-defined unsigned-to-signed casts. */
+    m->tick_rate_ppm = raw_ppm <= INT32_MAX ? (int32_t)raw_ppm :
+        -1 - (int32_t)(UINT32_MAX - raw_ppm);
+    m->tick_window_ms = f->len == 64 ? get_u16(f->payload + 62) : 0;
     return 0;
 }
 

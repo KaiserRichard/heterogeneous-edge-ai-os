@@ -162,7 +162,7 @@ input stream, not a byte-signedness or platform-specific parser defect.
 ## Optional firmware diagnostics in v3 MCU_STATUS
 
 **UNVERIFIED ON HARDWARE.** To observe ISR/queue contention and validate GPIO clock
-capture, v3 status may contain 33, 38 or 58 bytes instead of nine. The first nine
+capture, v3 status may contain 33, 38, 58 or 64 bytes instead of nine. The first nine
 bytes retain the base layout. Six little-endian u32 fields follow:
 
 | Offset | Field | Meaning |
@@ -176,9 +176,9 @@ bytes retain the base layout. Six little-endian u32 fields follow:
 
 `hea_pack_mcu_status` still emits nine bytes. Firmware uses the explicit
 `hea_pack_mcu_status_extended` API. The base decoder accepts nine bytes for v1/v2/v3
-and 33/38/58 bytes for v3; the extended decoder accepts those three v3 extensions.
-The current extended packer emits 58 bytes. Absent trailing
-fields decode as zero; use the payload length to distinguish absent diagnostics. All other lengths and
+and 33/38/58/64 bytes for v3; the extended decoder accepts those four v3 extensions.
+The current extended packer emits 64 bytes. Absent trailing
+fields decode as zero, except `tick_rate_ppm` which is `INT32_MIN`; use the payload length to distinguish absent diagnostics. All other lengths and
 versions are rejected. Existing strict nine-byte receivers must be updated before
 using this firmware. This is an optional v3 diagnostic payload, not a change to
 HEARTBEAT/INFERENCE/ECHO or their sequencing. Base counters in the firmware mean
@@ -206,6 +206,21 @@ error-bearing SR samples, not the sum of the four flags. The Pi CSV appends the
 five new columns, leaving them empty for 9/33/38-byte status (absence is not zero).
 At 84 MHz divide cycles by 84 for microseconds. See the firmware README for
 measurement coverage/overhead; this is runtime instrumentation, not a proven WCET.
+
+The 64-byte status adds signed little-endian `tick_rate_ppm` (i32, offset 58)
+and `tick_window_ms` (u16, offset 62). These append matching Pi CSV columns; both
+are blank for older payloads. The ratio is
+`1e6 * (elapsed_SysTick_ticks * 1000 / elapsed_TIM2_us - 1)`, rounded to the
+nearest integer ppm. Positive values mean SysTick runs fast relative to TIM2.
+The startup sample covers the first second after the scheduler starts; subsequent
+samples cover ten-second windows selected by TIM2, not SysTick. Status repeats the
+latest completed sample. `INT32_MIN` and a zero window mean no valid sample yet.
+A one-tick endpoint uncertainty is about 1000 ppm at startup and 100 ppm over 10 s;
+compare repeated windows rather than interpreting one-tick quantization as drift.
+Both clocks share the PLL source, so this checks their **relative** rate and lost
+ticks, not oscillator accuracy against the Pi. It uses the full existing 64-byte
+payload limit and adds no message type or dependency. This supports the OS clock
+and scheduler experiment while keeping the UART diagnostics bounded.
 
 DMA firmware timestamps ECHO T2 and supervisor receipt when the RX task reads the
 last CRC byte from RAM. IRQ fallback retains per-byte RXNE ISR timestamps. DMA

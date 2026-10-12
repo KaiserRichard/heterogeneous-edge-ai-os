@@ -68,16 +68,20 @@ brief exits detected between polls abort the run. Then:
 | F2 | SIGSTOP bridge for 1 s, then SIGCONT | Immediately before SIGCONT |
 | F3 | SIGSTOP inference for 1 s, then SIGCONT | Immediately before SIGCONT |
 | F4 | sudo SCHED_FIFO 99 busy loop on the pinned bridge CPU for 1 s | End of the busy loop |
-| F5 | NOT DONE | No documented bridge control to suppress only INFERENCE |
+| F5 | SIGUSR1 bridge: suppress INFERENCE for 1 s; HEARTBEAT and ECHO continue | Acknowledged second SIGUSR1 resumes INFERENCE |
 
-For F2–F4 the 10 s observation window starts at onset and includes the one second
+For F2–F5 the 10 s observation window starts at onset and includes the one second
 fault. The onset clock read is immediately before the signal or the hog loop,
 with no intervening file I/O. The hog records its own actual start/end. After
 observation, stop the pipeline, rearm/reset, and start a fresh pipeline; retain
 recovery events until FRESH and two further echo periods. Startup/recovery waits
 default to 15 s (`--ready-timeout`). Cleanup resumes stopped children, terminates
-and reaps all owned processes. F5 is recorded for every repetition as NOT_DONE;
-it is never silently substituted with a heartbeat outage. F3 tests a bounded
+and reaps all owned processes. F5 uses `pipeline/bridge_control.csv` acknowledgements
+for effective onset/end (CLOCK_MONOTONIC_RAW); run metadata also records the
+controller request times. A partially written INFERENCE finishes; the CSV records
+its remaining bytes. Detection is timed from the last accepted inference in
+STATE_EVENT, including any such in-flight frame. No queued results are replayed
+on resume. F5 hardware behavior is **UNVERIFIED ON HARDWARE**. F3 tests a bounded
 inference stall while the bridge continues its independent heartbeats.
 
 F1 needs reception while its decoder is dead. A second descriptor keeps the real
@@ -121,7 +125,9 @@ are reconstructed with the logged inverse affine echo estimator. Startup events
 can use the first fit from that same MCU epoch. F1 replay uses the latest original
 fit. Reset/restart has a separate `recovery/echo.csv` and MCU epoch; never subtract
 MCU timestamps across reset. MCU-local detection/FAILSAFE metrics subtract
-`last_hb_mcu_us` for F1/F2/F4 and `last_inf_mcu_us` for stale-result F3/F5. These
+`last_hb_mcu_us` for heartbeat-timeout reasons and `last_inf_mcu_us` for result
+timeout/HOLD reasons, recorded in `detection_reference` / `failsafe_reference`.
+The legacy `local_reference` column names the injected fault's intended timer. These
 measure elapsed time since the last accepted packet, rather than elapsed time
 since the Pi signal. FAILSAFE Pi latency uses onset as its reference. Recovery
 uses the first return to FRESH after fault end, including the prescribed wait
@@ -153,8 +159,12 @@ worktree's `stm32/firmware/main.c`, not measurements; supply the values actually
 flashed on your rig. The present `stm32/include` declares fields but contains no
 numeric defaults, so omission of JSON leaves comparisons UNKNOWN. The runner
 does not guess them. Keep the supplied configuration as campaign evidence.
-Table comparisons reference heartbeat timeout for F1/F2/F4 MCU-local metrics,
-and result hold/FAILSAFE for F3/F5, and show P50 minus the configured threshold.
+Table comparisons select the threshold from the actual transition reason. A HOLD
+can precede heartbeat FAILSAFE during F1/F2; comparing that first FRESH exit with
+100 ms heartbeat timeout creates a false early-timeout diagnosis. Mixed reasons
+are not pooled into a single threshold comparison. Source-age HOLD/FAILSAFE
+labels show `threshold - age_at_send_us - transit_bound_us`; their raw receipt
+elapsed time is not compared numerically with the full source-age threshold.
 Inspect the recorded transition reasons: source age, last-packet phase, and the
 supervisor evaluation period affect agreement. Source-age expiry includes the
 last result's age-at-send plus transit allowance, so receipt-silence time alone

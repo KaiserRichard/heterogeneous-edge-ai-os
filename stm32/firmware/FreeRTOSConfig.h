@@ -1,12 +1,13 @@
 #ifndef FREERTOS_CONFIG_H
 #define FREERTOS_CONFIG_H
 #include <stdint.h>
+#include "clock_config.h"
 void firmware_fault(void) __attribute__((noreturn));
 #define configASSERT(x) do { if (!(x)) firmware_fault(); } while (0)
 #define configUSE_PREEMPTION 1
 #define configUSE_TIME_SLICING 1
-#define configCPU_CLOCK_HZ 84000000UL
-#define configTICK_RATE_HZ 1000
+#define configCPU_CLOCK_HZ HEA_SYSCLK_HZ
+#define configTICK_RATE_HZ HEA_TICK_HZ
 #define configMAX_PRIORITIES 4
 #define configMINIMAL_STACK_SIZE 128
 #define configMAX_TASK_NAME_LEN 16

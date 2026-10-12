@@ -336,3 +336,62 @@ unseen laps and TIM2 wrap. Pi C executables and sanitized PTY tests passed, incl
 34 tests, 3 platform/environment skips; E4 analysis: 21 passed. Unix socket bind is
 sandbox-denied (PTY tests use socketpair); Linux-only runtime checks skip on macOS.
 These tests do not emulate STM32 DMA arbitration, IDLE clearing or interrupt timing.
+
+
+## E4 apparent tick-rate fault investigation (2026-10-12)
+
+The stored `feat/fw-rx-fix:results/e4/20261012T093526Z_e4` evidence does not
+establish an early heartbeat timeout. In `F2-r01/pipeline/state_events.csv`:
+
+- Last accepted heartbeat: 20,634,512 us.
+- HOLD (reason 9, SOURCE_AGE_HOLD): 20,733,108 us, or 98,596 us after heartbeat.
+- FAILSAFE (reason 3, HEARTBEAT_TIMEOUT): 20,735,108 us, or **100,596 us** after heartbeat.
+
+The summary used the first FRESH exit as detection, assigned its clock reference
+and threshold from the injected fault, and therefore compared source-age HOLD
+with heartbeat timeout. That is the cause of the apparent ~1.8% discrepancy.
+Stored F1/F2 heartbeat FAILSAFE times are 100,128–100,641 us; F4 is
+100,045–100,931 us. F3-r01 HOLD is 175,766 us after inference receipt; its
+approximately 20 ms input-to-send age plus 5 ms transit allowance makes this
+consistent with 200 ms source-age HOLD. Those policy terms are preserved.
+Analysis now selects each event's reference and comparison from its reason.
+
+Established by reading the raw STATE_EVENT and summary CSV blobs with `git show`,
+then tracing `supervisor_update`, `now_task`/`now_locked`, the clock setup and the
+compiled reference FreeRTOS port. The supervisor already uses extended TIM2 us,
+not xTaskGetTickCount. Nominal HSE 8 MHz / M=8 (or HSI 16 MHz / M=16), N=336,
+P=4 gives 84 MHz; AHB /1 and APB1 /2 with timer doubling give TIM2 84 MHz.
+PSC=83 gives 1 MHz. FreeRTOS configCPU_CLOCK_HZ=84 MHz and configTICK_RATE_HZ=1000
+produce LOAD=83,999 with HCLK selected. The startup HCLK/8 SysTick timeout is
+stopped and cleared; the kernel reinitializes it. No stale HSI clock assumption
+was found. Nominal clocks now share `clock_config.h`; changing oscillator
+compensation would be unsupported by these results.
+
+TIM2 remains the deadline source: it keeps supervisor policy independent of
+scheduler tick quantization/rate while FreeRTOS still schedules the 1 ms task.
+This supports deterministic portable timeout tests and separates deadline policy
+from scheduling latency, an OS learning objective. Task priorities are unchanged.
+The highest-priority owner asserts actual SysTick LOAD/control at startup and
+samples coherent tick/TIM2 pairs in a short critical section. Ppm arithmetic
+runs with interrupts enabled. The first ratio is available after one second,
+then every ten seconds of TIM2 time; it is repeated in status and Pi CSV.
+See `protocol/PROTOCOL.md` for sign, unavailable sentinel, and quantization.
+A shared oscillator error cannot be detected by this relative-rate check alone.
+
+New behavior is **UNVERIFIED ON HARDWARE**. No flash, reset, serial-device or GPIO
+operation was performed for this ticket. Host tests include the measured F2 event
+ordering as a synthetic regression, exact heartbeat expiry, F5's source-age HOLD
+with live heartbeats, and ratio startup/cadence/sign/counter-wrap checks.
+
+
+Local validation for this ticket: all four HSE/HSI × DMA/IRQ firmware profiles
+cross-compiled with `-Wall -Wextra -Werror` and zero warnings; final artifacts use
+HSE/DMA, 921600 baud, VCP/blink disabled. Default image is 12,008 B flash,
+11,348 B static RAM plus 2,048 B reserved MSP. Protocol/clock tests passed
+ASan/UBSan in both char modes; supervisor (24 scenarios, 66,768 checks), DMA and
+ratio tests passed. Linux C builds and sanitized PTY tests passed, including
+9/33/38/58/64-byte status compatibility and SIGUSR1 suppression/resume with live
+heartbeats and delayed IPC backlog discarded. E4 analysis: 23 tests; pipeline
+summary: 6; inference: 34 (3 platform/sandbox skips); analyzer: 6. Named Unix
+sockets are sandbox-denied (C tests use socketpair); Linux RAW clock/scheduler
+checks require the Pi and were skipped on macOS. **UNVERIFIED ON HARDWARE**.

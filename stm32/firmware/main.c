@@ -6,6 +6,7 @@
 #include "stream_buffer.h"
 #include "supervisor_protocol.h"
 #include "rx_dma_cursor.h"
+#include "tick_diagnostic.h"
 
 #define REG32(a) (*(volatile uint32_t *)(a))
 #define FRAME_DEPTH 8u
@@ -14,7 +15,7 @@
 #ifndef UART_BAUD
 #define UART_BAUD 921600u
 #endif
-#define SYSCLK_HZ 84000000u
+#define SYSCLK_HZ HEA_SYSCLK_HZ
 #define PCLK1_HZ (SYSCLK_HZ / 2u)
 #define PCLK2_HZ SYSCLK_HZ
 #define UART_BRR ((PCLK2_HZ + UART_BAUD / 2u) / UART_BAUD)
@@ -65,6 +66,7 @@ static supervisor_state_t published_state;
 static uint16_t tx_seq;
 static TaskHandle_t status_handle;
 static uint8_t clock_fallback;
+static tick_diagnostic_t tick_diagnostic;
 
 static void increment(volatile uint32_t *counter)
 {
@@ -176,7 +178,7 @@ static void board_init(void)
     (void)RCC->APB2ENR;
     alternate(GPIOA, 0, 1);
     GPIOA->PUPDR = (GPIOA->PUPDR & ~3u) | 2u; /* sync idle low */
-    TIM2->PSC = SYSCLK_HZ / 1000000u - 1u;
+    TIM2->PSC = HEA_TIM2_HZ / 1000000u - 1u;
     TIM2->ARR = UINT32_MAX;
     TIM2->CCMR1 = 1u; /* CC1 mapped directly to TI1, no filter */
     TIM2->CCER = 1u; /* rising edge */
@@ -371,6 +373,11 @@ static void supervisor_task(void *argument)
 {
     (void)argument;
     TickType_t release = xTaskGetTickCount();
+    /* Verify the kernel actually selected HCLK and the nominal 1 ms reload.
+     * The HSE startup timeout's temporary HCLK/8 setup must not survive. */
+    configASSERT(REG32(0xe000e014u) == configCPU_CLOCK_HZ / configTICK_RATE_HZ - 1u);
+    configASSERT((REG32(0xe000e010u) & 7u) == 7u);
+    tick_diagnostic_init(&tick_diagnostic, (uint32_t)release, TIM2->CNT);
     hea_irq_timing_reset(); /* exclude pre-scheduler BASEPRI ownership */
     /* Enable only after scheduler starts and every IPC object exists. */
     (void)USART1->SR; (void)USART1->DR;
@@ -396,6 +403,11 @@ static void supervisor_task(void *argument)
     for (;;) {
         /* Sole highest-priority owner: no ISR accesses the supervisor.
          * Lower-priority readers suspend scheduling when taking snapshots. */
+        taskENTER_CRITICAL();
+        uint32_t diagnostic_ticks = (uint32_t)xTaskGetTickCount();
+        uint32_t diagnostic_us = TIM2->CNT;
+        taskEXIT_CRITICAL();
+        (void)tick_diagnostic_sample(&tick_diagnostic, diagnostic_ticks, diagnostic_us);
         bool events_pending = supervisor.transition_count != 0u;
         supervisor_state_t previous = supervisor.state;
         supervisor_update(&supervisor, NULL, now_task());
@@ -479,6 +491,8 @@ static void status_task(void *argument)
             status.queue_dropped = queue_dropped; status.capture_lost = capture_lost;
             status.clock_fallback = clock_fallback;
             status.state_event_lost = supervisor.transition_lost;
+            status.tick_rate_ppm = tick_diagnostic.ppm;
+            status.tick_window_ms = tick_diagnostic.window_ms;
             (void)xTaskResumeAll();
             /* ISR-owned counters: coherent short snapshot, no supervisor work. */
             taskENTER_CRITICAL();

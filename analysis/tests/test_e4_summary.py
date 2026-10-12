@@ -196,8 +196,8 @@ class E4Tests(unittest.TestCase):
         target = self.root / "untouched"
         result = subprocess.run([sys.executable, str(REPO / "tools/experiments/e4_campaign.py"), str(target), "5", "--estimate-only"], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("10.7 min", result.stdout)
-        self.assertIn("34.0 min", result.stdout)
+        self.assertIn("13.3 min", result.stdout)
+        self.assertIn("42.5 min", result.stdout)
         self.assertFalse(target.exists())
 
     def test_event_discontinuity_invalid(self):
@@ -229,16 +229,44 @@ class E4Tests(unittest.TestCase):
         self.assertEqual(calls, ["clock", campaign.signal.SIGSTOP, "clock", campaign.signal.SIGCONT])
         self.assertEqual(meta, dict(onset_pi_ns=123, fault_end_pi_ns=456))
 
-    def test_kill_signal_and_not_done_have_no_sudo_or_hardware(self):
+    def test_kill_signal_has_no_sudo_or_hardware(self):
         with patch.object(campaign, "raw", return_value=123), patch.object(campaign.os, "kill") as kill, patch.object(campaign.time, "sleep") as sleep:
             meta = {}
             campaign.signal_fault(1234, "F1", meta)
             kill.assert_called_once_with(1234, campaign.signal.SIGKILL)
             sleep.assert_not_called()
             self.assertNotIn("fault_end_pi_ns", meta)
-        skipped = self.root / "F5-r99"
-        campaign.one_run(skipped, "F5", 99, None)
-        self.assertEqual(json.loads((skipped / "run.json").read_text())["status"], "NOT_DONE")
+
+    def test_f5_suppression_ack_and_resume_on_interrupt(self):
+        pipe = Mock()
+        pipe.toggle_inference.side_effect = [150, 450]
+        with patch.object(campaign, "raw", side_effect=[100, 400]), patch.object(
+                campaign.time, "sleep", side_effect=KeyboardInterrupt):
+            meta = {}
+            with self.assertRaises(KeyboardInterrupt):
+                campaign.stale_fault(pipe, meta)
+        self.assertEqual([call.args for call in pipe.toggle_inference.call_args_list], [(True,), (False,)])
+        self.assertEqual(meta, dict(suppress_request_pi_ns=100, onset_pi_ns=150,
+                                    resume_request_pi_ns=400, fault_end_pi_ns=450))
+
+    def test_f2_hold_does_not_compare_with_heartbeat_threshold(self):
+        self.meta["fault"] = "F2"
+        self.save_meta()
+        self.event_rows[1][5] = "9"
+        self.event_rows[1][6] = 22_101_404
+        self.event_rows[2][5] = "3"
+        self.event_rows[2][6] = 22_399_404
+        self.events()
+        report = e4.summarize_run(self.run)
+        self.assertEqual(report["detection_reference"], "last_inf_mcu_us")
+        self.assertEqual(report["failsafe_reference"], "last_hb_mcu_us")
+        self.assertEqual(report["failsafe_mcu_us"], 100596)
+        table = e4.fault_table([report], {"heartbeat_timeout_us": 100000}, "fixture")
+        hold = next(r for r in table if r["fault"] == "F2" and r["metric"] == "detection_mcu_us")
+        self.assertIn("age_at_send_us", hold["threshold"])
+        self.assertIsNone(hold["p50_minus_threshold_us"])
+        fail = next(r for r in table if r["fault"] == "F2" and r["metric"] == "failsafe_mcu_us")
+        self.assertEqual(fail["p50_minus_threshold_us"], 596)
 
     def test_cleanup_resumes_stopped_children_and_escalates_owned_pid(self):
         pipe = campaign.Pipeline(self.root, None, self.root, -1)

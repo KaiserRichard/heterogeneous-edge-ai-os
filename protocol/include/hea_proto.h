@@ -98,6 +98,8 @@ struct hea_mcu_status_extended {
     uint32_t state_event_lost;
     uint32_t uart_ore, uart_fe, uart_ne, uart_pe;
     uint32_t max_irq_masked_cycles;
+    int32_t tick_rate_ppm; /* (SysTick elapsed us / TIM2 elapsed us - 1) * 1e6. */
+    uint16_t tick_window_ms; /* Zero / INT32_MIN ppm: startup sample unavailable. */
 };
 
 /* Extended TIM2 times; UINT64_MAX means no accepted frame in that clock history. */

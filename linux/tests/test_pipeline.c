@@ -163,7 +163,7 @@ static void run_case(int full_pipeline)
     }
     char *bridge_args[] = {"build/san/hea_bridge", "--serial", tty,
         connected_ipc ? "--socket-fd" : "--socket", connected_ipc ? result_read : socket_path,
-        "--csv", bridge_csv, "--baud", "115200", "--heartbeat-ms", "5", "--policy", "fifo", "--echo-ms", "0", "--status-csv", "/dev/null", "--echo-csv", "/dev/null", "--state-events-csv", "/dev/null", NULL};
+        "--csv", bridge_csv, "--baud", "115200", "--heartbeat-ms", "5", "--policy", "fifo", "--echo-ms", "0", "--status-csv", "/dev/null", "--echo-csv", "/dev/null", "--state-events-csv", "/dev/null", "--control-csv", "/dev/null", NULL};
     pid_t bridge = launch(bridge_args, master, slave, 0); ready(connected_ipc ? bridge_csv : socket_path);
     if (!full_pipeline) {
         int sender = connected_ipc ? result_pair[0] : hea_socket_sender();
@@ -216,10 +216,10 @@ static void fake_mcu(void)
     path(tx, sizeof(tx), "fake-tx.csv"); path(events, sizeof(events), "events.csv");
     char *args[] = {"build/san/hea_bridge", "--serial", tty, "--socket-fd", fd,
         "--csv", tx, "--status-csv", status, "--echo-csv", echo, "--state-events-csv", events,
-        "--echo-ms", "20", "--baud", "115200", NULL};
+        "--echo-ms", "20", "--baud", "115200", "--control-csv", "/dev/null", NULL};
     pid_t bridge = launch(args, master, slave, 0); ready(status);
     uint8_t payload[64], wire[HEA_MAX_FRAME];
-    struct hea_mcu_status_extended x = {{123, 3, 4, 5}, 6, 7, 8, 9, 10, 11, 1, 12, 13, 14, 15, 16, 2100};
+    struct hea_mcu_status_extended x = {{123, 3, 4, 5}, 6, 7, 8, 9, 10, 11, 1, 12, 13, 14, 15, 16, 2100, -18000, 10000};
     uint8_t len = hea_pack_mcu_status(&x.base, payload);
     size_t n = hea_encode(HEA_MSG_MCU_STATUS, 40, payload, len, wire, sizeof(wire));
     wire[n-1] ^= 1; assert(write(master, wire, n) == (ssize_t)n);
@@ -232,6 +232,8 @@ static void fake_mcu(void)
     assert(write(master, wire, n) == (ssize_t)n); /* Previous firmware diagnostics. */
     n = hea_encode(HEA_MSG_MCU_STATUS, 46, payload, 38, wire, sizeof(wire));
     assert(write(master, wire, n) == (ssize_t)n); /* Clock/event-era firmware. */
+    n = hea_encode(HEA_MSG_MCU_STATUS, 47, payload, 58, wire, sizeof(wire));
+    assert(write(master, wire, n) == (ssize_t)n); /* IRQ timing-era firmware. */
     struct hea_parser parser; hea_parser_init(&parser);
     struct hea_state_event ev = {UINT64_C(0x2ffffd8ef), 1, 2, 9, UINT64_MAX, UINT64_C(0x2ffffd800), 7};
     len = hea_pack_state_event(&ev, payload);
@@ -265,9 +267,11 @@ static void fake_mcu(void)
     FILE *f = fopen(status, "r"); assert(f); char line[1024];
     assert(fgets(line, sizeof(line), f)); assert(fgets(line, sizeof(line), f));
     assert(strstr(line, ",123,3,4,5,0,,,,,,"));
-    assert(fgets(line, sizeof(line), f)); assert(strstr(line, ",123,3,4,5,1,6,7,8,9,10,11,1,12,13,14,15,16,2100\n"));
-    assert(fgets(line, sizeof(line), f)); assert(strstr(line, ",123,3,4,5,1,6,7,8,9,10,11,,,,,,,\n"));
-    assert(fgets(line, sizeof(line), f)); assert(strstr(line, ",123,3,4,5,1,6,7,8,9,10,11,1,12,,,,,\n"));
+    assert(fgets(line, sizeof(line), f)); assert(strstr(line, ",123,3,4,5,1,6,7,8,9,10,11,1,12,13,14,15,16,2100,-18000,10000\n"));
+    assert(fgets(line, sizeof(line), f)); assert(strstr(line, ",123,3,4,5,1,6,7,8,9,10,11,,,,,,,,,\n"));
+    assert(fgets(line, sizeof(line), f)); assert(strstr(line, ",123,3,4,5,1,6,7,8,9,10,11,1,12,,,,,,,\n"));
+    assert(fgets(line, sizeof(line), f));
+    assert(strstr(line, ",123,3,4,5,1,6,7,8,9,10,11,1,12,13,14,15,16,2100,,\n"));
     assert(!fgets(line, sizeof(line), f)); fclose(f);
     f = fopen(echo, "r"); assert(f); assert(fgets(line, sizeof(line), f));
     unsigned count = 0;
@@ -298,6 +302,86 @@ static void fake_mcu(void)
     puts("PASS: state event CSV, absent estimator, full MCU epoch alignment and mapped Pi time");
     puts("PASS: fake MCU base/v3 diagnostics, CRC recovery, echo estimator and timer wrap over openpty"); close(master); close(slave); close(pair[0]); close(pair[1]);
 }
+/* Exercise the real SIGUSR1 handler and UART loop over a PTY, without hardware. */
+static uint64_t control_ack(const char *filename, unsigned expected_rows, int expected_state)
+{
+    for (unsigned attempt = 0; attempt < 400u; ++attempt) {
+        FILE *f = fopen(filename, "r"); assert(f);
+        char line[256]; assert(fgets(line, sizeof line, f));
+        unsigned rows = 0; uint64_t stamp = 0; int state = -1; size_t pending = 0;
+        while (fgets(line, sizeof line, f)) {
+            assert(sscanf(line, "%" SCNu64 ",%d,%zu", &stamp, &state, &pending) == 3);
+            ++rows;
+        }
+        fclose(f);
+        if (rows == expected_rows) { assert(state == expected_state && stamp > 0); return stamp; }
+        pause_ms(5);
+    }
+    assert(0 && "SIGUSR1 ack timeout"); return 0;
+}
+static void control_frames(int master, struct hea_parser *parser, int result_fd,
+                           uint32_t id, unsigned *hb, unsigned *inf, uint32_t *last_id)
+{
+    uint64_t now = hea_raw_now();
+    struct hea_result r = {id, now - 20000000u, now, 7, 99};
+    uint8_t bytes[HEA_RESULT_SIZE]; hea_result_pack(&r, bytes);
+    assert(send(result_fd, bytes, sizeof bytes, 0) == (ssize_t)sizeof bytes);
+    uint64_t end = hea_now(CLOCK_MONOTONIC) + 10000000u;
+    while (hea_now(CLOCK_MONOTONIC) < end) {
+        uint8_t wire[256]; ssize_t n = read(master, wire, sizeof wire);
+        if (n < 0) { assert(errno == EAGAIN || errno == EINTR); pause_ms(1); continue; }
+        for (ssize_t i = 0; i < n; ++i) {
+            if (!hea_parser_feed(parser, wire[i])) continue;
+            if (parser->frame.type == HEA_MSG_HEARTBEAT) ++*hb;
+            else if (parser->frame.type == HEA_MSG_INFERENCE) {
+                struct hea_inference m; assert(!hea_unpack_inference(&parser->frame, &m));
+                ++*inf; *last_id = m.input_seq;
+            } else assert(0 && "unexpected frame while echoes disabled");
+        }
+    }
+}
+static void inference_control(void)
+{
+    int master, slave, pair[2]; char tty[128], fd[32], control[256], tx[256];
+    assert(!openpty(&master, &slave, tty, NULL, NULL));
+    assert(!hea_serial_configure(slave, 115200));
+    assert(!fcntl(master, F_SETFL, O_NONBLOCK));
+    assert(!socketpair(AF_UNIX, SOCK_DGRAM, 0, pair));
+    snprintf(fd, sizeof fd, "%d", pair[1]);
+    path(control, sizeof control, "control.csv"); path(tx, sizeof tx, "control-tx.csv");
+    char *args[] = {"build/san/hea_bridge", "--serial", tty, "--socket-fd", fd,
+        "--csv", tx, "--status-csv", "/dev/null", "--echo-csv", "/dev/null",
+        "--state-events-csv", "/dev/null", "--control-csv", control,
+        "--echo-ms", "0", "--heartbeat-ms", "5", "--baud", "115200", NULL};
+    pid_t bridge = launch(args, master, slave, 0); ready(control);
+    struct hea_parser parser; hea_parser_init(&parser);
+    unsigned hb = 0, inf = 0; uint32_t last_id = 0;
+    control_frames(master, &parser, pair[0], 1, &hb, &inf, &last_id);
+    assert(inf == 1 && last_id == 1);
+    uint64_t before = hea_raw_now();
+    assert(!kill(bridge, SIGUSR1));
+    uint64_t onset = control_ack(control, 1, 1);
+    assert(onset >= before && onset <= hea_raw_now());
+    /* Drain any already-started frame, then verify 200 ms of live heartbeats. */
+    control_frames(master, &parser, pair[0], 2, &hb, &inf, &last_id);
+    unsigned initial_inf = inf, initial_hb = hb;
+    for (uint32_t i = 3; i < 23; ++i)
+        control_frames(master, &parser, pair[0], i, &hb, &inf, &last_id);
+    assert(inf == initial_inf && hb > initial_hb + 10u);
+    assert(!kill(bridge, SIGUSR1));
+    uint64_t finish_stamp = control_ack(control, 2, 0);
+    assert(finish_stamp > onset);
+    /* A result delayed in IPC from the suppressed interval must also be dropped. */
+    struct hea_result delayed = {23, onset - 20000000u, onset, 7, 99};
+    uint8_t stale_bytes[HEA_RESULT_SIZE]; hea_result_pack(&delayed, stale_bytes);
+    assert(send(pair[0], stale_bytes, sizeof stale_bytes, 0) == (ssize_t)sizeof stale_bytes);
+    control_frames(master, &parser, pair[0], 100, &hb, &inf, &last_id);
+    assert(inf == initial_inf + 1u && last_id == 100);
+    assert(parser.stats.crc_errors == 0);
+    finish(bridge, 1);
+    close(master); close(slave); close(pair[0]); close(pair[1]);
+    puts("PASS: SIGUSR1 suppression/resume, RAW timestamp acknowledgements, live heartbeats and no stale replay");
+}
 int main(void)
 {
     assert(mkdtemp(directory)); assert(!atexit(cleanup));
@@ -310,7 +394,7 @@ int main(void)
         puts("SKIP: named Unix socket bind denied by sandbox; exercising the same datagram ABI via socketpair");
     } else unlink(a.sun_path);
     close(probe);
-    run_case(0); run_case(1); fake_mcu();
+    run_case(0); run_case(1); fake_mcu(); inference_control();
 #ifdef __linux__
     assert(!hea_sleep_until(hea_now(CLOCK_MONOTONIC) + 1000000u));
     puts("PASS: Linux absolute CLOCK_MONOTONIC sleep and RAW timestamps exercised");
