@@ -413,7 +413,7 @@ def main():
     # Validate threshold configuration before spending time on the rig.
     configured, threshold_source = summary.thresholds(args.thresholds, REPO / "stm32/include")
     subprocess.run(["make", "-C", str(REPO / "linux"), "all"], check=True)
-    subprocess.run(["sudo", "-v"], check=True)
+    subprocess.run(["sudo", "-n", "true"], check=True)
     os.sched_setaffinity(0, {args.controller_core})
     args.outdir.mkdir(parents=True)
     config = vars(args).copy()
