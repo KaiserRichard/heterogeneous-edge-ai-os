@@ -395,3 +395,21 @@ heartbeats and delayed IPC backlog discarded. E4 analysis: 23 tests; pipeline
 summary: 6; inference: 34 (3 platform/sandbox skips); analyzer: 6. Named Unix
 sockets are sandbox-denied (C tests use socketpair); Linux RAW clock/scheduler
 checks require the Pi and were skipped on macOS. **UNVERIFIED ON HARDWARE**.
+
+### E3 real INF_RX instrumentation (locally verified only)
+
+Every accepted inference queues one optional v3 INF_RX with its wire sequence,
+extended TIM2 receipt timestamp, supervisor age at evaluation, and resulting
+state. A static 16-entry ring drops new reports when full and saturates its boot
+loss counter. The existing TX owner drains up to four per iteration; no UART
+work is added to the supervisor/ISR. At 10 Hz this adds only 320 wire bytes/s.
+Task priorities, HSE/DMA configuration and pins are unchanged. Receipt continues
+to mean when RX reads the final CRC byte, with the documented DMA polling delay;
+it is not the physical arrival instant at the UART pin.
+
+HSE+DMA, default 921600-baud build with `-Wall -Wextra -Werror`: zero warnings.
+GNU size: text 12,468 B, data 4 B, bss 11,872 B; flash text+data **12,472 B**,
+static RAM data+bss **11,876 B**. The linker additionally reserves 2,048 B for
+MSP, so static RAM plus that reservation is **13,924 B**. Static RTOS task stacks
+are included in bss. These are linked sizes, not measured stack high-water marks.
+Physical flash/run verification is outstanding; no hardware was touched.

@@ -1,5 +1,6 @@
 """Behavioral integration tests using fake inference, never performance evidence."""
 import contextlib
+import csv
 import errno
 import io
 import json
@@ -65,6 +66,38 @@ class BenchmarkTests(unittest.TestCase):
 
 @unittest.skipUnless(hasattr(socket, 'AF_UNIX'), 'Unix sockets unavailable')
 class ServerTests(unittest.TestCase):
+    def test_socketpair_fifo_preserves_backlog_latest_drains_each_burst(self):
+        # Queue before receiving so the test does not depend on scheduling/timings.
+        sender, receiver = socket.socketpair(socket.AF_UNIX, socket.SOCK_DGRAM)
+        with sender, receiver, contextlib.redirect_stderr(io.StringIO()) as stderr:
+            for policy in ('fifo', 'latest'):
+                output = io.StringIO()
+                for record in (SOURCE_RECORD.pack(0xFFFFFFFE, 100), b'x',
+                               SOURCE_RECORD.pack(0xFFFFFFFF, 101), b'x' * 100,
+                               SOURCE_RECORD.pack(0, 102)):
+                    sender.send(record)
+                newest, skipped = infer_server.receive_input(receiver, policy, csv.writer(output))
+                if policy == 'fifo':
+                    self.assertEqual((newest, skipped), ((0xFFFFFFFE, 100), 0))
+                    self.assertEqual(infer_server.receive_input(receiver)[0], (0xFFFFFFFF, 101))
+                    self.assertEqual(infer_server.receive_input(receiver)[0], (0, 102))
+                    self.assertEqual(output.getvalue(), '')
+                else:
+                    self.assertEqual((newest, skipped), ((0, 102), 2))
+                    self.assertEqual(list(csv.reader(io.StringIO(output.getvalue()))), [
+                        ['4294967294', '100', '', 'skipped_stale'],
+                        ['4294967295', '101', '', 'skipped_stale']])
+                receiver.setblocking(False)
+                with self.assertRaises(BlockingIOError):
+                    receiver.recv(100)
+                receiver.setblocking(True)
+            # A later burst is drained again; a trailing malformed record cannot evict it.
+            sender.send(SOURCE_RECORD.pack(1, 103))
+            sender.send(SOURCE_RECORD.pack(2, 104))
+            sender.send(b'bad')
+            self.assertEqual(infer_server.receive_input(receiver, 'latest'), ((2, 104), 1))
+            self.assertEqual(stderr.getvalue().count('dropping malformed'), 5)
+
     def bind_or_skip(self, sock, path):
         try:
             sock.bind(str(path))
@@ -123,6 +156,40 @@ class ServerTests(unittest.TestCase):
 
 
 class ServerMockTests(unittest.TestCase):
+    def test_latest_skips_backlog_accumulated_during_inference(self):
+        from unittest.mock import MagicMock
+        tx, rx = socket.socketpair(socket.AF_UNIX, socket.SOCK_DGRAM)
+        receiver, sender = MagicMock(), MagicMock()
+        receiver.__enter__.return_value = receiver
+        sender.__enter__.return_value = sender
+        receiver.recv.side_effect = rx.recv  # Real datagrams, only bind/send are mocked.
+        calls = []
+
+        def compute(tensor):
+            calls.append(tensor)
+            if len(calls) == 1:
+                for frame_id in (1, 2, 3):
+                    tx.send(SOURCE_RECORD.pack(frame_id, 100 + frame_id))
+            return 'logits'
+
+        output = io.StringIO()
+        with tx, rx, \
+                patch.object(infer_server.socket, 'socket', side_effect=[receiver, sender]), \
+                patch.object(infer_server, 'preprocess', return_value='tensor'), \
+                patch.object(infer_server, 'classify', return_value=(1, .5)), \
+                patch.object(Path, 'unlink'), \
+                contextlib.redirect_stderr(io.StringIO()) as stderr:
+            tx.send(SOURCE_RECORD.pack(0, 100))
+            self.assertEqual(infer_server.serve(SimpleNamespace(run=compute), None, None,
+                                               's', 'b', lambda: 200, 2,
+                                               csv.writer(output), 'latest'), 2)
+        self.assertEqual(calls, ['tensor', 'tensor'])
+        self.assertEqual(list(csv.reader(io.StringIO(output.getvalue()))), [
+            ['0', '100', '200', 'sent'], ['1', '101', '', 'skipped_stale'],
+            ['2', '102', '', 'skipped_stale'], ['3', '103', '200', 'sent']])
+        self.assertEqual([RESULT_RECORD.unpack(call.args[0])[0] for call in sender.sendto.call_args_list], [0, 3])
+        self.assertEqual(json.loads(stderr.getvalue()), {'processed': 2, 'skipped': 2})
+
     def test_record_flow_without_socket_permission(self):
         from unittest.mock import MagicMock
         receiver, sender = MagicMock(), MagicMock()
@@ -136,10 +203,30 @@ class ServerMockTests(unittest.TestCase):
                 patch.object(Path, 'unlink') as unlink, \
                 contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(infer_server.serve(model, None, None, 'source', 'bridge', lambda: 200, 1), 1)
-        data, target = sender.sendto.call_args.args
+        data, flags, target = sender.sendto.call_args.args
+        self.assertEqual(flags, socket.MSG_DONTWAIT)
         self.assertEqual(RESULT_RECORD.unpack(data), (99, 100, 200, 231, 26))
         self.assertEqual(target, 'bridge')
         unlink.assert_called_once()
+
+    def test_completion_csv_includes_nonblocking_ipc_drop(self):
+        import csv
+        from unittest.mock import MagicMock
+        receiver, sender = MagicMock(), MagicMock()
+        receiver.__enter__.return_value = receiver
+        sender.__enter__.return_value = sender
+        receiver.recv.return_value = SOURCE_RECORD.pack(99, 100)
+        sender.sendto.side_effect = BlockingIOError(errno.EAGAIN, 'full queue')
+        model = SimpleNamespace(run=lambda tensor: 'logits')
+        output = io.StringIO()
+        with patch.object(infer_server.socket, 'socket', side_effect=[receiver, sender]), \
+                patch.object(infer_server, 'preprocess', return_value='tensor'), \
+                patch.object(infer_server, 'classify', return_value=(1, 0.5)), \
+                patch.object(Path, 'unlink'):
+            self.assertEqual(infer_server.serve(model, None, None, 's', 'b', lambda: 200,
+                                               1, csv.writer(output)), 1)
+        self.assertEqual(list(csv.reader(io.StringIO(output.getvalue()))),
+                         [['99', '100', '200', 'dropped']])
 
     def test_c_pipeline_options(self):
         with patch.dict(sys.modules, {'numpy': SimpleNamespace(),
@@ -152,10 +239,12 @@ class ServerMockTests(unittest.TestCase):
                 patch.object(infer_server.signal, 'signal'), \
                 contextlib.redirect_stderr(io.StringIO()):
             infer_server.main(['--socket', 'source', '--output', 'bridge',
-                               '--model', 'fixture.onnx', '--threads', '2', '--cpu', '1'])
+                               '--model', 'fixture.onnx', '--threads', '2', '--cpu', '1',
+                               '--input-policy', 'latest'])
         affinity.assert_called_once_with({1})
         self.assertEqual(model.call_args.args[1:], ('fixture.onnx', 2))
         self.assertEqual(serve.call_args.args[3:5], ('source', 'bridge'))
+        self.assertEqual(serve.call_args.kwargs['input_policy'], 'latest')
 
     def test_cleanup_on_send_failure(self):
         from unittest.mock import MagicMock

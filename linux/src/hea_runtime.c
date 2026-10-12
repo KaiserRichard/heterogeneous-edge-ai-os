@@ -12,6 +12,7 @@
 #include <unistd.h>
 #ifdef __linux__
 #include <sched.h>
+#include <sys/mman.h>
 #elif defined(__APPLE__)
 #include <sys/ioctl.h>
 #include <IOKit/serial/ioss.h>
@@ -83,6 +84,9 @@ int hea_options_parse(int argc, char **argv, struct hea_options *o)
         {"echo-csv", required_argument, NULL, 1002},
         {"state-events-csv", required_argument, NULL, 1003},
         {"control-csv", required_argument, NULL, 1004},
+        {"inf-rx-csv", required_argument, NULL, 1007},
+        {"mlock", no_argument, NULL, 1005},
+        {"input-policy", required_argument, NULL, 1006},
         {"serial-fd", required_argument, NULL, 'a'},
         {"socket-fd", required_argument, NULL, 'i'}, {"output-fd", required_argument, NULL, 'u'},
         {"period-ms", required_argument, NULL, 'p'}, {"heartbeat-ms", required_argument, NULL, 'h'},
@@ -103,6 +107,13 @@ int hea_options_parse(int argc, char **argv, struct hea_options *o)
         case 1002: o->echo_csv = optarg; break;
         case 1003: o->state_events_csv = optarg; break;
         case 1004: o->control_csv = optarg; break;
+        case 1007: o->inf_rx_csv = optarg; break;
+        case 1005: o->lock_memory = 1; break;
+        case 1006:
+            if (strcmp(optarg, "fifo") && strcmp(optarg, "latest")) {
+                fprintf(stderr, "--input-policy must be fifo or latest\n"); return -1;
+            }
+            o->input_latest = !strcmp(optarg, "latest"); break;
         case 's': o->socket_path = optarg; break;
         case 'o': o->output_path = optarg; break;
         case 'd': o->serial_path = optarg; break;
@@ -127,8 +138,9 @@ int hea_options_parse(int argc, char **argv, struct hea_options *o)
             if (optind > 0 && !strcmp(argv[optind - 1], "--help")) {
                 puts("See linux/README.md. Options: --socket PATH --output PATH --serial PATH\n"
                      "--csv PATH --period-ms N --heartbeat-ms N --work-us N --durations PATH\n"
-                     "--count N --baud N --fifo-priority N --cpu N --policy fifo|latest\n"
-                     "--echo-ms N (default 1000, 0 disables) --status-csv PATH --echo-csv PATH --state-events-csv PATH --control-csv PATH (SIGUSR1 inference toggles)");
+                     "--count N --baud N --fifo-priority N --cpu N --policy fifo|latest --mlock\n"
+                     "--input-policy fifo|latest (default fifo)\n"
+                     "--echo-ms N (default 1000, 0 disables) --status-csv PATH --echo-csv PATH --state-events-csv PATH --control-csv PATH --inf-rx-csv PATH (SIGUSR1 inference toggles)");
                 return 1;
             }
             return -1;
@@ -144,6 +156,9 @@ int hea_options_parse(int argc, char **argv, struct hea_options *o)
 int hea_schedule(const struct hea_options *o)
 {
 #ifdef __linux__
+    if (o->lock_memory && mlockall(MCL_CURRENT | MCL_FUTURE)) {
+        perror("mlockall failed (check RLIMIT_MEMLOCK/CAP_IPC_LOCK)"); return -1;
+    }
     if (o->cpu >= 0) {
         cpu_set_t set;
         if (o->cpu >= CPU_SETSIZE) { fprintf(stderr, "CPU exceeds CPU_SETSIZE\n"); return -1; }
@@ -160,7 +175,7 @@ int hea_schedule(const struct hea_options *o)
         }
     }
 #else
-    if (o->cpu >= 0 || o->priority) {
+    if (o->cpu >= 0 || o->priority || o->lock_memory) {
         fprintf(stderr, "SCHED_FIFO/CPU affinity options require Linux\n"); return -1;
     }
 #endif

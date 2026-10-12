@@ -1,0 +1,5 @@
+Policy,Time-average AoI,Peak AoI,Age-violation time,Deadline misses,Generated count,Delivered count,Replaced count
+fifo,94.69 ms (initialized),158 ms,26.85/0.0104 s,0/0 of 602,602,602,0
+latest,94.59 ms (initialized),156 ms,26.79/0.001595 s,0/0 of 602,602,602,0
+fifo,6660 ms (initialized),1.366e+04 ms,60.23/60.23 s,480/480 of 480,605,480,0
+latest,6958 ms (initialized),1.417e+04 ms,60.24/60.24 s,472/472 of 472,605,472,0

@@ -422,8 +422,33 @@ static void test_state_event(void)
     CHECK(hea_unpack_state_event(&f, &out) == -1);
 }
 
+static void test_inf_rx(void)
+{
+    struct hea_inf_rx in = {65535, UINT64_MAX, UINT64_C(0x123456789abcdef0), 3, UINT32_MAX}, out;
+    struct hea_frame f = {0};
+    f.version = 3; f.type = HEA_MSG_INF_RX;
+    f.len = hea_pack_inf_rx(&in, f.payload);
+    CHECK(f.len == 23 && f.payload[0] == 255 && f.payload[1] == 255);
+    CHECK(f.payload[10] == 0xf0 && f.payload[17] == 0x12 && f.payload[18] == 3);
+    CHECK(!hea_unpack_inf_rx(&f, &out));
+    CHECK(out.wire_seq == in.wire_seq && out.age_mcu_us == in.age_mcu_us &&
+          out.mcu_rx_us == in.mcu_rx_us && out.state == 3 && out.lost_count == UINT32_MAX);
+    for (unsigned len = 0; len <= HEA_MAX_PAYLOAD; ++len) {
+        f.len = (uint8_t)len;
+        CHECK((hea_unpack_inf_rx(&f, &out) == 0) == (len == 23));
+    }
+    f.len = 23;
+    for (unsigned version = 0; version < 5; ++version) {
+        f.version = (uint8_t)version;
+        CHECK((hea_unpack_inf_rx(&f, &out) == 0) == (version == 3));
+    }
+    f.version = 3; f.type = HEA_MSG_STATE_EVENT;
+    CHECK(hea_unpack_inf_rx(&f, &out) == -1);
+}
+
 int main(void)
 {
+    test_inf_rx();
     test_state_event();
     test_status_extension();
     test_crc_known_vector();

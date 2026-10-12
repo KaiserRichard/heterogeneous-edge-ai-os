@@ -893,9 +893,66 @@ static void test_e4_distinct_hold_and_heartbeat_deadlines(void)
     CHECK(sv.last_transition_reason == SUPERVISOR_REASON_SOURCE_AGE_HOLD);
 }
 
+static void test_inf_rx_ring(void)
+{
+    supervisor_t sv;
+    supervisor_config_t cfg = config; cfg.transit_bound_us = 5;
+    CHECK(supervisor_init(&sv, &cfg, 0));
+    (void)event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 0, 0, 0);
+    supervisor_event_t e = {SUPERVISOR_EVENT_RESULT, true, 1, 1, 1, sv.generation, 0, false, 20, true};
+    CHECK(supervisor_update(&sv, &e, 4) == SUPERVISOR_STATE_FRESH);
+    struct hea_inf_rx r;
+    CHECK(supervisor_pop_inf_rx(&sv, &r));
+    CHECK(r.wire_seq == 1 && r.mcu_rx_us == 1 && r.age_mcu_us == 28 && r.state == 1 && r.lost_count == 0);
+    (void)supervisor_update(&sv, &e, 4); /* Duplicate result rejected. */
+    CHECK(!supervisor_pop_inf_rx(&sv, &r));
+    e.wire_seq = 2; /* New wire sequence, duplicate input rejected. */
+    (void)supervisor_update(&sv, &e, 4);
+    CHECK(!supervisor_pop_inf_rx(&sv, &r));
+    e.wire_seq = 3; e.input_seq = 2; e.generation++;
+    (void)supervisor_update(&sv, &e, 4); /* Old queue generation. */
+    CHECK(!supervisor_pop_inf_rx(&sv, &r));
+    e.generation = sv.generation;
+    for (unsigned i = 0; i < 20; ++i) {
+        e.wire_seq = (uint16_t)(3u + i); e.input_seq = 2u + i;
+        e.received_at_ticks = 5u + i;
+        (void)supervisor_update(&sv, &e, 5u + i);
+    }
+    CHECK(sv.inf_rx_count == 16 && sv.inf_rx_lost == 4);
+    for (unsigned i = 0; i < 16; ++i) {
+        CHECK(supervisor_pop_inf_rx(&sv, &r));
+        CHECK(r.wire_seq == 3u + i && r.mcu_rx_us == 5u + i && r.lost_count == 4);
+    }
+    CHECK(!supervisor_pop_inf_rx(&sv, &r));
+    sv.inf_rx_count = 16; sv.inf_rx_lost = UINT32_MAX;
+    e.wire_seq = 30; e.input_seq = 30; e.received_at_ticks = 25;
+    (void)supervisor_update(&sv, &e, 25);
+    CHECK(sv.inf_rx_lost == UINT32_MAX);
+    CHECK(!supervisor_pop_inf_rx(NULL, &r) && !supervisor_pop_inf_rx(&sv, NULL));
+    uint64_t base = UINT64_C(0xfffffff0);
+    CHECK(supervisor_init(&sv, &cfg, base));
+    (void)event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 0, 0, base);
+    CHECK(event(&sv, SUPERVISOR_EVENT_RESULT, 1, 1, base + 1) == SUPERVISOR_STATE_FRESH);
+    CHECK(supervisor_pop_inf_rx(&sv, &r));
+    e = (supervisor_event_t){SUPERVISOR_EVENT_RESULT, true, 2, 2,
+        base + 20, sv.generation, 0, false, 20, true};
+    CHECK(supervisor_update(&sv, &e, base + 25) == SUPERVISOR_STATE_HOLD);
+    CHECK(supervisor_pop_inf_rx(&sv, &r));
+    CHECK(r.mcu_rx_us == UINT64_C(0x100000004) && r.age_mcu_us == 30 && r.state == 2);
+    e.wire_seq = 3; e.input_seq = 3; e.received_at_ticks = base + 26;
+    e.age_at_send_us = UINT32_MAX;
+    CHECK(supervisor_update(&sv, &e, base + 27) == SUPERVISOR_STATE_FAILSAFE);
+    CHECK(supervisor_pop_inf_rx(&sv, &r));
+    CHECK(r.age_mcu_us == (uint64_t)UINT32_MAX + 6u && r.state == 3);
+    e.wire_seq = 4; e.input_seq = 4; e.received_at_ticks = base + 28; e.age_at_send_us = 0;
+    CHECK(supervisor_update(&sv, &e, base + 28) == SUPERVISOR_STATE_FAILSAFE);
+    CHECK(supervisor_pop_inf_rx(&sv, &r) && r.state == 3 && r.age_mcu_us == 5);
+}
+
 int main(void)
 {
     test_e4_distinct_hold_and_heartbeat_deadlines();
+    test_inf_rx_ring();
     test_transition_ring();
     test_sequence_boundaries();
     test_configuration_and_startup();

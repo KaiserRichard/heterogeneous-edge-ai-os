@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <math.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,7 +21,7 @@
 #endif
 
 #define N 32u
-static pid_t children[8];
+static pid_t children[16];
 static size_t child_count;
 static int connected_ipc;
 static char directory[] = "build/pipeline-test-XXXXXX";
@@ -163,7 +164,7 @@ static void run_case(int full_pipeline)
     }
     char *bridge_args[] = {"build/san/hea_bridge", "--serial", tty,
         connected_ipc ? "--socket-fd" : "--socket", connected_ipc ? result_read : socket_path,
-        "--csv", bridge_csv, "--baud", "115200", "--heartbeat-ms", "5", "--policy", "fifo", "--echo-ms", "0", "--status-csv", "/dev/null", "--echo-csv", "/dev/null", "--state-events-csv", "/dev/null", "--control-csv", "/dev/null", NULL};
+        "--csv", bridge_csv, "--baud", "115200", "--heartbeat-ms", "5", "--policy", "fifo", "--echo-ms", "0", "--status-csv", "/dev/null", "--echo-csv", "/dev/null", "--inf-rx-csv", "/dev/null", "--state-events-csv", "/dev/null", "--control-csv", "/dev/null", NULL};
     pid_t bridge = launch(bridge_args, master, slave, 0); ready(connected_ipc ? bridge_csv : socket_path);
     if (!full_pipeline) {
         int sender = connected_ipc ? result_pair[0] : hea_socket_sender();
@@ -211,11 +212,12 @@ static void fake_mcu(void)
     assert(!hea_serial_configure(slave, 115200));
     assert(!socketpair(AF_UNIX, SOCK_DGRAM, 0, pair));
     snprintf(fd, sizeof(fd), "%d", pair[1]);
-    char status[256], echo[256], tx[256], events[256];
+    char status[256], echo[256], tx[256], events[256], reports[256];
+    path(reports, sizeof(reports), "inf_rx.csv");
     path(status, sizeof(status), "status.csv"); path(echo, sizeof(echo), "echo.csv");
     path(tx, sizeof(tx), "fake-tx.csv"); path(events, sizeof(events), "events.csv");
     char *args[] = {"build/san/hea_bridge", "--serial", tty, "--socket-fd", fd,
-        "--csv", tx, "--status-csv", status, "--echo-csv", echo, "--state-events-csv", events,
+        "--inf-rx-csv", reports, "--csv", tx, "--status-csv", status, "--echo-csv", echo, "--state-events-csv", events,
         "--echo-ms", "20", "--baud", "115200", "--control-csv", "/dev/null", NULL};
     pid_t bridge = launch(args, master, slave, 0); ready(status);
     uint8_t payload[64], wire[HEA_MAX_FRAME];
@@ -239,14 +241,28 @@ static void fake_mcu(void)
     len = hea_pack_state_event(&ev, payload);
     n = hea_encode(HEA_MSG_STATE_EVENT, 42, payload, len, wire, sizeof wire);
     assert(write(master, wire, n) == (ssize_t)n); /* Before estimator: empty mapped time. */
+    struct hea_inf_rx report = {65535, 123456, UINT64_C(0x2ffffd8ef), 2, 7};
+    len = hea_pack_inf_rx(&report, payload);
+    n = hea_encode(HEA_MSG_INF_RX, 50, payload, len, wire, sizeof wire);
+    assert(write(master, wire, n) == (ssize_t)n); /* No map/fit yet. */
+    uint64_t input_stamp = hea_raw_now() - 20000000u;
+    struct hea_result result = {1234, input_stamp, input_stamp + 10000000u, 7, 99};
+    uint8_t ipc[HEA_RESULT_SIZE]; hea_result_pack(&result, ipc);
+    assert(send(pair[0], ipc, sizeof ipc, 0) == (ssize_t)sizeof ipc);
     unsigned replies = 0;
+    int have_inference = 0;
+    uint16_t inference_seq = 0;
     uint64_t start = hea_now(CLOCK_MONOTONIC);
     uint64_t raw_start = hea_raw_now();
-    while (replies < 3 && hea_now(CLOCK_MONOTONIC)-start < UINT64_C(2000000000)) {
+    while ((replies < 3 || !have_inference) && hea_now(CLOCK_MONOTONIC)-start < UINT64_C(2000000000)) {
         uint8_t bytes[256]; ssize_t nr = read(master, bytes, sizeof(bytes));
         if (nr < 0) { assert(errno == EAGAIN || errno == EINTR); pause_ms(1); continue; }
         for (ssize_t i = 0; i < nr; ++i) {
-            if (!hea_parser_feed(&parser, bytes[i]) || parser.frame.type != HEA_MSG_ECHO_REQ) continue;
+            if (!hea_parser_feed(&parser, bytes[i])) continue;
+            if (parser.frame.type == HEA_MSG_INFERENCE) {
+                inference_seq = parser.frame.seq; have_inference = 1;
+            }
+            if (parser.frame.type != HEA_MSG_ECHO_REQ || replies >= 3) continue;
             struct hea_echo_req req; assert(!hea_unpack_echo_req(&parser.frame, &req));
             uint32_t t2 = (uint32_t)((uint64_t)UINT32_MAX - 10000u + (hea_raw_now()-raw_start)/1000u);
             struct hea_echo_resp resp = {req.linux_t1_ns, t2, t2};
@@ -255,11 +271,18 @@ static void fake_mcu(void)
             assert(write(master, wire, n) == (ssize_t)n); ++replies;
         }
     }
-    assert(replies == 3); pause_ms(10);
+    assert(replies == 3 && have_inference); pause_ms(10);
     ev.mcu_us = UINT64_C(0x2ffffd8ef) + (hea_raw_now() - raw_start) / 1000u;
     len = hea_pack_state_event(&ev, payload);
     n = hea_encode(HEA_MSG_STATE_EVENT, 43, payload, len, wire, sizeof wire);
     assert(write(master, wire, n) == (ssize_t)n);
+    report.wire_seq = inference_seq; report.mcu_rx_us = ev.mcu_us;
+    len = hea_pack_inf_rx(&report, payload);
+    n = hea_encode(HEA_MSG_INF_RX, 51, payload, len, wire, sizeof wire);
+    assert(write(master, wire, n) == (ssize_t)n);
+    n = hea_encode(HEA_MSG_INF_RX, 52, payload, 22, wire, sizeof wire);
+    assert(write(master, wire, n) == (ssize_t)n);
+    len = hea_pack_state_event(&ev, payload);
     /* A malformed event must not produce a CSV row. */
     n = hea_encode(HEA_MSG_STATE_EVENT, 44, payload, (uint8_t)(len - 1u), wire, sizeof wire);
     assert(write(master, wire, n) == (ssize_t)n);
@@ -299,6 +322,19 @@ static void fake_mcu(void)
     assert(seq_event == 43 && mcu == ev.mcu_us && hb == UINT64_MAX && lost == 7);
     assert(mapped > (long double)rx - 20000000.0L && mapped < (long double)rx + 20000000.0L);
     assert(!fgets(line, sizeof(line), f)); fclose(f);
+    f = fopen(reports, "r"); assert(f); assert(fgets(line, sizeof line, f));
+    assert(strstr(line, "seq,frame_id,t_input_ns,mcu_rx_us,t_mcu_pi_est_ns,age_mcu_us,state,lost_count"));
+    assert(fgets(line, sizeof line, f)); assert(strstr(line, "65535,,,12884891887,,123456,2,7,,"));
+    assert(fgets(line, sizeof line, f));
+    unsigned wire_seq, frame_id, report_state, report_lost;
+    uint64_t ti, receipt, age_us, report_rx; long double pi_stamp, aoi;
+    assert(sscanf(line, "%u,%u,%" SCNu64 ",%" SCNu64 ",%Lf,%" SCNu64 ",%u,%u,%Lf,%" SCNu64,
+        &wire_seq, &frame_id, &ti, &receipt, &pi_stamp, &age_us, &report_state, &report_lost, &aoi, &report_rx) == 10);
+    assert(wire_seq == inference_seq && frame_id == 1234 && ti == input_stamp && receipt == report.mcu_rx_us);
+    assert(age_us == 123456 && report_state == 2 && report_lost == 7);
+    assert(fabsl((pi_stamp - (long double)ti) / 1000.0L - aoi) < 0.001L);
+    assert(!fgets(line, sizeof line, f)); fclose(f);
+    puts("PASS: INF_RX absent correlation/fit, extended MCU time, mapped receipt AoI, local age, losses and malformed rejection");
     puts("PASS: state event CSV, absent estimator, full MCU epoch alignment and mapped Pi time");
     puts("PASS: fake MCU base/v3 diagnostics, CRC recovery, echo estimator and timer wrap over openpty"); close(master); close(slave); close(pair[0]); close(pair[1]);
 }
@@ -351,7 +387,7 @@ static void inference_control(void)
     path(control, sizeof control, "control.csv"); path(tx, sizeof tx, "control-tx.csv");
     char *args[] = {"build/san/hea_bridge", "--serial", tty, "--socket-fd", fd,
         "--csv", tx, "--status-csv", "/dev/null", "--echo-csv", "/dev/null",
-        "--state-events-csv", "/dev/null", "--control-csv", control,
+        "--inf-rx-csv", "/dev/null", "--state-events-csv", "/dev/null", "--control-csv", control,
         "--echo-ms", "0", "--heartbeat-ms", "5", "--baud", "115200", NULL};
     pid_t bridge = launch(args, master, slave, 0); ready(control);
     struct hea_parser parser; hea_parser_init(&parser);
@@ -382,6 +418,58 @@ static void inference_control(void)
     close(master); close(slave); close(pair[0]); close(pair[1]);
     puts("PASS: SIGUSR1 suppression/resume, RAW timestamp acknowledgements, live heartbeats and no stale replay");
 }
+static void inference_input_policy(void)
+{
+    for (unsigned mode = 0; mode < 3u; ++mode) {
+        int input[2], output[2];
+        assert(!socketpair(AF_UNIX, SOCK_DGRAM, 0, input));
+        assert(!socketpair(AF_UNIX, SOCK_DGRAM, 0, output));
+        char in_fd[32], out_fd[32], csv_path[256];
+        snprintf(in_fd, sizeof(in_fd), "%d", input[1]);
+        snprintf(out_fd, sizeof(out_fd), "%d", output[0]);
+        path(csv_path, sizeof(csv_path), mode == 2u ? "latest.csv" : mode == 1u ? "fifo.csv" : "default.csv");
+        uint8_t bytes[HEA_INPUT_SIZE + 1u];
+        uint64_t timestamp = hea_raw_now();
+        /* Queue a burst before launch: deterministic drain, including ID wrap. */
+        struct hea_input records[] = {{UINT32_MAX - 1u, timestamp}, {UINT32_MAX, timestamp}, {0, timestamp}};
+        for (unsigned i = 0; i < 3u; ++i) {
+            hea_input_pack(&records[i], bytes);
+            assert(send(input[0], bytes, HEA_INPUT_SIZE, 0) == HEA_INPUT_SIZE);
+            if (i == 0u) assert(send(input[0], bytes, 1, 0) == 1);
+        }
+        assert(send(input[0], bytes, sizeof(bytes), 0) == (ssize_t)sizeof(bytes));
+        struct hea_input future = {1, timestamp + UINT64_C(60000000000)};
+        hea_input_pack(&future, bytes);
+        assert(send(input[0], bytes, HEA_INPUT_SIZE, 0) == HEA_INPUT_SIZE);
+        char *args[] = {"build/san/hea_infer_stub", "--socket-fd", in_fd, "--output-fd", out_fd,
+            "--csv", csv_path, "--work-us", "0", "--count", "1",
+            mode ? "--input-policy" : NULL, mode == 2u ? "latest" : "fifo", NULL};
+        pid_t infer = launch(args, -1, -1, 0);
+        finish(infer, 0);
+        uint8_t result_bytes[HEA_RESULT_SIZE];
+        assert(recv(output[1], result_bytes, sizeof(result_bytes), MSG_DONTWAIT) == HEA_RESULT_SIZE);
+        struct hea_result result;
+        assert(!hea_result_unpack(&result, result_bytes, sizeof(result_bytes)));
+        assert(result.frame_id == records[mode == 2u ? 2u : 0u].frame_id);
+        assert(result.t_input_ns == timestamp && result.t_done_ns >= timestamp);
+        FILE *f = fopen(csv_path, "r"); assert(f);
+        char line[256]; assert(fgets(line, sizeof(line), f));
+        unsigned skipped = 0, completed = 0;
+        while (fgets(line, sizeof(line), f)) {
+            if (strstr(line, "skipped_stale")) {
+                uint32_t id; uint64_t ti;
+                assert(sscanf(line, "%" SCNu32 ",%" SCNu64, &id, &ti) == 2);
+                assert(skipped < 2u && id == records[skipped].frame_id && ti == timestamp);
+                assert(strstr(line, ",,0,skipped_stale"));
+                ++skipped;
+            } else { assert(strstr(line, ",sent")); ++completed; }
+        }
+        fclose(f);
+        assert(completed == 1u && skipped == (mode == 2u ? 2u : 0u));
+        for (unsigned i = 0; i < 2u; ++i) { close(input[i]); close(output[i]); }
+    }
+    puts("PASS: inference default/FIFO/latest socketpair bursts, skipped IDs, malformed/future rejection and ID wrap");
+}
 int main(void)
 {
     assert(mkdtemp(directory)); assert(!atexit(cleanup));
@@ -394,7 +482,7 @@ int main(void)
         puts("SKIP: named Unix socket bind denied by sandbox; exercising the same datagram ABI via socketpair");
     } else unlink(a.sun_path);
     close(probe);
-    run_case(0); run_case(1); fake_mcu(); inference_control();
+    run_case(0); run_case(1); fake_mcu(); inference_control(); inference_input_policy();
 #ifdef __linux__
     assert(!hea_sleep_until(hea_now(CLOCK_MONOTONIC) + 1000000u));
     puts("PASS: Linux absolute CLOCK_MONOTONIC sleep and RAW timestamps exercised");

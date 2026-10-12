@@ -408,7 +408,7 @@ static void supervisor_task(void *argument)
         uint32_t diagnostic_us = TIM2->CNT;
         taskEXIT_CRITICAL();
         (void)tick_diagnostic_sample(&tick_diagnostic, diagnostic_ticks, diagnostic_us);
-        bool events_pending = supervisor.transition_count != 0u;
+        bool events_pending = supervisor.transition_count != 0u || supervisor.inf_rx_count != 0u;
         supervisor_state_t previous = supervisor.state;
         supervisor_update(&supervisor, NULL, now_task());
         /* Bounded batch prevents traffic from extending one release forever. */
@@ -423,7 +423,7 @@ static void supervisor_task(void *argument)
             missed_heartbeats != UINT16_MAX) ++missed_heartbeats;
         published_state = supervisor.state;
         output(published_state);
-        if (!events_pending && supervisor.transition_count != 0u) xTaskNotifyGive(status_handle);
+        if (!events_pending && (supervisor.transition_count != 0u || supervisor.inf_rx_count != 0u)) xTaskNotifyGive(status_handle);
 #if BRINGUP_BLINK
         /* Diagnostic image only: PB5 stays safe; PA5 toggles at 1 Hz. */
         GPIOB->BSRR = 1u << 21;
@@ -466,6 +466,15 @@ static void status_task(void *argument)
             if (!available) break;
             uint8_t length = hea_pack_state_event(&event, payload);
             send_frame(HEA_MSG_STATE_EVENT, payload, length);
+        }
+        for (unsigned i = 0; i < 4u; ++i) {
+            struct hea_inf_rx report;
+            vTaskSuspendAll();
+            bool available = supervisor_pop_inf_rx(&supervisor, &report);
+            (void)xTaskResumeAll();
+            if (!available) break;
+            uint8_t length = hea_pack_inf_rx(&report, payload);
+            send_frame(HEA_MSG_INF_RX, payload, length);
         }
         /* Sole TX owner: at most one echo per iteration, bounded status delay. */
         struct hea_echo_resp echo;

@@ -345,3 +345,23 @@ int hea_unpack_state_event(const struct hea_frame *f, struct hea_state_event *m)
     m->lost_count = get_u32(f->payload + 27);
     return 0;
 }
+
+uint8_t hea_pack_inf_rx(const struct hea_inf_rx *m, uint8_t *b)
+{
+    put_u16(b, m->wire_seq);
+    put_u64(b + 2, m->age_mcu_us);
+    put_u64(b + 10, m->mcu_rx_us);
+    b[18] = m->state;
+    put_u32(b + 19, m->lost_count);
+    return 23;
+}
+int hea_unpack_inf_rx(const struct hea_frame *f, struct hea_inf_rx *m)
+{
+    if (f->version != HEA_PROTO_VERSION || check(f, HEA_MSG_INF_RX, 23)) return -1;
+    m->wire_seq = get_u16(f->payload);
+    m->age_mcu_us = get_u64(f->payload + 2);
+    m->mcu_rx_us = get_u64(f->payload + 10);
+    m->state = f->payload[18];
+    m->lost_count = get_u32(f->payload + 19);
+    return 0;
+}

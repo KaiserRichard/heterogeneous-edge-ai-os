@@ -37,6 +37,7 @@ encoding step that hides less of the OS-level behaviour we want to observe.
 | `0x03` ECHO_REQ | Pi to STM32 | `linux_t1_ns` u64 | Round-trip time and clock-offset estimation. |
 | `0x83` ECHO_RESP | STM32 to Pi | `linux_t1_ns` u64 (T1), `mcu_rx_us` u32 (T2), `mcu_tx_us` u32 (T3) | Linux adds T4 on receipt; offset and delay per RFC 4330 section 5 (see `docs/research/R8.md`). |
 | `0x84` MCU_STATUS | STM32 to Pi | `mcu_us` u32, `state` u8, `missed_heartbeats` u16, `rx_crc_errors` u16 | Supervisor state (INIT / FRESH / HOLD / FAILSAFE), matching the supervisor state machine. |
+| `0x86` INF_RX | STM32 to Pi | 23 bytes: accepted wire seq, supervisor age, extended receipt time, state, losses (layout below) | Optional v3 receipt timing for E3 real. |
 | `0x85` STATE_EVENT | STM32 to Pi | 31 bytes: extended MCU time, old/new state, reason, last heartbeat/inference receipt times, losses (layout below) | Optional v3 event timing for E4. |
 
 Pi timestamp fields and the age-at-send calculation must use the same Pi monotonic
@@ -275,3 +276,60 @@ Pi time R, offset O and drift D, mapped time is
 raw echo clock's boot epoch, including when capture starts after a timer wrap;
 observations must remain within half a timer wrap of the last echo sample. Mapping
 is an estimate with UART/scheduling uncertainty, not a measured common clock.
+
+## Optional v3 INF_RX (0x86, MCU → Pi)
+
+This reports **accepted** inference frames, after the supervisor evaluates their
+age/state. It supports the OS freshness comparison at the MCU boundary, rather
+than a Pi PTY proxy. No scheduling, pinout, session or acceptance rules change.
+The implementation is locally tested and **UNVERIFIED ON HARDWARE**.
+
+Payload is exactly 23 bytes, little endian; v1/v2 and other lengths are rejected:
+
+| Offset | Type | Field |
+| --- | --- | --- |
+| 0 | u16 | `wire_seq`: accepted INFERENCE header sequence (not INF_RX header sequence) |
+| 2 | u64 | `age_mcu_us`: supervisor source-age estimate at this acceptance evaluation |
+| 10 | u64 | `mcu_rx_us`: extended TIM2 inference receipt time |
+| 18 | u8 | `state`: supervisor state after evaluating this accepted frame (0–3) |
+| 19 | u32 | `lost_count`: saturating cumulative INF_RX ring overflows since MCU boot |
+
+For v2/v3 inference the age is `age_at_send_us + (evaluation_us - receipt_us)
++ transit_bound_us`, using the supervisor's saturating u64 arithmetic. Thus it
+includes supervisor queue delay and the configured **provisional** transit
+allowance (default firmware 5 ms); it is not the mapped receipt AoI. Legacy v1
+acceptances report the supervisor's receipt-silence fallback age, with no source
+age or transit allowance; E3 real uses v3 exclusively. Rejected malformed,
+duplicate, old-input, generation-mismatched or out-of-order frames create no
+report. Accepted traffic still reports its age/state in latched FAILSAFE.
+
+The supervisor records in a static 16-entry FIFO; overflow drops the new report
+and increments `lost_count` up to UINT32_MAX. Session changes/rearm do not erase
+queued reports or cumulative losses. The sole status TX task serializes ring
+pops with the supervisor using scheduler suspension (IRQs stay enabled), drains
+at most four reports per iteration, and samples the current cumulative loss
+counter at pop. No TX happens in the supervisor or an ISR. A single report uses
+32 wire bytes; at 10 Hz it adds 320 bytes/s, about 0.35% of 921600-baud 8N1
+capacity. Batching is unnecessary at this rate.
+
+`hea_bridge` writes `inf_rx.csv` (override `--inf-rx-csv PATH`):
+
+```text
+seq,frame_id,t_input_ns,mcu_rx_us,t_mcu_pi_est_ns,age_mcu_us,state,lost_count,aoi_mapped_us,t_rx_pi_ns
+```
+
+The bounded 2048-slot correlation history records each completed outbound
+INFERENCE's wire sequence and original result identity. A consumed, absent or
+replaced slot leaves identity fields empty, rather than inventing a match.
+Full receipt timestamps align echo wrap epochs, as STATE_EVENT does. Mapped Pi
+time uses the inverse affine clock-sync estimator and Pi CLOCK_MONOTONIC_RAW;
+`aoi_mapped_us = (t_mcu_pi_est_ns - t_input_ns) / 1000`. Missing estimator leaves
+mapped fields empty. `age_mcu_us` is logged independently of that estimator.
+The report's Pi receive time is diagnostic and is never used as MCU receipt time.
+
+The E3 real summary remaps receipt/state times using the nearest fitted echo
+sample (including retrospective startup fits), at most two seconds away. This
+retains early accepted frames before an online estimator existed. Fits must
+have finite positive slope and RMS at most 200 us; empty identity, nonzero INF_RX
+loss, nonzero STATE_EVENT loss or missing state/clock evidence invalidates the
+run. Online mapping columns remain available for comparison with this replay.

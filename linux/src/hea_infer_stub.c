@@ -53,7 +53,7 @@ int main(int argc, char **argv)
     int fd = hea_socket_input(&o), output = hea_socket_output(&o);
     FILE *csv = hea_csv_open(o.csv_path, "frame_id,t_input_ns,t_done_ns,work_us,status");
     if (hea_schedule(&o)) { close(fd); hea_socket_cleanup(&o); return 1; }
-    uint64_t processed = 0, sent = 0, malformed = 0, interrupted = 0;
+    uint64_t processed = 0, sent = 0, malformed = 0, interrupted = 0, skipped = 0;
     while (!hea_stop && (!o.count || processed < o.count)) {
         struct pollfd p = { fd, POLLIN, 0 };
         if (poll(&p, 1, -1) < 0) { if (errno == EINTR) continue; hea_fatal("inference poll"); }
@@ -62,6 +62,25 @@ int main(int argc, char **argv)
         if (n < 0) { if (errno == EAGAIN || errno == EINTR) continue; hea_fatal("inference recv"); }
         struct hea_input in;
         if (hea_input_unpack(&in, bytes, (size_t)n) || in.t_input_ns > hea_raw_now()) { ++malformed; continue; }
+        if (o.input_latest) {
+            while (!hea_stop) {
+                n = recv(fd, bytes, sizeof(bytes), MSG_DONTWAIT);
+                if (n < 0) {
+                    if (errno == EINTR) continue;
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) break;
+                    hea_fatal("inference drain");
+                }
+                struct hea_input next;
+                if (hea_input_unpack(&next, bytes, (size_t)n) || next.t_input_ns > hea_raw_now()) {
+                    ++malformed; continue;
+                }
+                /* Arrival order defines newest, including frame ID wrap. */
+                if (fprintf(csv, "%" PRIu32 ",%" PRIu64 ",,0,skipped_stale\n",
+                            in.frame_id, in.t_input_ns) < 0) hea_fatal("inference skip CSV");
+                ++skipped;
+                in = next;
+            }
+        }
         uint64_t work = nd ? durations[(size_t)(processed % nd)] : o.work_us;
         busy(work);
         if (hea_stop) { ++interrupted; break; }
@@ -74,8 +93,9 @@ int main(int argc, char **argv)
                     ok ? "sent" : "dropped") < 0) hea_fatal("inference CSV");
     }
     fprintf(stderr, "{\"processed\":%" PRIu64 ",\"sent\":%" PRIu64
-            ",\"dropped\":%" PRIu64 ",\"malformed\":%" PRIu64 ",\"interrupted\":%" PRIu64 "}\n",
-            processed, sent, processed - sent, malformed, interrupted);
+            ",\"dropped\":%" PRIu64 ",\"malformed\":%" PRIu64 ",\"interrupted\":%" PRIu64
+            ",\"skipped\":%" PRIu64 "}\n",
+            processed, sent, processed - sent, malformed, interrupted, skipped);
     close(fd); close(output); hea_socket_cleanup(&o);
     if (fclose(csv)) hea_fatal("close inference CSV");
     return 0;

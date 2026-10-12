@@ -87,6 +87,26 @@ static int prepare(struct pending *p, uint16_t seq, uint32_t session)
                          seq, payload, len, p->bytes, sizeof(p->bytes));
     return 0;
 }
+static int mapped_time(const struct hea_clock_filter *filter, uint64_t mcu, long double *pi_ns)
+{
+    struct hea_clock_estimate best;
+    if (hea_clock_filter_min(filter, &best)) return -1;
+    struct hea_clock_fit fit;
+    double offset = best.offset_us, drift = 0.0;
+    if (!hea_clock_fit(filter, best.reference_pi_us, &fit)) {
+        offset = fit.offset_us; drift = fit.drift;
+    }
+    long double ref = (long double)best.reference_pi_us;
+    long double slope = 1.0L + (long double)drift;
+    if (slope <= 0.0L) return -1;
+    *pi_ns = (ref + ((long double)mcu - ref - (long double)offset) / slope) * 1000.0L;
+    return 0;
+}
+/* Bounded correlation history; slots carry full wire sequence, never just index.
+ * Reports older than the history are logged with missing identity, not guessed. */
+#define INF_MAP_DEPTH 2048u
+static struct { struct hea_result result; uint16_t seq; int valid; } inf_map[INF_MAP_DEPTH];
+
 int main(int argc, char **argv)
 {
     struct hea_options o;
@@ -108,6 +128,7 @@ int main(int argc, char **argv)
     FILE *status = hea_csv_open(o.status_csv ? o.status_csv : "mcu_status.csv", "seq,version,t_rx_pi_ns,mcu_us,state,missed_heartbeats,rx_crc_errors,diagnostics_present,last_capture_us,capture_count,rx_dropped,uart_errors,queue_dropped,capture_lost,clock_fallback,state_event_lost,uart_ore,uart_fe,uart_ne,uart_pe,max_irq_masked_cycles,tick_rate_ppm,tick_window_ms");
     FILE *echo = hea_csv_open(o.echo_csv ? o.echo_csv : "echo.csv", "seq,t1_pi_ns,t2_mcu_us,t3_mcu_us,t4_pi_ns,t2_mcu_extended_us,t3_mcu_extended_us,accepted,reference_pi_us,offset_us,delay_us,drift_ppm,rms_residual_us,sample_count,mapping_offset_us,mapping_drift,t1_mcu_est_us,t2_pi_est_us,t3_pi_est_us,t4_mcu_est_us");
     FILE *events = hea_csv_open(o.state_events_csv ? o.state_events_csv : "state_events.csv", "seq,t_rx_pi_ns,mcu_us,old,new,reason,last_hb_mcu_us,last_inf_mcu_us,lost_count,t_mcu_pi_est_ns");
+    FILE *inf_rx = hea_csv_open(o.inf_rx_csv ? o.inf_rx_csv : "inf_rx.csv", "seq,frame_id,t_input_ns,mcu_rx_us,t_mcu_pi_est_ns,age_mcu_us,state,lost_count,aoi_mapped_us,t_rx_pi_ns");
     FILE *control = hea_csv_open(o.control_csv ? o.control_csv : "bridge_control.csv", "t_pi_ns,suppressed,pending_inference_bytes");
     struct hea_parser parser; hea_parser_init(&parser);
     struct hea_clock_wrap wrap = {0};
@@ -180,6 +201,27 @@ int main(int argc, char **argv)
                     else fprintf(status, ",,");
                     fprintf(status, "\n");
                     if (ferror(status)) hea_fatal("status CSV");
+                } else if (f->type == HEA_MSG_INF_RX) {
+                    struct hea_inf_rx r;
+                    if (hea_unpack_inf_rx(f, &r) || r.state > 3u) { ++malformed; continue; }
+                    mcu_anchor_us = r.mcu_rx_us; have_mcu_anchor = 1;
+                    align_mcu_epoch(&wrap, &filter, mcu_anchor_us);
+                    unsigned slot = r.wire_seq % INF_MAP_DEPTH;
+                    int matched = inf_map[slot].valid && inf_map[slot].seq == r.wire_seq;
+                    fprintf(inf_rx, "%u,", r.wire_seq);
+                    if (matched) fprintf(inf_rx, "%" PRIu32 ",%" PRIu64,
+                        inf_map[slot].result.frame_id, inf_map[slot].result.t_input_ns);
+                    else fprintf(inf_rx, ",");
+                    fprintf(inf_rx, ",%" PRIu64 ",", r.mcu_rx_us);
+                    long double mapped = 0.0L;
+                    int mapping = !mapped_time(&filter, r.mcu_rx_us, &mapped);
+                    if (mapping) fprintf(inf_rx, "%.3Lf", mapped);
+                    fprintf(inf_rx, ",%" PRIu64 ",%u,%" PRIu32 ",", r.age_mcu_us, r.state, r.lost_count);
+                    if (mapping && matched) fprintf(inf_rx, "%.6Lf",
+                        (mapped - (long double)inf_map[slot].result.t_input_ns) / 1000.0L);
+                    fprintf(inf_rx, ",%" PRIu64 "\n", t4);
+                    if (matched) inf_map[slot].valid = 0;
+                    if (ferror(inf_rx)) hea_fatal("INF_RX CSV");
                 } else if (f->type == HEA_MSG_STATE_EVENT) {
                     struct hea_state_event e;
                     if (hea_unpack_state_event(f, &e)) { ++malformed; continue; }
@@ -295,6 +337,8 @@ int main(int argc, char **argv)
             now = hea_now(CLOCK_MONOTONIC);
             next_hb += ((now - next_hb) / interval + 1u) * interval;
         } else {
+            unsigned slot = seq % INF_MAP_DEPTH;
+            inf_map[slot].result = p.result; inf_map[slot].seq = seq; inf_map[slot].valid = 1;
             ++sent;
             if (fprintf(csv, "%" PRIu16 ",%" PRIu32 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "\n",
                         seq, p.result.frame_id, p.result.t_input_ns, p.result.t_done_ns, p.t_send) < 0)
@@ -309,7 +353,7 @@ int main(int argc, char **argv)
             session, received, sent, heartbeats, q.overwritten, q.dropped, malformed,
             q.count + (size_t)(p.active && !p.heartbeat && !p.echo));
     close(input); close(serial); hea_socket_cleanup(&o);
-    if (fclose(status) || fclose(echo) || fclose(events) || fclose(control)) hea_fatal("close receive CSV");
+    if (fclose(inf_rx) || fclose(status) || fclose(echo) || fclose(events) || fclose(control)) hea_fatal("close receive CSV");
     if (fclose(csv)) hea_fatal("close bridge CSV");
     return 0;
 }

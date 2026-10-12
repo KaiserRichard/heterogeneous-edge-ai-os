@@ -130,12 +130,19 @@ python linux/inference/infer_server.py \
     --socket /tmp/hea-infer.sock --output /tmp/hea-bridge.sock
 ```
 
-One blocking Unix datagram receiver processes one input at a time. No application
-queue, latest-value overwrite, worker pool, or warm-up is added: kernel socket
-queueing and inference delays remain observable OS effects. Records contain IDs
+One Unix datagram receiver processes one input at a time. `--input-policy fifo`
+(default) retains kernel socket queueing. `--input-policy latest` waits for a valid
+record, then drains available datagrams nonblocking before each inference and
+keeps the last valid arrival. This compares freshness against completeness when
+inference exceeds the source period, an OS queueing/contention experiment.
+No worker pool or warm-up is added. Records contain IDs
 and timestamps only; this workload runs the same deterministic image per frame.
 The first pipeline frame therefore includes first-run effects. `--max-frames N`
-allows a finite integration run; default is unlimited.
+allows a finite integration run counting completed inferences, not skipped inputs;
+default is unlimited. `--csv PATH` logs each completion (`sent`/`dropped`) and each
+superseded input (`skipped_stale`), with its original frame ID/input timestamp.
+Skipped rows have an empty completion timestamp. They are excluded from service
+latency/completion counts; the stderr summary counts them as `skipped`.
 
 The source of truth is `linux/include/hea_ipc.h` and the pack/unpack functions
 in `linux/src/hea_ipc.c`: explicit little-endian fields with no padding.
@@ -171,13 +178,14 @@ on the Pi with an existing ONNX environment:
 
 ```sh
 PYTHON=.venv/bin/python scripts/pi/run_pipeline.sh --stage onnx \
-    --model offline-bundle/mobilenetv2-12.onnx --threads 2
+    --model offline-bundle/mobilenetv2-12.onnx --threads 2 --input-policy latest
 ```
 
 The runner defaults to `--stage stub`. ONNX mode uses the same socket paths,
 startup/liveness checks and shutdown sequence. Stub workload options affect only
-stub mode. ONNX emits no `infer.csv`; analysis uses bridge timestamps, so results
-lost before bridge dispatch are excluded from inference latency samples.
+stub mode. Both stages accept `--input-policy fifo|latest` independently of the
+bridge's `--policy fifo|latest` and emit `infer.csv`. Analysis includes all completed
+inferences, including IPC drops, in service latency, and counts stale skips separately.
 
 ## Local verification and evidence
 

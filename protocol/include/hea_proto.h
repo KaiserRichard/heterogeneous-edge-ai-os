@@ -37,6 +37,7 @@ enum hea_msg_type {
     HEA_MSG_INFERENCE = 0x02,  /* hea_inference */
     HEA_MSG_ECHO_REQ = 0x03,   /* hea_echo_req */
     HEA_MSG_ECHO_RESP = 0x83,  /* hea_echo_resp */
+    HEA_MSG_INF_RX = 0x86, /* hea_inf_rx, optional v3 */
     HEA_MSG_STATE_EVENT = 0x85, /* hea_state_event, optional v3 */
     HEA_MSG_MCU_STATUS = 0x84, /* hea_mcu_status */
 };
@@ -107,6 +108,14 @@ struct hea_state_event {
     uint64_t mcu_us;
     uint8_t old_state, new_state, reason;
     uint64_t last_hb_mcu_us, last_inf_mcu_us;
+    uint32_t lost_count;
+};
+
+/* One accepted inference, age at supervisor evaluation (not report TX). */
+struct hea_inf_rx {
+    uint16_t wire_seq;
+    uint64_t age_mcu_us, mcu_rx_us;
+    uint8_t state;
     uint32_t lost_count;
 };
 
@@ -183,6 +192,9 @@ int hea_unpack_mcu_status(const struct hea_frame *f, struct hea_mcu_status *m);
 
 uint8_t hea_pack_mcu_status_extended(const struct hea_mcu_status_extended *m, uint8_t *buf);
 int hea_unpack_mcu_status_extended(const struct hea_frame *f, struct hea_mcu_status_extended *m);
+
+uint8_t hea_pack_inf_rx(const struct hea_inf_rx *m, uint8_t *buf);
+int hea_unpack_inf_rx(const struct hea_frame *f, struct hea_inf_rx *m);
 
 uint8_t hea_pack_state_event(const struct hea_state_event *m, uint8_t *buf);
 int hea_unpack_state_event(const struct hea_frame *f, struct hea_state_event *m);

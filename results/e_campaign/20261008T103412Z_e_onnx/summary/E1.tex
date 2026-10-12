@@ -1,0 +1,18 @@
+% MEASURED; software timestamps; pty link; no physical UART, no MCU
+\par\noindent MEASURED; software timestamps; pty link; no physical UART, no MCU\par
+\begin{tabular}{llllllll}
+\toprule
+Condition & Service latency & Delivery latency & CPU & RAM & Drops & Overflows & Exact load \\
+\midrule
+\multicolumn{8}{l}{P0 / B0\_idle; valid reps 3/3} \\
+B0\_idle & 44.25/48.28/56.31 ms & 44.37/48.47/56.47 ms & 43.99 \% & 93.5 MiB & 0 & 0 & idle \\
+\multicolumn{8}{l}{P0 / B1\_stream\_c2; valid reps 3/3} \\
+B1\_stream\_c2 & 76.46/88.5/202.8 ms & 76.99/89.02/203.4 ms & 77.96 \% & 93.51 MiB & 0 & 0 & taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --metrics-brief \\
+\multicolumn{8}{l}{P0 / B2\_memrate\_c23; valid reps 3/3} \\
+B2\_memrate\_c23 & 6626/1.398e+04/1.512e+04 ms & 6626/1.398e+04/1.512e+04 ms & 99.95 \% & 93.51 MiB & 0 & 0 & taskset -c 2 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief ; taskset -c 3 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief \\
+\multicolumn{8}{l}{P0 / C1\_cache2M\_c2; valid reps 3/3} \\
+C1\_cache2M\_c2 & 67.58/97.3/121.6 ms & 68/98.83/121.8 ms & 67.97 \% & 93.5 MiB & 0 & 0 & taskset -c 2 stress-ng --cache 1 --cache-level 3 --cache-size 2M --cache-no-affinity --metrics-brief \\
+\multicolumn{8}{l}{P0 / CPU\_c23; valid reps 3/3} \\
+CPU\_c23 & 45.2/48.13/80.74 ms & 45.41/48.3/80.98 ms & 45.99 \% & 93.52 MiB & 0 & 0 & taskset -c 2 stress-ng --cpu 1 --metrics-brief ; taskset -c 3 stress-ng --cpu 1 --metrics-brief \\
+\bottomrule
+\end{tabular}

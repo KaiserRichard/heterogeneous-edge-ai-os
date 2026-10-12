@@ -6,6 +6,7 @@
 #include "hea_proto.h"
 
 #define SUPERVISOR_TRANSITION_DEPTH 16u
+#define SUPERVISOR_INF_RX_DEPTH 16u
 
 /* Step 2: duration-based source-age estimate; all local ticks are microseconds. */
 typedef enum {
@@ -65,6 +66,10 @@ typedef struct {
 } supervisor_event_t;
 
 typedef struct {
+    struct hea_inf_rx inf_rx[SUPERVISOR_INF_RX_DEPTH];
+    uint32_t inf_rx_lost;
+    unsigned inf_rx_head, inf_rx_count;
+    bool result_accepted; /* Reset each update; set only at accepted-result boundary. */
     struct hea_state_event transitions[SUPERVISOR_TRANSITION_DEPTH];
     uint32_t transition_lost;
     unsigned transition_head, transition_count;
@@ -125,6 +130,7 @@ supervisor_state_t supervisor_update(supervisor_t *sv,
 bool supervisor_rearm(supervisor_t *sv, uint64_t now_ticks);
 
 /* Caller serializes pop with update/rearm; nonblocking static ring. */
+bool supervisor_pop_inf_rx(supervisor_t *sv, struct hea_inf_rx *out);
 bool supervisor_pop_transition(supervisor_t *sv, struct hea_state_event *out);
 
 /* Only FRESH permits new simulated output; HOLD policy is a port decision.

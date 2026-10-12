@@ -175,6 +175,7 @@ static void accept(supervisor_t *sv, const supervisor_event_t *event, uint64_t n
         sv->has_result = true;
         sv->last_result_ticks = event->received_at_ticks;
         sv->accepted_inf_us = event->received_at_ticks;
+        sv->result_accepted = true;
         sv->last_age_at_send_us = (uint32_t)event->age_at_send_us;
         sv->receipt_silence_fallback = !event->has_age_at_send;
     }
@@ -193,6 +194,7 @@ supervisor_state_t supervisor_update(supervisor_t *sv,
         return sv->state;
     }
     sv->last_time_ticks = now_ticks;
+    sv->result_accepted = false;
     evaluate(sv, now_ticks);
     accept(sv, event, now_ticks);
     if (sv->has_result) sv->source_age_estimate_us = result_age(sv, now_ticks);
@@ -205,6 +207,17 @@ supervisor_state_t supervisor_update(supervisor_t *sv,
         if (sv->state == SUPERVISOR_STATE_INIT ||
             sv->state == SUPERVISOR_STATE_HOLD) {
             transition(sv, SUPERVISOR_STATE_FRESH, SUPERVISOR_REASON_READY, now_ticks);
+        }
+    }
+    if (sv->result_accepted) {
+        if (sv->inf_rx_count == SUPERVISOR_INF_RX_DEPTH) {
+            if (sv->inf_rx_lost != UINT32_MAX) ++sv->inf_rx_lost;
+        } else {
+            unsigned tail = (sv->inf_rx_head + sv->inf_rx_count) % SUPERVISOR_INF_RX_DEPTH;
+            sv->inf_rx[tail] = (struct hea_inf_rx){event->wire_seq,
+                sv->source_age_estimate_us, event->received_at_ticks,
+                (uint8_t)sv->state, sv->inf_rx_lost};
+            ++sv->inf_rx_count;
         }
     }
     return sv->state;
@@ -252,5 +265,15 @@ bool supervisor_pop_transition(supervisor_t *sv, struct hea_state_event *out)
     out->lost_count = sv->transition_lost;
     sv->transition_head = (sv->transition_head + 1u) % SUPERVISOR_TRANSITION_DEPTH;
     --sv->transition_count;
+    return true;
+}
+
+bool supervisor_pop_inf_rx(supervisor_t *sv, struct hea_inf_rx *out)
+{
+    if (sv == NULL || out == NULL || sv->inf_rx_count == 0u) return false;
+    *out = sv->inf_rx[sv->inf_rx_head];
+    out->lost_count = sv->inf_rx_lost;
+    sv->inf_rx_head = (sv->inf_rx_head + 1u) % SUPERVISOR_INF_RX_DEPTH;
+    --sv->inf_rx_count;
     return true;
 }
