@@ -76,7 +76,7 @@ for ((i=1; i<=count; i++)); do
   [[ $ready == 1 ]] || { echo 'Pi did not become ready' >&2; exit 1; }
   # FX2 software rising-edge trigger, 20% pre-trigger, 3 s sample depth.
   # No --wait-trigger: it discards the prehistory required for last UART byte.
-  "$sigrok" --driver fx2lafw --config samplerate=24m:capture_ratio=20 --triggers D3=r --channels 0=D0,1=D1,2=D2,3=D3 --time 3s --output-file "$local_run/capture.sr" >"$local_run/sigrok.log" 2>&1 &
+  "$sigrok" --driver fx2lafw --config samplerate=8m:captureratio=20 --triggers D3=r --channels D0,D1,D2,D3 --time 3s --output-file "$local_run/capture.sr" >"$local_run/sigrok.log" 2>&1 &
   capture_pid=$!
   # Bound a missing trigger; preserve sigrok stderr and partial session.
   (sleep 30; kill "$capture_pid" 2>/dev/null || true) &
