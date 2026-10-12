@@ -8,23 +8,34 @@ import os
 import signal
 import socket
 import sys
+import time
 from pathlib import Path
 
 from bench_common import SOURCE_RECORD, clock, pack_result, parse_cpu, pin_cpu, unpack_source
 from model_runtime import Model, add_runtime_args, classify, load_image, preprocess
 
+DRAIN_LIMIT = 64
+DRAIN_NS = 2_000_000
 
-def receive_input(receiver, input_policy='fifo', samples=None):
-    """Wait for a valid record; latest drains to the last valid arrival, not max ID.
+def receive_input(receiver, input_policy='fifo', samples=None, now=None):
+    """Wait for a valid record; latest collects at most 64 more arrivals / 2 ms.
 
     Skips have no completion timestamp because no inference was performed.
     Malformed datagrams never replace the current valid candidate.
     """
     if input_policy not in ('fifo', 'latest'):
         raise ValueError('input policy must be fifo or latest')
+    if now is None:
+        now, _ = clock()
     newest = None
     skipped = 0
+    drained = 0
+    drain_started = None
     while True:
+        if newest is not None:
+            if drained >= DRAIN_LIMIT or time.monotonic_ns() - drain_started >= DRAIN_NS:
+                return newest, skipped
+            drained += 1  # Invalid arrivals also consume the bounded batch.
         flags = socket.MSG_DONTWAIT if newest is not None else 0
         try:
             # One extra byte detects oversized records after truncation.
@@ -33,6 +44,10 @@ def receive_input(receiver, input_policy='fifo', samples=None):
             return newest, skipped
         try:
             record = unpack_source(data)
+            # Check each candidate at reception, before inference or skip logs.
+            # Completion-time validation alone can conceal a future input.
+            if record[1] > now():
+                raise ValueError('input timestamp is ahead of reception; check clock domains')
         except ValueError as exc:
             print(f'dropping malformed source datagram: {exc}', file=sys.stderr)
             continue
@@ -41,6 +56,8 @@ def receive_input(receiver, input_policy='fifo', samples=None):
             if samples is not None:
                 samples.writerow((*newest, '', 'skipped_stale'))
         newest = record
+        if drain_started is None:
+            drain_started = time.monotonic_ns()
         if input_policy == 'fifo':
             return newest, skipped
 
@@ -56,7 +73,7 @@ def serve(model, np, image, source_path, bridge_path, now, max_frames=None, samp
         receiver.bind(str(source_path))
         try:
             while max_frames is None or handled < max_frames:
-                (frame_id, t_input_ns), stale = receive_input(receiver, input_policy, samples)
+                (frame_id, t_input_ns), stale = receive_input(receiver, input_policy, samples, now)
                 skipped += stale
                 output = model.run(preprocess(np, image))
                 class_id, confidence = classify(np, output)

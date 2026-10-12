@@ -109,10 +109,10 @@ class E4Tests(unittest.TestCase):
     def test_rms_bound_and_lost_events(self):
         self.echo("pipeline", [(100_500_000_000, -99_000_000, 201)])
         self.assertIn("residual RMS", e4.summarize_run(self.run)["reasons"])
-        self.assertEqual(e4.summarize_run(self.run, 250)["validity"], "VALID")
+        self.assertEqual(e4.summarize_run(self.run, 250, 30)["validity"], "VALID")
         self.event_rows[-1][-2] = 1
         self.events()
-        self.assertIn("lost_count", e4.summarize_run(self.run, 250)["reasons"])
+        self.assertIn("lost_count", e4.summarize_run(self.run, 250, 30)["reasons"])
 
     def test_missing_fit_and_monitor_are_invalid(self):
         (self.run / "pipeline/echo.csv").unlink()
@@ -121,6 +121,7 @@ class E4Tests(unittest.TestCase):
         self.assertEqual(e4.summarize_run(self.run)["validity"], "INVALID")
 
     def test_false_transitions_and_short_windows_invalid(self):
+        self.echo("pipeline", [(100_500_000_000, -99_000_000, 10), (109_500_000_000, -99_000_000, 10), (120_500_000_000, -99_000_000, 10)])
         self.event_rows.insert(1, [8, 110_000_000_000, 11_000_000, 1, 2, 2, 10_900_000, 10_800_000, 0, ""])
         self.events()
         report = e4.summarize_run(self.run)
@@ -206,7 +207,7 @@ class E4Tests(unittest.TestCase):
         self.assertIn("discontinuity", e4.summarize_run(self.run)["reasons"])
 
     def test_cli_reuses_campaign_bound_and_threshold_snapshot(self):
-        self.echo("pipeline", [(100_500_000_000, -99_000_000, 201)])
+        self.echo("pipeline", [(100_500_000_000, -99_000_000, 201), (120_500_000_000, -99_000_000, 201)])
         (self.root / "campaign.json").write_text('{"rms_bound_us":250}')
         (self.root / "supervisor_thresholds.json").write_text('{"result_hold_us":200000}')
         result = subprocess.run([sys.executable, str(REPO / "analysis/e4_summary.py"), str(self.root)], capture_output=True, text=True)
@@ -285,6 +286,29 @@ class E4Tests(unittest.TestCase):
 
     def test_monitor_cleanup_before_start_is_safe(self):
         campaign.Monitor(self.root).close()
+
+    def test_stale_live_explicit_and_replay_mappings_unavailable(self):
+        self.echo('pipeline', [(100_500_000_000, -99_000_000, 10)])
+        self.event_rows[1][-1] = 121_200_000_000
+        self.events()
+        fits = e4.clock_fits(self.run / 'pipeline')
+        for replay in (False, True):
+            rows = e4.events(self.run / 'pipeline', fits, replay=replay)
+            self.assertIsNone(rows[1]['pi_ns'])
+            self.assertIsNone(rows[2]['pi_ns'])
+            self.assertIsNotNone(e4.events(self.run / 'pipeline', fits, replay=replay,
+                                          max_calibration_age_s=30)[1]['pi_ns'])
+        report = e4.summarize_run(self.run)
+        self.assertEqual(report['validity'], 'INVALID')
+        self.assertIsNone(report['detection_us'])
+        self.assertIn('stale calibration', report['reasons'])
+
+    def test_replay_and_startup_extrapolation_age_boundary(self):
+        self.event_rows = [[1, 999_000_000_000, 1_000_000, 'INIT', 'FRESH', 1, 0, 0, 0, '']]
+        self.events()
+        fit = (105_000_000_000, 100_000_000, -99_000_000, 0, 1)
+        self.assertIsNotNone(e4.events(self.run / 'pipeline', [fit], replay=True)[0]['pi_ns'])
+        self.assertIsNone(e4.events(self.run / 'pipeline', [(fit[0]+1, *fit[1:])], replay=True)[0]['pi_ns'])
 
 
 if __name__ == "__main__":

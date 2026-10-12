@@ -193,6 +193,19 @@ def summarize_run(directory):
                     reasons.append(name + ": command failed")
             except (OSError, ValueError) as error:
                 reasons.append(name + ": " + str(error))
+    if condition in ('CPU_c23', 'B1_stream_c2', 'C1_cache2M_c2', 'B2_memrate_c23'):
+        try:
+            if (directory / "stressor_alive").read_text().strip() != "1":
+                raise ValueError("stressor ended early during measurement")
+            with (directory / "stress_liveness.csv").open(newline="") as stream:
+                samples = list(csv.DictReader(stream))
+            times = [float(sample["timestamp"]) for sample in samples]
+            if (not samples or any(sample["alive"] != "1" for sample in samples)
+                    or any(not math.isfinite(t) for t in times)
+                    or any(b <= a or b - a > 1.5 for a, b in zip(times, times[1:]))):
+                raise ValueError("invalid stressor liveness samples")
+        except (OSError, ValueError, KeyError) as error:
+            reasons.append("stressor liveness unavailable or failed: " + str(error))
     try:
         row.update(parse_histogram(directory / "cyclictest_hist.txt"))
     except (OSError, ValueError) as error:
@@ -264,6 +277,7 @@ def write_outputs(campaign, rows):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("campaign", type=Path, help="directory containing condition_rN subdirectories")
+    parser.add_argument("--outdir", type=Path)
     args = parser.parse_args(argv)
     if not args.campaign.is_dir():
         parser.error("campaign must be a directory")
@@ -272,7 +286,9 @@ def main(argv=None):
     if not directories:
         parser.error("no condition_rN run directories found")
     rows = [summarize_run(directory) for directory in directories]
-    write_outputs(args.campaign, rows)
+    dest = args.outdir or args.campaign
+    dest.mkdir(parents=True, exist_ok=True)
+    write_outputs(dest, rows)
     invalid = sum(row["status"] == "INVALID" for row in rows)
     print(f"Wrote summaries for {len(rows)} runs ({invalid} INVALID).")
     return 0

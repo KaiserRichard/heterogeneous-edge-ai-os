@@ -2,13 +2,16 @@
 #include "hea_ipc.h"
 #include "hea_proto.h"
 #include "hea_runtime.h"
+#include "../../stm32/firmware/uart_budget.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <poll.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <termios.h>
 #include <unistd.h>
 
 /* Echo fields are raw u32. A full event timestamp supplies their boot epoch.
@@ -87,6 +90,25 @@ static int prepare(struct pending *p, uint16_t seq, uint32_t session)
                          seq, payload, len, p->bytes, sizeof(p->bytes));
     return 0;
 }
+/* Payload age is sampled at the START of this frame's first write attempt.
+ * Accepted prefix bytes cannot be restamped; never send their remainder once
+ * the 2 ms submission budget expires (even after a scheduler suspension).
+ * Return -2 for expiration, -1 for invalid input, 0 pending, 1 complete. */
+static int transmit(struct pending *p, int serial, uint16_t seq, uint32_t session)
+{
+    if (!p->offset && prepare(p, seq, session)) return -1;
+    uint64_t limit = HEA_UART_WRITE_US * UINT64_C(1000);
+    if (hea_raw_now() - p->t_send >= limit) return -2;
+    ssize_t n = write(serial, p->bytes + p->offset, p->size - p->offset);
+    if (hea_raw_now() - p->t_send >= limit) return -2;
+    if (n < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) return 0;
+        hea_fatal("serial write");
+    }
+    if (!n) { fprintf(stderr, "serial write made no progress\n"); exit(1); }
+    p->offset += (size_t)n;
+    return p->offset == p->size;
+}
 static int mapped_time(const struct hea_clock_filter *filter, uint64_t mcu, long double *pi_ns)
 {
     struct hea_clock_estimate best;
@@ -141,7 +163,9 @@ int main(int argc, char **argv)
     struct hea_queue q; hea_queue_init(&q, o.latest);
     struct pending p; memset(&p, 0, sizeof(p));
     uint16_t seq = 0;
-    uint64_t sent = 0, heartbeats = 0, malformed = 0, received = 0;
+    uint64_t sent = 0, heartbeats = 0, malformed = 0, received = 0, expired = 0;
+    uint64_t quiet_until = 0;
+    uint64_t transit_ns = HEA_UART_TRANSIT_US(o.baud) * UINT64_C(1000);
     uint64_t interval = o.heartbeat_ms * UINT64_C(1000000);
     uint64_t next_hb = hea_now(CLOCK_MONOTONIC);
     uint64_t next_echo = next_hb;
@@ -153,8 +177,8 @@ int main(int argc, char **argv)
         if (requested != suppressed) {
             suppressed = requested;
             uint64_t effective = hea_raw_now();
-            /* Never truncate a frame already started on UART. Finish that one;
-             * discard every unsent result, including queued pre-toggle data. */
+            /* Started frames still obey the submission deadline. Discard
+             * every unsent result, including queued pre-toggle data. */
             size_t remaining = p.active && !p.heartbeat && !p.echo && p.offset ? p.size - p.offset : 0;
             if (suppressed) {
                 q.count = 0;
@@ -166,10 +190,25 @@ int main(int argc, char **argv)
         uint64_t now = hea_now(CLOCK_MONOTONIC);
         uint64_t deadline = o.echo_ms && next_echo < next_hb ? next_echo : next_hb;
         uint64_t wait_ms = now >= deadline ? 0 : (deadline - now + 999999u) / 1000000u;
-        int timeout = p.active ? -1 : (wait_ms > INT_MAX ? INT_MAX : (int)wait_ms);
+        uint64_t raw = hea_raw_now();
+        if (raw < quiet_until) wait_ms = (quiet_until - raw + 999999u) / 1000000u;
+        if (p.active && p.offset) {
+            uint64_t elapsed = raw - p.t_send;
+            uint64_t limit = HEA_UART_WRITE_US * UINT64_C(1000);
+            wait_ms = elapsed >= limit ? 0 : (limit - elapsed + 999999u) / 1000000u;
+        }
+        int timeout = wait_ms > INT_MAX ? INT_MAX : (int)wait_ms;
         struct pollfd fds[2] = { { input, POLLIN, 0 },
-            { serial, (short)(POLLIN | ((p.active || q.count || now >= deadline) ? POLLOUT : 0)), 0 } };
+            { serial, (short)(POLLIN | ((raw >= quiet_until &&
+                (p.active || q.count || now >= deadline)) ? POLLOUT : 0)), 0 } };
         if (poll(fds, 2, timeout) < 0) { if (errno == EINTR) continue; hea_fatal("bridge poll"); }
+        if (p.active && p.offset && hea_raw_now() - p.t_send >= HEA_UART_WRITE_US * UINT64_C(1000)) {
+            /* Remove any queued prefix and leave a full quiet interval before
+             * the next SOF, so the receiver expires the abandoned assembly. */
+            if (tcflush(serial, TCOFLUSH)) hea_fatal("serial abort flush");
+            ++expired; seq = (uint16_t)(seq + 1u); p.active = 0;
+            quiet_until = hea_raw_now() + transit_ns;
+        }
         if (fds[1].revents & (POLLERR | POLLHUP | POLLNVAL)) {
             fprintf(stderr, "serial disconnected\n"); close(input); hea_socket_cleanup(&o); return 1;
         }
@@ -311,7 +350,7 @@ int main(int argc, char **argv)
                 } else (void)hea_queue_push(&q, &r);
             }
         }
-        if (!(fds[1].revents & POLLOUT)) continue;
+        if (!(fds[1].revents & POLLOUT) || hea_raw_now() < quiet_until) continue;
         now = hea_now(CLOCK_MONOTONIC);
         if (!p.active) {
             p.heartbeat = now >= next_hb;
@@ -319,16 +358,19 @@ int main(int argc, char **argv)
             if (!p.heartbeat && !p.echo && (suppressed || !hea_queue_pop(&q, &p.result))) continue;
             p.active = 1; p.offset = 0;
         }
-        /* Restamp/repack until a first byte is accepted: EAGAIN is not a send. */
-        if (!p.offset && prepare(&p, seq, session)) { ++malformed; p.active = 0; continue; }
-        ssize_t n = write(serial, p.bytes + p.offset, p.size - p.offset);
-        if (n < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) continue;
-            hea_fatal("serial write");
+        int written = transmit(&p, serial, seq, session);
+        if (written == -1) { ++malformed; p.active = 0; continue; }
+        if (written == -2) {
+            if (tcflush(serial, TCOFLUSH)) hea_fatal("serial abort flush");
+            ++expired; seq = (uint16_t)(seq + 1u); p.active = 0;
+            quiet_until = hea_raw_now() + transit_ns;
+            continue;
         }
-        if (!n) { fprintf(stderr, "serial write made no progress\n"); return 1; }
-        p.offset += (size_t)n;
-        if (p.offset != p.size) continue;
+        if (!written) continue;
+        /* Pace whole frames too: do not build a tty backlog whose pre-SOF
+         * queuing delay is invisible to the receiver's assembly timer. */
+        quiet_until = hea_raw_now() +
+            ((uint64_t)p.size * UINT64_C(10000000000) + o.baud - 1u) / o.baud;
         if (p.echo) {
             outstanding = p.t_send;
             next_echo = hea_now(CLOCK_MONOTONIC) + echo_interval;
@@ -349,8 +391,8 @@ int main(int argc, char **argv)
     fprintf(stderr, "{\"session_id\":%" PRIu32 ",\"received\":%" PRIu64
             ",\"sent\":%" PRIu64 ",\"heartbeats\":%" PRIu64
             ",\"overwritten\":%" PRIu64 ",\"dropped\":%" PRIu64
-            ",\"malformed\":%" PRIu64 ",\"discarded_on_stop\":%zu}\n",
-            session, received, sent, heartbeats, q.overwritten, q.dropped, malformed,
+            ",\"malformed\":%" PRIu64 ",\"expired\":%" PRIu64 ",\"discarded_on_stop\":%zu}\n",
+            session, received, sent, heartbeats, q.overwritten, q.dropped, malformed, expired,
             q.count + (size_t)(p.active && !p.heartbeat && !p.echo));
     close(input); close(serial); hea_socket_cleanup(&o);
     if (fclose(inf_rx) || fclose(status) || fclose(echo) || fclose(events) || fclose(control)) hea_fatal("close receive CSV");

@@ -54,7 +54,7 @@ elif tool == 'stress-ng':
     if args == ['--version']:
         print('synthetic stress-ng')
     else:
-        time.sleep(0.15)
+        time.sleep(float(os.environ.get("MOCK_STRESS_SECONDS", "2")))
         sys.exit(int(os.environ.get('MOCK_STRESS_RC', '0')))
 elif tool == 'cyclictest':
     if args == ['--version']:
@@ -91,7 +91,7 @@ class CampaignTests(unittest.TestCase):
         out = self.root / profile
         result = subprocess.run(["bash", str(ROOT / "tools/timing/cyclictest_campaign.sh"),
                                  profile, str(out), "1", "1"], cwd=ROOT,
-                                env=dict(self.env, **env), capture_output=True, text=True, timeout=30)
+                                env=dict(self.env, **env), capture_output=True, text=True, timeout=120)
         return out, result
 
     def test_both_profiles_capture_raw_and_select_policy(self):
@@ -129,6 +129,13 @@ class CampaignTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertFalse((out / "DONE").exists())
         self.assertEqual((out / "CPU_c23_r1/stress_exit_code").read_text().strip(), "1")
+
+    def test_zero_exit_early_stressor_invalidates(self):
+        out, result = self.campaign(MOCK_STRESS_SECONDS="0.15")
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertFalse((out / "DONE").exists())
+        self.assertEqual((out / "CPU_c23_r1/stress_exit_code").read_text().strip(), "0")
+        self.assertEqual((out / "CPU_c23_r1/stressor_alive").read_text().strip(), "0")
 
     def test_existing_campaign_refused(self):
         out = self.root / "P0"

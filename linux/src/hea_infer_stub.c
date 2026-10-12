@@ -2,12 +2,14 @@
 #include "hea_runtime.h"
 #include <errno.h>
 #include <inttypes.h>
-#include <poll.h>
+#include <sys/select.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
 #define MAX_DURATIONS 4096u
+#define DRAIN_LIMIT 64u
+#define DRAIN_NS UINT64_C(2000000)
 static size_t load_durations(const char *path, uint64_t *values)
 {
     if (!path) return 0;
@@ -51,19 +53,31 @@ int main(int argc, char **argv)
     size_t nd = load_durations(o.durations_path, durations);
     hea_signals();
     int fd = hea_socket_input(&o), output = hea_socket_output(&o);
+    if (fd >= FD_SETSIZE) { errno = EINVAL; hea_fatal("inference fd exceeds pselect range"); }
     FILE *csv = hea_csv_open(o.csv_path, "frame_id,t_input_ns,t_done_ns,work_us,status");
     if (hea_schedule(&o)) { close(fd); hea_socket_cleanup(&o); return 1; }
     uint64_t processed = 0, sent = 0, malformed = 0, interrupted = 0, skipped = 0;
     while (!hea_stop && (!o.count || processed < o.count)) {
-        struct pollfd p = { fd, POLLIN, 0 };
-        if (poll(&p, 1, -1) < 0) { if (errno == EINTR) continue; hea_fatal("inference poll"); }
+        /* Block between flag check and wait; pselect atomically restores the
+         * old mask while waiting, including any stop signal already pending. */
+        sigset_t blocked, previous;
+        sigemptyset(&blocked); sigaddset(&blocked, SIGINT); sigaddset(&blocked, SIGTERM);
+        if (sigprocmask(SIG_BLOCK, &blocked, &previous)) hea_fatal("inference signal mask");
+        fd_set readable; FD_ZERO(&readable); FD_SET(fd, &readable);
+        int ready = hea_stop ? 0 : pselect(fd + 1, &readable, NULL, NULL, NULL, &previous);
+        int wait_error = errno;
+        if (sigprocmask(SIG_SETMASK, &previous, NULL)) hea_fatal("inference restore mask");
+        if (hea_stop) break;
+        if (ready < 0) { if (wait_error == EINTR) continue; errno = wait_error; hea_fatal("inference pselect"); }
         uint8_t bytes[HEA_INPUT_SIZE + 1u];
         ssize_t n = recv(fd, bytes, sizeof(bytes), 0);
         if (n < 0) { if (errno == EAGAIN || errno == EINTR) continue; hea_fatal("inference recv"); }
         struct hea_input in;
         if (hea_input_unpack(&in, bytes, (size_t)n) || in.t_input_ns > hea_raw_now()) { ++malformed; continue; }
         if (o.input_latest) {
-            while (!hea_stop) {
+            uint64_t drain_started = hea_now(CLOCK_MONOTONIC);
+            for (unsigned drained = 0; drained < DRAIN_LIMIT && !hea_stop &&
+                 hea_now(CLOCK_MONOTONIC) - drain_started < DRAIN_NS; ++drained) {
                 n = recv(fd, bytes, sizeof(bytes), MSG_DONTWAIT);
                 if (n < 0) {
                     if (errno == EINTR) continue;

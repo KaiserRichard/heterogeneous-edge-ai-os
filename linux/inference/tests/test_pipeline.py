@@ -156,6 +156,51 @@ class ServerTests(unittest.TestCase):
 
 
 class ServerMockTests(unittest.TestCase):
+    def test_continuous_latest_queue_is_bounded_by_count_and_time(self):
+        from unittest.mock import MagicMock
+        for delay, expected in ((0, 65), (1_000_000, 2)):
+            receiver = MagicMock()
+            count = 0
+
+            def receive(*args):
+                nonlocal count
+                count += 1
+                return SOURCE_RECORD.pack(count, 100)
+
+            receiver.recv.side_effect = receive  # Queue never becomes empty.
+            ticks = iter(range(0, 100_000_000, delay or 1))
+            with patch.object(infer_server.time, 'monotonic_ns', side_effect=lambda: next(ticks)):
+                self.assertEqual(infer_server.receive_input(receiver, 'latest', now=lambda: 200),
+                                 ((expected, 100), expected - 1))
+            self.assertEqual(count, expected)
+
+    def test_future_inputs_rejected_at_reception_including_latest_candidates(self):
+        from unittest.mock import MagicMock
+        receiver, sender = MagicMock(), MagicMock()
+        receiver.__enter__.return_value = receiver
+        sender.__enter__.return_value = sender
+        receiver.recv.side_effect = [SOURCE_RECORD.pack(1, 110), SOURCE_RECORD.pack(2, 90),
+                                     SOURCE_RECORD.pack(3, 110), BlockingIOError()]
+        clock_ns = 100
+        calls = []
+
+        def compute(tensor):
+            nonlocal clock_ns
+            calls.append(tensor)
+            clock_ns += 20  # Old validation would now accept timestamp 110.
+            return 'logits'
+
+        with patch.object(infer_server.socket, 'socket', side_effect=[receiver, sender]), \
+                patch.object(infer_server, 'preprocess', return_value='tensor'), \
+                patch.object(infer_server, 'classify', return_value=(1, .5)), \
+                patch.object(Path, 'unlink'), contextlib.redirect_stderr(io.StringIO()) as errors:
+            self.assertEqual(infer_server.serve(SimpleNamespace(run=compute), None, None,
+                                               's', 'b', lambda: clock_ns, 1,
+                                               input_policy='latest'), 1)
+        self.assertEqual(calls, ['tensor'])
+        self.assertEqual(RESULT_RECORD.unpack(sender.sendto.call_args.args[0])[:3], (2, 90, 120))
+        self.assertEqual(errors.getvalue().count('ahead of reception'), 2)
+
     def test_latest_skips_backlog_accumulated_during_inference(self):
         from unittest.mock import MagicMock
         tx, rx = socket.socketpair(socket.AF_UNIX, socket.SOCK_DGRAM)

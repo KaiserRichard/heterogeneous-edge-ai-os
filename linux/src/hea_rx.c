@@ -1,8 +1,9 @@
 #include "hea_proto.h"
 #include "hea_runtime.h"
+#include "../../stm32/firmware/uart_budget.h"
 #include <errno.h>
 #include <inttypes.h>
-#include <poll.h>
+#include <sys/select.h>
 #include <unistd.h>
 
 int main(int argc, char **argv)
@@ -13,26 +14,33 @@ int main(int argc, char **argv)
     if (!o.serial_path && o.serial_fd < 0) { fprintf(stderr, "hea_rx requires --serial PATH\n"); return 2; }
     hea_signals();
     int fd = hea_serial_get(&o);
+    if (fd >= FD_SETSIZE) { errno = EINVAL; hea_fatal("receiver fd exceeds pselect range"); }
     FILE *csv = hea_csv_open(o.csv_path, "type,seq,frame_id,t_input_ns,t_send_ns,t_rx_ns,age_at_send_us,crc_ok");
     if (hea_schedule(&o)) return 1;
     struct hea_parser parser; hea_parser_init(&parser);
+    uint32_t frame_started = 0;
     uint64_t results = 0, malformed = 0;
     while (!hea_stop && (!o.count || results < o.count)) {
-        struct pollfd p = { fd, POLLIN, 0 };
-        if (poll(&p, 1, -1) < 0) { if (errno == EINTR) continue; hea_fatal("rx poll"); }
-        if (p.revents & (POLLERR | POLLHUP | POLLNVAL)) {
-            fprintf(stderr, "receiver serial disconnected\n"); return 1;
-        }
+        sigset_t blocked, previous;
+        sigemptyset(&blocked); sigaddset(&blocked, SIGINT); sigaddset(&blocked, SIGTERM);
+        if (sigprocmask(SIG_BLOCK, &blocked, &previous)) hea_fatal("rx signal mask");
+        fd_set readable; FD_ZERO(&readable); FD_SET(fd, &readable);
+        int ready = hea_stop ? 0 : pselect(fd + 1, &readable, NULL, NULL, NULL, &previous);
+        int wait_error = errno;
+        if (sigprocmask(SIG_SETMASK, &previous, NULL)) hea_fatal("rx restore mask");
+        if (hea_stop) break;
+        if (ready < 0) { if (wait_error == EINTR) continue; errno = wait_error; hea_fatal("rx pselect"); }
         uint8_t bytes[1024];
         ssize_t n = read(fd, bytes, sizeof(bytes));
         if (n < 0) { if (errno == EAGAIN || errno == EINTR) continue; hea_fatal("rx read"); }
         if (!n) { fprintf(stderr, "receiver serial EOF\n"); return 1; }
         for (size_t i = 0; i < (size_t)n; ++i) {
             uint32_t errors = parser.stats.crc_errors;
-            int ready = hea_parser_feed(&parser, bytes[i]);
+            int frame_ready = hea_uart_feed(&parser, bytes[i], (uint32_t)(hea_raw_now() / 1000u),
+                                &frame_started, (uint32_t)HEA_UART_ASSEMBLY_US(o.baud));
             if (parser.stats.crc_errors != errors)
                 if (fprintf(csv, "CRC_ERROR,,,,,%" PRIu64 ",,0\n", hea_raw_now()) < 0) hea_fatal("rx CSV");
-            if (!ready) continue;
+            if (!frame_ready) continue;
             uint64_t t_rx = hea_raw_now();
             struct hea_frame *f = &parser.frame;
             if (f->type == HEA_MSG_INFERENCE) {

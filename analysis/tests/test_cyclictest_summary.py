@@ -188,6 +188,19 @@ class SummaryTests(unittest.TestCase):
     def test_latex_escape(self):
         self.assertEqual(summary.latex_escape("a_b&c%#"), r"a\_b\&c\%\#")
 
+    def test_stressed_run_needs_measurement_liveness_even_for_zero_exit(self):
+        run = self.run_directory('CPU_c23_r1')
+        (run / 'stress_exit_code').write_text('0')
+        self.assertEqual(summary.summarize_run(run)['status'], 'INVALID')
+        (run / 'stressor_alive').write_text('1')
+        (run / 'stress_liveness.csv').write_text('timestamp,alive\n1,1\n1.2,1\n')
+        self.assertEqual(summary.summarize_run(run)['status'], 'VALID')
+        (run / 'stressor_alive').write_text('0')
+        self.assertEqual(summary.summarize_run(run)['status'], 'INVALID')
+        (run / 'stressor_alive').write_text('1')
+        (run / 'stress_liveness.csv').write_text('timestamp,alive\n1,1\n1.2,0\n')
+        self.assertEqual(summary.summarize_run(run)['status'], 'INVALID')
+
 
 if __name__ == "__main__":
     unittest.main()

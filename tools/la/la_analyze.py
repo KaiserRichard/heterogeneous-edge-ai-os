@@ -65,15 +65,24 @@ def uart_ends(rows, baud=921600):
     def level(t):
         return edges[bisect.bisect_right(times, t)-1][1]
     ends, busy = [], -1
+    resync = False
     bit = 1/baud
     for index, (start, value) in enumerate(edges):
         if index == 0 or value != 0 or start < busy:
             continue
+        if resync and start - edges[index-1][0] < bit:
+            continue
         end = start + 10*bit
+        busy = end - .1*bit
         if end > rows[-1][0]:
             continue
         if level(start+.5*bit) == 0 and level(start+9.5*bit) == 1:
-            ends.append(end); busy = end - .1*bit
+            ends.append(end)
+            resync = False
+        else:
+            # Discard the whole failed character, then require an idle bit.
+            busy = end
+            resync = True
     return ends
 
 

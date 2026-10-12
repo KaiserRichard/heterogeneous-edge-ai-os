@@ -31,3 +31,18 @@ The report predates the retained logic-analyzer collection; its pending analyzer
 checks are historical limits of those reported measurements, not a claim that
 this repository contains no captures. Read analyzer comparisons with
 [tools/la/README.md](../tools/la/README.md).
+
+## Validity rule versions (read before re-running any summary)
+
+The summaries stored in these folders were produced with the validity rules in force when each run was recorded (rule set v1). The final code review (docs/STAGE_REPORT.md, "Validity rule versions") tightened the rules (v2): monitor samples must carry RAW timestamps, cover the whole measurement window with gaps of at most 1.5 s, stressors must be shown alive during measurement, and clock fits older than 5 s may not map MCU time.
+
+Re-running the v2 analysis on the stored data (read-only replay, 2026-10-13):
+
+| Data set | v1 (stored) | v2 replay | Why |
+|---|---|---|---|
+| E1/E2/E3 over pty | 45/45 valid | 0/45 | v1 monitor files have no RAW `t_pi_ns` timestamps, so window coverage cannot be proven. Not evidence of a bad run. |
+| cyclictest P0, P1 | 15/15 each | 3/15 each | Stressed runs did not record stressor liveness; the 3 idle runs per profile stay valid. |
+| E4 faults | 17/25 | 17/25 | Unchanged. Detection values now follow the transition reason code (result-age HOLD ~175 ms vs heartbeat FAILSAFE ~100 ms), as already reported. |
+| Logic analyzer | 15 captures | unchanged | No number or flag changed. |
+
+So the v1 numbers are reported as measured, with the stated limitation that the stricter v2 evidence was not recorded for them. Any rerun uses v2.

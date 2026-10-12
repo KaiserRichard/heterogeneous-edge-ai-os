@@ -27,8 +27,9 @@ command -v sudo >/dev/null; sudo -n true || { echo "cyclictest needs passwordles
 if [[ -e $out ]]; then echo "Refusing to overwrite campaign: $out" >&2; exit 2; fi
 mkdir -p "$out"
 repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
-mon=; sp=
+mon=; sp=; cp=
 cleanup() {
+  if [[ -n $cp ]]; then sudo -n kill "$cp" 2>/dev/null || :; wait "$cp" 2>/dev/null || :; fi
   if [[ -n $sp ]]; then kill "$sp" 2>/dev/null || :; wait "$sp" 2>/dev/null || :; fi
   if [[ -n $mon ]]; then kill "$mon" 2>/dev/null || :; wait "$mon" 2>/dev/null || :; fi
 }
@@ -95,7 +96,22 @@ while IFS=: read -r condition repetition; do
   # Evidence that the measured thread really runs in the intended class (TS vs FF).
   ( sleep 3; ps -L -o tid=,cls=,rtprio=,psr=,comm= -C cyclictest ) > "$d/sched_check.txt" 2>&1 &
   rc=0
-  "${cmd[@]}" > "$d/cyclictest_hist.txt" 2> "$d/cyclictest.err" || rc=$?
+  stress_alive=1
+  "${cmd[@]}" > "$d/cyclictest_hist.txt" 2> "$d/cyclictest.err" & cp=$!
+  echo 'timestamp,alive' > "$d/stress_liveness.csv"
+  while :; do
+    alive=1
+    if [[ -n $sp ]] && ! kill -0 "$sp" 2>/dev/null; then
+      alive=0; stress_alive=0; failed=1
+    fi
+    printf '%s,%s\n' "$(date +%s.%N)" "$alive" >> "$d/stress_liveness.csv"
+    kill -0 "$cp" 2>/dev/null || break
+    sleep 0.2
+  done
+  wait "$cp" || rc=$?
+  cp=
+  echo "$stress_alive" > "$d/stressor_alive"
+
   echo "$rc" > "$d/exit_code"
   if [[ $rc -ne 0 ]]; then failed=1; fi
   if [[ -n $sp ]]; then

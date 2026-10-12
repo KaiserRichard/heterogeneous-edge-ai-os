@@ -7,6 +7,7 @@
 #include "supervisor_protocol.h"
 #include "rx_dma_cursor.h"
 #include "tick_diagnostic.h"
+#include "uart_budget.h"
 
 #define REG32(a) (*(volatile uint32_t *)(a))
 #define FRAME_DEPTH 8u
@@ -19,6 +20,16 @@
 #define PCLK1_HZ (SYSCLK_HZ / 2u)
 #define PCLK2_HZ SYSCLK_HZ
 #define UART_BRR ((PCLK2_HZ + UART_BAUD / 2u) / UART_BAUD)
+/* Override only for a measured, more conservative deployment budget. */
+#ifndef UART_TRANSIT_US
+#define UART_TRANSIT_US HEA_UART_TRANSIT_US(UART_BAUD)
+#endif
+_Static_assert(UART_BAUD > 0u, "UART baud must be positive");
+_Static_assert(UART_TRANSIT_US >= HEA_UART_SERIAL_US(UART_BAUD),
+               "transit allowance is smaller than UART serialization time");
+_Static_assert(UART_TRANSIT_US >= HEA_UART_TRANSIT_US(UART_BAUD),
+               "transit allowance must also cover bounded TX and RX margin");
+_Static_assert(UART_TRANSIT_US < UINT32_C(0x80000000), "UART budget exceeds timer range");
 _Static_assert(configTICK_RATE_HZ == 1000, "RX poll requires a 1 ms tick");
 _Static_assert(UART_BRR >= 16u && UART_BRR <= 65535u, "USART1 baud out of range");
 
@@ -278,6 +289,7 @@ void TIM2_Handler(void)
 static void rx_task(void *argument)
 {
     (void)argument;
+    uint32_t frame_started = 0;
 #if RX_DMA
     unsigned consumed = 0;
     uint32_t epoch = rx_error_epoch;
@@ -300,8 +312,11 @@ static void rx_task(void *argument)
         sampled_at = sampled;
         if (errors) firmware_fault(); /* DMA bus/config failure: safe outputs */
         DMA2_LIFCR = DMA_RX_FLAGS;
-        if (late || epoch != rx_error_epoch) {
-            if (late) dma_drop();
+        /* DMA lacks per-byte timestamps: a delayed sample must not make an
+         * old buffered frame look newly received within the transit margin. */
+        bool delivery_late = (uint32_t)(sampled - drain_started) >= HEA_UART_RX_MARGIN_US;
+        if (late || delivery_late || epoch != rx_error_epoch) {
+            if (late || delivery_late) dma_drop();
             epoch = rx_error_epoch;
             consumed = produced;
             parser.state = HEA_P_SOF0;
@@ -332,7 +347,8 @@ static void rx_task(void *argument)
             continue;
         }
 #endif
-        if (!hea_parser_feed(&parser, record.byte)) continue;
+        if (!hea_uart_feed(&parser, record.byte, record.raw_us, &frame_started,
+                           (uint32_t)HEA_UART_ASSEMBLY_US(UART_BAUD))) continue;
         frame_event_t event = { .frame = parser.frame };
         taskENTER_CRITICAL();
 #if RX_DMA
@@ -521,7 +537,7 @@ int main(void)
     board_init();
     extended_us = TIM2->CNT;
     /* PROVISIONAL educational thresholds, in us; calibrate on the rig. */
-    const supervisor_config_t config = {100000, 200000, 500000, 1000000, 5000};
+    const supervisor_config_t config = {100000, 200000, 500000, 1000000, UART_TRANSIT_US};
     configASSERT(supervisor_init(&supervisor, &config, extended_us));
     hea_parser_init(&parser);
 #if !RX_DMA

@@ -134,14 +134,15 @@ def monitor_samples(run, stop, evidence_records):
                          read_sys('/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq'),
                          flags, voltage_value(voltage)])
             evidence, ticks, rss = process_evidence(run / 'pipeline')
+            counter_time = time.monotonic()
             if set(evidence) == {'source', 'infer', 'bridge'}:
                 evidence_records.append(evidence)
                 cpu = ''
                 if previous is not None:
                     old_time, old_ticks, old_pids = previous
                     if [r['pid'] for r in evidence.values()] == old_pids and ticks >= old_ticks:
-                        cpu = (ticks - old_ticks) / os.sysconf('SC_CLK_TCK') / (t0 - old_time) * 100
-                previous = (t0, ticks, [r['pid'] for r in evidence.values()])
+                        cpu = (ticks - old_ticks) / os.sysconf('SC_CLK_TCK') / (counter_time - old_time) * 100
+                previous = (counter_time, ticks, [r['pid'] for r in evidence.values()])
                 rw.writerow([time.time(), cpu, rss])
             thermal.flush()
             resources.flush()

@@ -30,16 +30,27 @@ def throttle(value):
     return int(str(value), 0)
 
 
-def validity(run):
+def validity(run, max_monitor_gap_s=1.5):
     """Historical sticky flags are allowed; live or newly sticky flags are not."""
     reasons = []
     try:
+        if not math.isfinite(max_monitor_gap_s) or max_monitor_gap_s <= 0:
+            raise ValueError('monitor gap bound must be finite and positive')
         before, after = [throttle(read_json(run / name)['throttled'])
                          for name in ('meta_before.json', 'meta_after.json')]
         records = pipeline.rows(run / 'thermal.csv')
         flags = [throttle(r['throttled']) for r in records]
         if not flags:
             raise ValueError('empty monitor')
+        start, end = [int((run / 'pipeline' / name).read_text())
+                      for name in ('window_start_ns', 'window_end_ns')]
+        times = [int(r['t_pi_ns']) for r in records]
+        if end <= start:
+            reasons.append('invalid observation window')
+        if len(times) < 2 or any(b <= a or b - a > max_monitor_gap_s * 1e9 for a, b in zip(times, times[1:])):
+            reasons.append('power monitor timestamps unordered or gap exceeds bound')
+        if times[0] > start or times[-1] < end:
+            reasons.append('power monitor does not cover measurement window')
         if any(v & 0xF for v in [before, after] + flags):
             reasons.append('live throttling/power bits (0xF)')
         if (after & ~before) & 0xFFFF0000:
@@ -237,13 +248,13 @@ def latex_table(records, columns, per_run=False):
     return '\n'.join(lines) + '\n'
 
 
-def write_summary(campaign):
+def write_summary(campaign, outdir=None):
     runs = [summarize_run(p.parent) for p in sorted(campaign.glob('E*/condition.json'))]
     if not runs:
         raise ValueError('no campaign runs found')
     conditions = aggregate(runs)
-    dest = campaign / 'summary'
-    dest.mkdir(exist_ok=True)
+    dest = outdir or campaign / 'summary'
+    dest.mkdir(parents=True, exist_ok=True)
     csv_write(dest / 'per_run.csv', runs)
     csv_write(dest / 'per_condition.csv', conditions)
     csv_write(dest / 'excluded.csv', [r for r in runs if not r['valid']],
@@ -295,10 +306,11 @@ def worst_stressors(campaign):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('campaign', type=Path)
+    parser.add_argument('--outdir', type=Path)
     args = parser.parse_args()
     try:
-        runs, _ = write_summary(args.campaign)
-        print(f"{EVIDENCE}; {sum(r['valid'] for r in runs)}/{len(runs)} valid runs; {args.campaign / 'summary'}")
+        runs, _ = write_summary(args.campaign, args.outdir)
+        print(f"{EVIDENCE}; {sum(r['valid'] for r in runs)}/{len(runs)} valid runs; {args.outdir or args.campaign / 'summary'}")
     except (OSError, ValueError, KeyError) as exc:
         parser.exit(2, f'e_summary: {exc}\n')
 

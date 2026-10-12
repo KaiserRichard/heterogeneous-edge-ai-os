@@ -72,18 +72,25 @@ def map_mcu(mcu_us, fit):
     return (reference + (mcu_us - reference - offset) / (1 + drift)) * 1000
 
 
-def events(directory, fits, replay=False):
+def events(directory, fits, replay=False, max_calibration_age_s=5):
+    if not math.isfinite(max_calibration_age_s) or max_calibration_age_s <= 0:
+        raise ValueError("calibration age must be finite and positive")
     result = []
     for row in read_csv(directory / "state_events.csv", EVENT_COLUMNS):
         mcu = int(row["mcu_us"])
         received = int(row["t_rx_pi_ns"])
         eligible = fits if replay else [fit for fit in fits if fit[0] <= received]
-        fit = eligible[-1] if eligible else None
-        mapped = row["t_mcu_pi_est_ns"]
-        # A replay decoder's Pi epoch is unrelated to the original receipt.
-        pi = finite(mapped) if mapped and finite(mapped) > 0 and not replay else None
-        if pi is None and fit:
-            pi = map_mcu(mcu, fit)
+        # Startup back-extrapolation and replay share the same bounded gate.
+        fit = eligible[-1] if eligible else (fits[0] if fits else None)
+        pi = None
+        if fit:
+            estimate = map_mcu(mcu, fit)
+            age_ns = max_calibration_age_s * 1e9
+            if abs(estimate - fit[0]) <= age_ns and (replay or abs(received - fit[0]) <= age_ns):
+                mapped = row["t_mcu_pi_est_ns"]
+                pi = finite(mapped) if mapped and finite(mapped) > 0 and not replay else estimate
+                if abs(pi - fit[0]) > age_ns:
+                    pi = None
         result.append(dict(row, mcu_us=mcu, pi_ns=pi, old=state(row["old"]),
                            new=state(row["new"]), lost_count=int(row["lost_count"])))
     return result
@@ -114,7 +121,7 @@ def thresholds(path=None, include=None):
     return values, ";".join(sorted(set(sources))) or "UNKNOWN: no literal threshold macros in stm32/include; pass --thresholds"
 
 
-def summarize_run(run, rms_bound=200):
+def summarize_run(run, rms_bound=200, max_calibration_age_s=5):
     meta = json.loads((run / "run.json").read_text())
     report = dict(run=run.name, fault=meta["fault"], rep=meta["rep"], evidence=EVIDENCE,
                   validity="INVALID", reasons="", false_transitions=None,
@@ -155,24 +162,17 @@ def summarize_run(run, rms_bound=200):
         report["clock_rms_max_us"] = max(residuals) if residuals else None
         if any(rms > rms_bound for rms in residuals):
             errors.append("clock-sync residual RMS exceeds bound")
-        observed = events(run / "pipeline", fits)
+        observed = events(run / "pipeline", fits, max_calibration_age_s=max_calibration_age_s)
         if (run / "capture/state_events.csv").exists():
-            observed += events(run / "capture", fits, replay=True)
-        recovered = events(run / "recovery", recovery_fits)
+            observed += events(run / "capture", fits, replay=True, max_calibration_age_s=max_calibration_age_s)
+        recovered = events(run / "recovery", recovery_fits, max_calibration_age_s=max_calibration_age_s)
         if any(r["lost_count"] > 0 for r in observed + recovered):
             errors.append("STATE_EVENT lost_count > 0")
         if any(r["lost_count"] < 0 or r["mcu_us"] < 0 or int(r["t_rx_pi_ns"]) < 0 for r in observed + recovered):
             errors.append("negative STATE_EVENT counters/timestamps")
         if any(r["pi_ns"] is None for r in observed + recovered
                if r["mcu_us"] >= 0):
-            # Initial startup events may predate the first fit; they are mapped
-            # with the first fit below, within the same MCU epoch only.
-            for records, mapping in ((observed, fits), (recovered, recovery_fits)):
-                for row in records:
-                    if row["pi_ns"] is None and mapping:
-                        row["pi_ns"] = map_mcu(row["mcu_us"], mapping[0])
-            if any(r["pi_ns"] is None for r in observed + recovered):
-                errors.append("STATE_EVENT mapping unavailable")
+            errors.append("STATE_EVENT mapping unavailable: missing or stale calibration")
         observed = sorted((r for r in observed if r["pi_ns"] is not None), key=lambda r: r["pi_ns"])
         for records in (observed, sorted(recovered, key=lambda r: r["pi_ns"] or 0)):
             if any(a["new"] != b["old"] or b["mcu_us"] < a["mcu_us"] for a, b in zip(records, records[1:])):
@@ -292,6 +292,8 @@ def main():
     parser.add_argument("campaign", type=Path)
     parser.add_argument("--thresholds", type=Path, help="JSON with *_us threshold keys")
     parser.add_argument("--rms-bound-us", type=float, help="default: campaign setting, otherwise 200")
+    parser.add_argument("--max-calibration-age-s", type=float, default=5, help="maximum fit age/extrapolation in seconds (default: 5)")
+    parser.add_argument("--outdir", type=Path, help="write reports here instead of campaign")
     parser.add_argument("--include", type=Path, default=Path(__file__).resolve().parents[1] / "stm32/include")
     args = parser.parse_args()
     try:
@@ -302,16 +304,20 @@ def main():
             args.thresholds = args.campaign / "supervisor_thresholds.json"
         if not math.isfinite(args.rms_bound_us) or args.rms_bound_us <= 0:
             raise ValueError("RMS bound must be finite and positive")
+        if not math.isfinite(args.max_calibration_age_s) or args.max_calibration_age_s <= 0:
+            raise ValueError("calibration age must be finite and positive")
+        dest = args.outdir or args.campaign
+        dest.mkdir(parents=True, exist_ok=True)
         configured, source = thresholds(args.thresholds, args.include)
-        reports = [summarize_run(p.parent, args.rms_bound_us) for p in sorted(args.campaign.glob("F*/run.json"))]
+        reports = [summarize_run(p.parent, args.rms_bound_us, args.max_calibration_age_s) for p in sorted(args.campaign.glob("F*/run.json"))]
         if not reports:
             raise ValueError("no F*/run.json directories")
         table = fault_table(reports, configured, source)
-        write_csv(args.campaign / "e4_runs.csv", reports)
-        write_csv(args.campaign / "e4_faults.csv", table)
-        (args.campaign / "e4_faults.tex").write_text(latex(table))
-        (args.campaign / "e4_thresholds.json").write_text(json.dumps(dict(values=configured, source=source), indent=2) + "\n")
-        print(f"{EVIDENCE}: {sum(r['validity'] == 'VALID' for r in reports)}/{len(reports)} valid runs; {args.campaign}/e4_{{runs,faults}}.csv, e4_faults.tex")
+        write_csv(dest / "e4_runs.csv", reports)
+        write_csv(dest / "e4_faults.csv", table)
+        (dest / "e4_faults.tex").write_text(latex(table))
+        (dest / "e4_thresholds.json").write_text(json.dumps(dict(values=configured, source=source), indent=2) + "\n")
+        print(f"{EVIDENCE}: {sum(r['validity'] == 'VALID' for r in reports)}/{len(reports)} valid runs; {dest}/e4_{{runs,faults}}.csv, e4_faults.tex")
     except (OSError, ValueError, KeyError) as error:
         print(f"e4_summary: {error}", file=sys.stderr)
         return 2

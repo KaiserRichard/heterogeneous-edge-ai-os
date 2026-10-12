@@ -41,8 +41,8 @@ def fixture(root, experiment='E1', stressor='B0_idle', rep=1, ages=(100, 101, 15
         write_json(run / name, {'throttled': '0x0'})
     write_json(run / 'execution.json', {'stressor_ok': True, 'settings_ok': True, 'monitor_ok': True})
     (run / 'exit_code').write_text('0')
-    write_csv(run / 'thermal.csv', 'timestamp,temp_millic,cpu0_khz,throttled,ext5v_v',
-              [[1, 42000, 2400000, '0x0', 5.1], [1.5, 43000, 2400000, '0x0', 5.1]])
+    write_csv(run / 'thermal.csv', 't_pi_ns,timestamp,temp_millic,cpu0_khz,throttled,ext5v_v',
+              [[1000000000, 1, 42000, 2400000, '0x0', 5.1], [2000000000, 1.5, 43000, 2400000, '0x0', 5.1]])
     write_csv(run / 'resources.csv', 'timestamp,cpu_percent,rss_mib', [[1, 20, 10], [2, 40, 12]])
     write_json(p / 'config.json', {'serial': None, 'period_ms': 100})
     source, infer, bridge, rx = [], [], [], []
@@ -360,3 +360,33 @@ class RunnerTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class MonitorRegressionTests(unittest.TestCase):
+    def test_monitor_order_gap_and_full_coverage(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = fixture(Path(tmp))
+            self.assertEqual(e_summary.validity(run), 'OK')
+            fields = 't_pi_ns,timestamp,temp_millic,cpu0_khz,throttled,ext5v_v'
+            for times in ([1000000000], [2000000000, 1000000000],
+                          [1000000000, 1000000000, 2000000000],
+                          [1000000000, 3000000000], [1100000000, 2000000000],
+                          [1000000000, 1900000000]):
+                write_csv(run / 'thermal.csv', fields,
+                          [[t, 1, 42000, 2400000, '0x0', 5.1] for t in times])
+                self.assertTrue(e_summary.validity(run).startswith('INVALID'), times)
+
+    def test_cpu_uses_counter_collection_time_after_delayed_telemetry(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            stop = MagicMock()
+            stop.is_set.side_effect = [False, False, True]
+            evidence = {name: {'pid': i} for i, name in enumerate(('source', 'infer', 'bridge'))}
+            with patch.object(campaign, 'capture', return_value='throttled=0x0'), \
+                 patch.object(campaign, 'read_sys', return_value='1'), \
+                 patch.object(campaign, 'process_evidence', side_effect=[(evidence, 0, 1), (evidence, 100, 1)]), \
+                 patch.object(campaign.os, 'sysconf', return_value=100), \
+                 patch.object(campaign.time, 'monotonic', side_effect=[0, .8, .8, .5, 1.8, 1.8]), \
+                 patch.object(campaign.time, 'CLOCK_MONOTONIC_RAW', 4, create=True):
+                campaign.monitor_samples(Path(tmp), stop, [])
+            with (Path(tmp) / 'resources.csv').open() as stream:
+                rows = list(csv.DictReader(stream))
+            self.assertEqual(float(rows[1]['cpu_percent']), 100)

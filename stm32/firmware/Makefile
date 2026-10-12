@@ -23,10 +23,15 @@ else
 $(error RX_MODE must be DMA or IRQ)
 endif
 UART_BAUD ?= 921600
+# uart_budget.h derives serialization + 5 ms TX/RX margin from this baud.
+# Optional measured override may only increase that allowance (static asserts).
 DEBUG_VCP ?= 0
 BRINGUP_BLINK ?= 0
 ARCH := -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
 CPPFLAGS := -DHEA_REFERENCE_PORTMACRO='"$(KERNEL)/portable/GCC/ARM_CM4F/portmacro.h"' -DRX_DMA=$(RX_DMA) -I. -I../include -I../../protocol/include -I$(REF_BOARD)/src -I$(KERNEL)/include -I$(KERNEL)/portable/GCC/ARM_CM4F -DCLOCK_HSE=$(CLOCK_HSE) -DUART_BAUD=$(UART_BAUD) -DDEBUG_VCP=$(DEBUG_VCP) -DBRINGUP_BLINK=$(BRINGUP_BLINK)
+ifdef UART_TRANSIT_US
+CPPFLAGS += -DUART_TRANSIT_US=$(UART_TRANSIT_US)
+endif
 CFLAGS := $(ARCH) -std=c11 -Os -g3 -Wall -Wextra -Werror -ffunction-sections -fdata-sections -fno-common -MMD -MP
 SOURCES := main.c irq_timing.c ../src/supervisor.c ../src/supervisor_protocol.c ../../protocol/src/hea_proto.c $(KERNEL)/tasks.c $(KERNEL)/queue.c $(KERNEL)/list.c $(KERNEL)/stream_buffer.c $(KERNEL)/portable/GCC/ARM_CM4F/port.c
 OBJECTS := $(addprefix $(BUILD)/,$(notdir $(SOURCES:.c=.o))) $(BUILD)/startup.o

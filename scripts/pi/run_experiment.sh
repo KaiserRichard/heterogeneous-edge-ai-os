@@ -19,11 +19,13 @@ cd "$run"
 "$repo/scripts/pi/collect_metadata.sh" > meta_before.json
 set +e
 $(printf '%q ' "$@") > stdout.log 2> stderr.log
-echo \$? > exit_code
+rc=\$?
+echo \$rc > exit_code
 set -e
 "$repo/scripts/pi/collect_metadata.sh" > meta_after.json
 t=\$(jq -r .throttled meta_after.json)
-if [[ "\$t" == "unavailable" ]]; then echo UNKNOWN > validity
+if [[ "\$rc" -ne 0 ]]; then echo "INVALID command exit=\$rc" > validity
+elif [[ "\$t" == "unavailable" ]]; then echo UNKNOWN > validity
 elif [[ "\$t" != "0x0" ]]; then echo "INVALID throttled=\$t" > validity
 else echo OK > validity; fi
 cd "$repo"
@@ -32,7 +34,7 @@ cd "$repo"
 if [[ "\${HEA_PUSH:-0}" == 1 ]]; then
   git add -f "$run" && git commit -qm "run: $(basename "$run")" && git push -q || echo "push failed; results kept locally" >> "$run/validity"
 fi
-touch "$run/DONE"
+if [[ "\$rc" -eq 0 ]]; then touch "$run/DONE"; else touch "$run/FAILED"; fi
 INNER
 )
 

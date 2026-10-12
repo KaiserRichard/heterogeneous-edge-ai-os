@@ -115,6 +115,10 @@ there is no tick-rate bug behind the earlier interpretation.
 Sources: raw E4/F5 state events and F5 r5 MCU status cited in the physical-fault
 section below; source configuration and age arithmetic cited above.
 
+### Validity rule versions
+
+All numbers in this report were validated with the rules in force when they were recorded (v1). The final code review tightened the rules (v2: RAW-timestamped monitor coverage of the whole window with gaps of at most 1.5 s, stressor liveness during measurement, clock fits at most 5 s old). A read-only v2 replay on the stored data leaves E4 (17/25) and the logic-analyzer captures unchanged, but cannot confirm E1/E2/E3 (0/45) or the stressed cyclictest runs (3/15 per profile) because v1 did not record the extra evidence. This is a missing-evidence limitation, not a detected fault; the v1 numbers stand as MEASURED under v1 rules. See `results/README.md`.
+
 ## Linux measurements
 
 ### Timer wake-up diagnostic

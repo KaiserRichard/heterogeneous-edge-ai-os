@@ -65,3 +65,17 @@ class AnalyzeTests(unittest.TestCase):
             write(1); self.assertIsNone(la.analyze(self.trace(),run)['mcu_safe_us'])
 
 if __name__ == '__main__': unittest.main()
+
+class FramingTests(unittest.TestCase):
+    def test_failed_character_consumed_and_idle_resync_required(self):
+        # Failed stop, with data falling edges that used to become fake starts.
+        rows = [(0,(1,1,1,0)), (1,(1,1,0,0)), (2,(1,1,1,0)),
+                (3,(1,1,0,0)), (11,(1,1,1,0)),
+                (11.5,(1,1,0,0)), (12.5,(1,1,1,0)),
+                (22,(1,1,0,0)), (23,(1,1,1,0)), (33,(1,1,1,0))]
+        self.assertEqual(la.uart_ends(rows, baud=1), [32])
+
+    def test_adjacent_valid_characters_remain_decodable(self):
+        rows = [(0,(1,1,1,0)), (1,(1,1,0,0)), (2,(1,1,1,0)),
+                (11,(1,1,0,0)), (12,(1,1,1,0)), (21,(1,1,1,0))]
+        self.assertEqual(la.uart_ends(rows, baud=1), [11,21])
