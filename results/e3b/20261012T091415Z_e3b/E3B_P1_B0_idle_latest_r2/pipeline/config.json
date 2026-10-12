@@ -1,0 +1,16 @@
+{
+  "evidence": "software PTY stand-in, no physical UART/STM32",
+  "cooler": "unknown",
+  "duration_seconds": 60,
+  "drain_seconds": 1,
+  "policy": "latest",
+  "input_policy": "latest",
+  "period_ms": 100,
+  "heartbeat_ms": 20,
+  "work_us": 20000,
+  "baud": 921600,
+  "serial": null,
+  "stage": "onnx",
+  "model": "/home/richard/osbuild/wheels/mobilenetv2-12.onnx",
+  "threads": 1
+}
