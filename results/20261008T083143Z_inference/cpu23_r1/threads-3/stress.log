@@ -1,0 +1,7 @@
+stress-ng: info:  [8060] setting to a 1 hour, 0 secs run per stressor
+stress-ng: info:  [8060] dispatching hogs: 2 cpu
+stress-ng: info:  [8060] skipped: 0
+stress-ng: info:  [8060] passed: 0
+stress-ng: info:  [8060] failed: 0
+stress-ng: info:  [8060] metrics untrustworthy: 0
+stress-ng: info:  [8060] successful run completed in 54.23 secs

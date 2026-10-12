@@ -1,0 +1,8 @@
+{
+  "exit_status": 0,
+  "eligible_for_aggregate": false,
+  "reasons": [
+    "before: throttled/history bits 0x50000",
+    "after: throttled/history bits 0x50000"
+  ]
+}
