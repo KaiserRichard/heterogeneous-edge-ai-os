@@ -32,10 +32,72 @@ def save(path, data):
     path.write_text(json.dumps(data, indent=2) + "\n")
 
 
-def hog(core):
+class Marker:
+    """Linux GPIO uAPI v1; one requested output handle for the entire fault."""
+    def __init__(self, line):
+        import fcntl
+        import re
+        import struct
+        self.fd = None
+        self.records = []
+        matches = []
+        for chip in sorted(Path('/dev').glob('gpiochip*')):
+            info = subprocess.check_output(['gpioinfo', str(chip)], text=True)
+            for offset, label in re.findall(r'line\s+(\d+):\s+"([^"]+)"', info):
+                if label == f'GPIO{line}':
+                    matches.append((chip, int(offset)))
+        if len(matches) != 1:
+            raise RuntimeError(f'expected one GPIO{line} label, found {matches}')
+        chip, offset = matches[0]
+        self.chip, self.offset = str(chip), offset
+        request = bytearray(struct.pack('=64II64s32sIi', offset, *([0] * 63),
+                                      2, bytes(64), b'hea-e4-marker', 1, 0))
+        chip_fd = os.open(chip, os.O_RDONLY)
+        try:
+            fcntl.ioctl(chip_fd, 0xC16CB403, request, True)  # GPIO_GET_LINEHANDLE_IOCTL
+            self.fd = struct.unpack_from('=i', request, 360)[0]
+        finally:
+            os.close(chip_fd)
+        self.set(0)
+
+    def set(self, value):
+        import fcntl
+        values = bytearray(64)
+        values[0] = value
+        before = raw()
+        fcntl.ioctl(self.fd, 0xC040B409, values, True)  # GPIOHANDLE_SET_LINE_VALUES_IOCTL
+        after = raw()
+        self.records.append(dict(value=value, before_pi_ns=before, after_pi_ns=after,
+                                 software_bracket_ns=after-before))
+
+    def close(self):
+        if self.fd is not None:
+            try:
+                self.set(0)
+            finally:
+                os.close(self.fd)
+                self.fd = None
+
+
+def wait_go(path):
+    if not path:
+        return
+    Path(str(path) + '.ready').write_text('FRESH; ready for analyzer\n')
+    deadline = time.monotonic() + 90
+    while not path.exists():
+        if time.monotonic() > deadline:
+            raise RuntimeError('Mac capture release timed out')
+        time.sleep(.01)
+
+
+def hog(core, marker_line=None, go=None):
     """Called with sudo, on the bridge core; log after the timed interval."""
+    marker = Marker(marker_line) if marker_line is not None else None
+    wait_go(Path(go) if go else None)
     os.sched_setaffinity(0, {core})
     os.sched_setscheduler(0, os.SCHED_FIFO, os.sched_param(99))
+    if marker:
+        marker.set(1)
     onset = raw()
     deadline = onset + 1_000_000_000
     while raw() < deadline:
@@ -43,10 +105,16 @@ def hog(core):
     finish = raw()
     # Drop FIFO before stdout/file I/O.
     os.sched_setscheduler(0, os.SCHED_OTHER, os.sched_param(0))
-    print(json.dumps(dict(onset_pi_ns=onset, fault_end_pi_ns=finish)), flush=True)
+    if marker:
+        marker.set(0)
+        marker.close()
+    print(json.dumps(dict(onset_pi_ns=onset, fault_end_pi_ns=finish,
+                         marker_edges=marker.records if marker else [])), flush=True)
 
 
-def signal_fault(pid, fault, meta):
+def signal_fault(pid, fault, meta, marker=None):
+    if marker:
+        marker.set(1)
     # No file I/O or subprocess launch between this clock read and signal.
     onset = raw()
     os.kill(pid, signal.SIGKILL if fault == "F1" else signal.SIGSTOP)
@@ -58,6 +126,8 @@ def signal_fault(pid, fault, meta):
             finish = raw()
             os.kill(pid, signal.SIGCONT)
             meta["fault_end_pi_ns"] = finish
+            if marker:
+                marker.set(0)
 
 
 class Monitor:
@@ -291,35 +361,40 @@ def metadata(directory, phase):
 
 def one_run(directory, fault, rep, args):
     directory.mkdir()
-    meta = dict(fault=fault, rep=rep, status="FAILED", evidence=summary.EVIDENCE)
+    meta = dict(fault=fault, rep=rep, status="FAILED",
+                evidence="UNVERIFIED ON HARDWARE" if getattr(args, "single", None) else summary.EVIDENCE)
     if fault == "F5":
         meta.update(status="NOT_DONE", reason="bridge has no documented runtime inference-only suppression control; HEARTBEAT must remain active")
         save(directory / "run.json", meta)
         return
     save(directory / "run.json", meta)
     monitor = Monitor(directory)
-    pipeline = recovery = None
+    pipeline = recovery = marker = None
     fd = None
     try:
         metadata(directory, "before")
         monitor.start()
         rearm(args, directory)
+        if args.marker_gpio is not None and fault != "F4":
+            marker = Marker(args.marker_gpio)
         # Keep tty open across F1's kill so the kernel does not discard RX on close.
         fd = os.open(args.serial, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
         with tempfile.TemporaryDirectory(prefix="hea-e4-") as ipc:
             pipeline = Pipeline(directory / "pipeline", args, ipc, fd)
             pipeline.start()
             meta["steady_start_pi_ns"] = pipeline.wait_fresh(args.ready_timeout)
-            pipeline.wait(meta["steady_start_pi_ns"] + 20_000_000_000, require_fresh=True)
+            pipeline.wait(meta["steady_start_pi_ns"] + (2 if args.single else 20) * 1_000_000_000, require_fresh=True)
+            if fault != "F4":
+                wait_go(args.wait_go)
             bridge = pipeline.processes["hea_bridge"]
             target = pipeline.processes["hea_infer_stub"] if fault == "F3" else bridge
             if fault == "F4":
-                completed = subprocess.run(["sudo", "-n", sys.executable, str(Path(__file__).resolve()), "--hog", str(args.bridge_core)],
-                                           text=True, capture_output=True, check=True, timeout=5)
+                completed = subprocess.run(["sudo", "-n", sys.executable, str(Path(__file__).resolve()), "--hog", str(args.bridge_core), str(args.marker_gpio) if args.marker_gpio is not None else "-", str(args.wait_go) if args.wait_go else "-"],
+                                           text=True, capture_output=True, check=True, timeout=100 if args.wait_go else 5)
                 meta.update(json.loads(completed.stdout))
             else:
-                signal_fault(target.pid, fault, meta)
-            until = meta["onset_pi_ns"] + 10_000_000_000
+                signal_fault(target.pid, fault, meta, marker)
+            until = meta["onset_pi_ns"] + (2 if args.single else 10) * 1_000_000_000
             if fault == "F1":
                 bridge.wait(timeout=2)
                 capture_dead_bridge(fd, directory / "capture", until)
@@ -334,6 +409,11 @@ def one_run(directory, fault, rep, args):
             if fault == "F1":
                 # Persistent crash ends when restore/rearm begins, not at SIGKILL.
                 meta["fault_end_pi_ns"] = meta["recovery_start_pi_ns"]
+            if marker and fault == "F1":
+                marker.set(0)
+            if args.single:
+                meta["status"] = "COMPLETE"
+                return
             rearm(args, directory)
             # Clear pre-reset bytes before the new epoch. Never clear F1 capture.
             import termios
@@ -352,6 +432,11 @@ def one_run(directory, fault, rep, args):
         meta["reason"] = "campaign interrupted"
         raise
     finally:
+        if marker:
+            marker.close()
+            meta["marker_edges"] = marker.records
+            meta["marker_chip"] = marker.chip
+            meta["marker_offset"] = marker.offset
         if recovery:
             recovery.close()
         if pipeline:
@@ -367,12 +452,16 @@ def one_run(directory, fault, rep, args):
 
 
 def main():
-    if len(sys.argv) == 3 and sys.argv[1] == "--hog":
-        hog(int(sys.argv[2]))
+    if len(sys.argv) >= 3 and sys.argv[1] == "--hog":
+        hog(int(sys.argv[2]), int(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3] != "-" else None,
+            sys.argv[4] if len(sys.argv) > 4 and sys.argv[4] != "-" else None)
         return 0
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("outdir", type=Path, help="new campaign directory; refuses overwrite")
     parser.add_argument("reps", type=int, nargs="?", default=5)
+    parser.add_argument("--single", choices=("F1", "F2", "F4"))
+    parser.add_argument("--marker-gpio", type=int)
+    parser.add_argument("--wait-go", type=Path, help="single-mode release file; writes FILE.ready when FRESH")
     parser.add_argument("--serial", default="/dev/ttyAMA0")
     parser.add_argument("--baud", type=int, default=921600)
     parser.add_argument("--bridge-core", type=int, default=2)
@@ -388,9 +477,13 @@ def main():
     args = parser.parse_args()
     if args.reps < 1 or args.reps > 100 or not math.isfinite(args.ready_timeout) or args.ready_timeout <= 0 or args.baud <= 0 or not math.isfinite(args.rms_bound_us) or args.rms_bound_us <= 0:
         parser.error("reps 1..100, positive timeout/baud/RMS bound required")
+    if args.wait_go and not args.single:
+        parser.error("--wait-go requires --single")
+    if args.marker_gpio is not None and args.marker_gpio < 0:
+        parser.error("marker GPIO must be nonnegative")
     # Four executed faults; F5 is explicitly NOT_DONE on this bridge API.
-    minimum = 4 * args.reps * 32
-    budget = 4 * args.reps * (32 + 2 * args.ready_timeout + 30 + 10)
+    minimum = 4 if args.single else 4 * args.reps * 32
+    budget = 120 + args.ready_timeout if args.single else 4 * args.reps * (32 + 2 * args.ready_timeout + 30 + 10)
     command = [str(REPO / "tools/experiments/e4_campaign.sh")] + [s for s in sys.argv[1:] if s != "--estimate-only"]
     print("Run command: " + shlex.join(command), flush=True)
     print(f"Wall-time estimate: >= {minimum / 60:.1f} min measured windows; allow about {budget / 60:.1f} min with startup/rearm/timeouts plus initial build. F5 NOT DONE.", flush=True)
@@ -424,6 +517,9 @@ def main():
     (args.outdir / "command.txt").write_text(shlex.join(command) + "\n")
     with (args.outdir / "revision.txt").open("w") as stream:
         subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"], stdout=stream, check=True)
+    if args.single:
+        one_run(args.outdir / f"{args.single}-r01", args.single, 1, args)
+        return 0 if json.loads((args.outdir / f"{args.single}-r01/run.json").read_text())["status"] == "COMPLETE" else 1
     failed = False
     try:
         for rep in range(1, args.reps + 1):
