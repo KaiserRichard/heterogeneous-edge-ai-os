@@ -1,3 +1,5 @@
+> Historical implementation ticket; see [STAGE_REPORT.md](../STAGE_REPORT.md) for submission status and evidence.
+
 # T2 — Versioned Pi age-at-send payload
 
 Goal: carry input-to-send duration without comparing Pi and MCU timestamps.

@@ -1,3 +1,5 @@
+> Historical implementation ticket; see [STAGE_REPORT.md](../STAGE_REPORT.md) for submission status and evidence.
+
 # T3 — Portable clock-sync math
 
 Goal: validate offset, delay and drift math before hardware clock alignment.

@@ -30,8 +30,7 @@ subprocess.run(['gpioset', '--version'], check=True)
 matches = []
 for chip in sorted(Path('/dev').glob('gpiochip*')):
     info = subprocess.check_output(['gpioinfo', str(chip)], text=True)
-    for offset, label, rest in re.findall(r'line\s+(\d+):\s+"([^"]+)"([^
-]*)', info):
+    for offset, label, rest in re.findall(r'line\s+(\d+):\s+"([^"]+)"([^\n]*)', info):
         if label == 'GPIO27':
             matches.append((chip, offset, rest))
 if len(matches) != 1:

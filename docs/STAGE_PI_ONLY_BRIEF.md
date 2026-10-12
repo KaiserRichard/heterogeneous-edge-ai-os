@@ -1,3 +1,5 @@
+> Historical planning snapshot; superseded for this submission by [STAGE_REPORT.md](STAGE_REPORT.md).
+
 # Autonomous brief: finish the Pi-only stage (no STM32)
 
 Paste to ChatGPT Work as one task. It should run to completion without asking, except at the

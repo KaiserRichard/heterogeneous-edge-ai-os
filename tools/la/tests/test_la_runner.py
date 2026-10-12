@@ -23,6 +23,7 @@ if name == 'sigrok-cli':
     print('fx2lafw: synthetic device')
 if name == 'ssh':
     source = sys.stdin.read()
+    compile(source, '<dry-run ssh Python>', 'exec')
     assert 'GPIO27' in source and 'gpioset' in source
     assert "subprocess.run(['gpioset', '--version']" in source
     assert 'print(shlex.join' in source

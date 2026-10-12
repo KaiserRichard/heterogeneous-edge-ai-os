@@ -16,12 +16,12 @@ make -C protocol test
 ```
 
 Artifacts: `stm32/firmware/build/firmware.elf`, `firmware.bin`, `firmware.map`,
-`size.txt`. `scripts/stm32/build.sh` wraps the build. GCC defaults to
-`/usr/local/bin/arm-none-eabi-gcc`. On the Pi use
-`make -C stm32 firmware CROSS_COMPILE=arm-none-eabi-`.
+`size.txt`. From the repository root, `make firmware` builds the image using
+`arm-none-eabi-gcc` on PATH (override `CROSS_COMPILE` if needed).
 
 `FREERTOS_REF` defaults to
-`/Users/quockaiser/Desktop/OS/OS-project/heterogeneous-edge-ai-os/third_party/nucleo-f446re-freertos`.
+the repository-relative `third_party/nucleo-f446re-freertos` submodule.
+Initialize it with `git submodule update --init -- third_party/nucleo-f446re-freertos`.
 Override it with the absolute reference checkout path on another machine.
 The kernel and GCC ARM_CM4F port are compiled directly from `ThirdParty/FreeRTOS`;
 the device/CMSIS headers and linker script are read directly from
@@ -307,8 +307,8 @@ make -C stm32 test
 make -C linux all test
 python3 -m unittest discover -s linux/inference/tests -v
 python3 -m unittest discover -s analysis/tests -v
-scripts/stm32/build.sh CLOCK_SOURCE=HSE RX_MODE=DMA
-scripts/stm32/build.sh CLOCK_SOURCE=HSE RX_MODE=IRQ
+make firmware CLOCK_SOURCE=HSE RX_MODE=DMA
+make firmware CLOCK_SOURCE=HSE RX_MODE=IRQ
 ```
 
 For the hardware rerun, repeat the same 40 s workload in both RX modes and capture
@@ -340,7 +340,7 @@ These tests do not emulate STM32 DMA arbitration, IDLE clearing or interrupt tim
 
 ## E4 apparent tick-rate fault investigation (2026-10-12)
 
-The stored `feat/fw-rx-fix:results/e4/20261012T093526Z_e4` evidence does not
+The stored `feat/fw-rx-fix:results/2026-10-12_e4_faults/20261012T093526Z_e4` evidence does not
 establish an early heartbeat timeout. In `F2-r01/pipeline/state_events.csv`:
 
 - Last accepted heartbeat: 20,634,512 us.

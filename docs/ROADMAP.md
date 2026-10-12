@@ -1,3 +1,5 @@
+> Historical planning snapshot; superseded for this submission by [STAGE_REPORT.md](STAGE_REPORT.md).
+
 # Roadmap: OS project → WBRobot → article
 
 Updated 2026-10-10. This replaces the earlier proposed calendar with completion

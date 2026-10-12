@@ -1,3 +1,5 @@
+> Historical planning snapshot; superseded for this submission by [STAGE_REPORT.md](STAGE_REPORT.md).
+
 # Conductor state
 
 Updated 2026-10-10. Evidence snapshot; Stage A is incomplete.

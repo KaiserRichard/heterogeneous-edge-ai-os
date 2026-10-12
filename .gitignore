@@ -51,3 +51,7 @@ cmake-build-*/
 *.temp
 tmp/
 scratch/
+
+# Retained experiment evidence includes raw logs and captures. Plain result
+# folder moves must remain addable without forcing ignored extensions.
+!results/**

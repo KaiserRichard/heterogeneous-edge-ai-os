@@ -1,5 +1,14 @@
 # OS course project: stage report
 
+Submission navigation: retained evidence now lives under the dated folders in
+[results/README.md](../results/README.md). Result paths below refer to this checkout;
+inner acquisition names are preserved. This report's claims retain their original
+measurement scope: the later logic-analyzer captures and seventh bring-up smoke
+are indexed in the results inventory without promoting their validity. References
+to `slides_course/` review records describe historical provenance outside this
+submission checkout.
+
+
 Draft from retained evidence. The project now has a Linux workload and telemetry
 pipeline, a shared UART protocol, and an external FreeRTOS supervisor. The evidence
 shows Linux timing under contention, an upstream freshness problem, and MCU state
@@ -24,7 +33,7 @@ IPC, freshness, and independent supervision. Inference is a workload.
 | ASSUMED | A configured experimental choice or provisional allowance, not a measured bound. |
 | UNKNOWN | Missing evidence, an unperformed experiment, or an unresolved calibration. |
 
-Sources: `PROJECT.md`; `docs/STAGE_PI_ONLY_BRIEF.md`; `scratch/pi-timing-tools/results/cyclictest/SUMMARY.md`; `scratch/e-campaign/results/e_campaign/20261008T103412Z_e_onnx/summary/README.md`; main-checkout `slides_course/REVIEW_LOG.md`, rounds 11–12. The label definitions above also follow this ticket's requested vocabulary.
+Sources: `PROJECT.md`; `docs/STAGE_PI_ONLY_BRIEF.md`; `results/2026-10-11_cyclictest/SUMMARY.md`; `results/2026-10-11_e1_e2_e3_pty/20261008T103412Z_e_onnx/summary/README.md`; main-checkout `slides_course/REVIEW_LOG.md`, rounds 11–12. The label definitions above also follow this ticket's requested vocabulary.
 
 Full source paths are relative to the main repository root. Bare sibling filenames
 in a source list use the directory of the preceding full path; braces and globs
@@ -44,7 +53,7 @@ values. No experiment was rerun for this draft.
 | Board firmware | Statically allocated FreeRTOS tasks/queues, supervisor ownership, HSE bypass from ST-LINK MCO with HSI fallback, TIM2 timestamps, circular DMA UART RX with IRQ fallback, GPIO state outputs, diagnostics, and a transition ring feeding STATE_EVENT. | Separates real-time supervision from Linux and exposes reception/timing failures. DMA removes the per-byte interrupt service deadline. |
 | Tooling | Offline workload bundle, build/flash/reset scripts, applied-setting and power monitors, shuffled campaigns, latency/AoI analysis, fault injection, raw logs and exclusion records. | Reproducible experiments with explicit failures and validity checks. Recorded build/tests are software verification; hardware runs have separate limitations. |
 
-Sources: `scratch/stage-report/linux/README.md`; `scratch/stage-report/linux/inference/README.md`; `scratch/stage-report/protocol/PROTOCOL.md`; `scratch/stage-report/stm32/README.md`; `scratch/fw-rx-fix/stm32/firmware/README.md`; `scratch/e-campaign/results/e_campaign/20261008T103412Z_e_onnx/summary/README.md`; `scratch/fw-rx-fix/results/e4/20261012T093526Z_e4/e4_runs.csv`; main-checkout `slides_course/REVIEW_LOG.md`, round 12.
+Sources: `linux/README.md`; `linux/inference/README.md`; `protocol/PROTOCOL.md`; `stm32/README.md`; `stm32/firmware/README.md`; `results/2026-10-11_e1_e2_e3_pty/20261008T103412Z_e_onnx/summary/README.md`; `results/2026-10-12_e4_faults/20261012T093526Z_e4/e4_runs.csv`; main-checkout `slides_course/REVIEW_LOG.md`, round 12.
 
 The firmware README records local cross-compilation, sanitizer checks, parser,
 supervisor, DMA-cursor, pipeline and analysis tests. These are historical checks,
@@ -65,13 +74,13 @@ observations, without closing every item in that README.
 | F5 stale results, heartbeat alive | MEASURED: 5/5 retained short-window runs; SIGUSR1 inference suppression for about 1 s. No live power events or new sticky bits. | MCU/Pi state timestamps; shorter steady/observation windows than original E4, no recovery qualification. Accepted for the measured stale-result transitions, not the original 20 s steady / 10 s observation gate. |
 | Hardware smoke | CALCULATED: 6 retained smoke directories, all marked excluded by their summary.json. | These summaries flag before/after throttling. Keep their link/diagnostic observations visible; do not call them clean timing runs or apply the newer live-bit rule retrospectively. |
 
-Sources: `scratch/pi-timing-tools/results/cyclictest/SUMMARY.md`; `scratch/inference-baseline/results/20261008T085429Z_inference_livepower/SUMMARY.md`; `scratch/e-campaign/results/e_campaign/20261008T103412Z_e_onnx/summary/per_run.csv` and `README.md`; `scratch/e3-input-latest/results/e3b/20261012T091415Z_e3b/summary/E3B_per_run.csv`; `scratch/fw-rx-fix/results/e4/20261012T093526Z_e4/e4_runs.csv` and `campaign.json`; `scratch/fw-rx-fix/results/hw_bringup/hw_smoke*/summary.json`.
+Sources: `results/2026-10-11_cyclictest/SUMMARY.md`; `results/2026-10-11_inference_baseline/SUMMARY.md`; `results/2026-10-11_e1_e2_e3_pty/20261008T103412Z_e_onnx/summary/per_run.csv` and `README.md`; `results/2026-10-12_e3b_input_latest/20261012T091415Z_e3b/summary/E3B_per_run.csv`; `results/2026-10-12_e4_faults/20261012T093526Z_e4/e4_runs.csv` and `campaign.json`; `results/2026-10-12_hw_bringup/hw_smoke*/summary.json`.
 
 MEASURED metadata: the Pi used a **5 V / 3 A PSU**. The inference summary reports
 a loaded rail of **4.66–4.92 V**, and a wall clock about **3 days** behind; monotonic
-durations are unaffected. Source: `scratch/inference-baseline/results/20261008T085429Z_inference_livepower/SUMMARY.md`.
+durations are unaffected. Source: `results/2026-10-11_inference_baseline/SUMMARY.md`.
 The small campaign has fewer repeats than the ASSUMED planned acceptance gate of
-**5 valid repeats** per cell (`scratch/e-campaign/results/e_campaign/20261008T103412Z_e_onnx/summary/README.md`).
+**5 valid repeats** per cell (`results/2026-10-11_e1_e2_e3_pty/20261008T103412Z_e_onnx/summary/README.md`).
 Sampled power gating cannot prove that no short disturbance occurred between samples.
 
 ### Applied settings, rather than planned settings
@@ -85,7 +94,7 @@ Sampled power gating cannot prove that no short disturbance occurred between sam
 | Supervisor thresholds | ASSUMED source configuration: heartbeat timeout 100 ms, result HOLD 200 ms, result FAILSAFE 500 ms, healthy rearm 1000 ms, transit allowance 5 ms. Calibration and safe margins are UNKNOWN. |
 | Frame line time | CALCULATED: v3 INFERENCE is 35 bytes; 8N1 requires 350 bits, giving about 0.380 ms at nominal 921600 baud. Excludes every software/buffering delay. |
 
-Sources: `scratch/pi-timing-tools/results/cyclictest/SUMMARY.md`; `scratch/e-campaign/results/e_campaign/20261008T103412Z_e_onnx/E2_P1_B0_idle_latest_r1/settings.json`, `command.txt`, and `pipeline/config.json`; `docs/SYSTEM_GUIDE.md`; `scratch/fw-rx-fix/stm32/firmware/README.md` and `main.c`; `scratch/fw-rx-fix/stm32/src/supervisor.c`; `scratch/fw-rx-fix/protocol/PROTOCOL.md`.
+Sources: `results/2026-10-11_cyclictest/SUMMARY.md`; `results/2026-10-11_e1_e2_e3_pty/20261008T103412Z_e_onnx/E2_P1_B0_idle_latest_r1/settings.json`, `command.txt`, and `pipeline/config.json`; `docs/SYSTEM_GUIDE.md`; `stm32/firmware/README.md` and `main.c`; `stm32/src/supervisor.c`; `protocol/PROTOCOL.md`.
 
 The E4 captured `supervisor_thresholds.json` is empty and `e4_thresholds.json`
 contains null threshold values. The threshold row above cites source configuration,
@@ -121,7 +130,7 @@ across repeats; max is the largest observed maximum.
 | Cache 2M, CPU 2 | 54 / 203 / 1463 / 4780 | 3 / 35 / 52 / 233 |
 | Memrate, CPUs 2–3 | 55 / 613 / 2092 / 5170 | 5 / 239 / 588 / 1094 |
 
-Source: `scratch/pi-timing-tools/results/cyclictest/SUMMARY.md`.
+Source: `results/2026-10-11_cyclictest/SUMMARY.md`.
 
 INFERRED: the P0 median includes the default timer-slack effect, so the median gap
 cannot be attributed entirely to scheduler waiting. The memory-loaded FIFO tail
@@ -146,7 +155,7 @@ synchronous inference-call time, not pipeline service latency.
 | CPU, CPUs 2–3 | 3 | 3 | 45.5 | 77.6 | 91.1 |
 | CPU, CPUs 2–3 | 4 | 2 | 60.3 | 100.5 | 150.3 |
 
-Source: `scratch/inference-baseline/results/20261008T085429Z_inference_livepower/SUMMARY.md`.
+Source: `results/2026-10-11_inference_baseline/SUMMARY.md`.
 
 MEASURED: model `mobilenetv2-12.onnx`, ONNX Runtime **1.31.0**, preprocessing P50
 approximately **2.4 ms**, recorded separately in that summary. Inference P95 and
@@ -173,7 +182,7 @@ waiting and pre/postprocessing; delivery is input-to-Pi-receiver time.
 | E2 P0 | Cache 2M CPU 2 | 66.36 / 73.10 / 108.80 | 66.81 / 73.57 / 109.60 |
 | E2 P1 | Cache 2M CPU 2 | 69.80 / 96.58 / 135.70 | 70.19 / 97.16 / 136.10 |
 
-Sources: `scratch/e-campaign/results/e_campaign/20261008T103412Z_e_onnx/summary/E1_table.csv`, `E2_table.csv`, `per_condition.csv`, and `README.md`. Scientific notation in the supplied tables is expanded here without adding precision.
+Sources: `results/2026-10-11_e1_e2_e3_pty/20261008T103412Z_e_onnx/summary/E1_table.csv`, `E2_table.csv`, `per_condition.csv`, and `README.md`. Scientific notation in the supplied tables is expanded here without adding precision.
 
 INFERRED: memory traffic creates sustained upstream overload; priority helps the
 small bridge's dispatch but does not remove input waiting. The measured cache
@@ -198,7 +207,7 @@ receptions, including shutdown drain. Missing deliveries are separate.
 | Memrate / FIFO | 6660 / 13660 | 60.23 / 60.23 | 480 / 480 of 480 | 605 / 480 / 125 | 0 |
 | Memrate / latest | 6958 / 14170 | 60.24 / 60.24 | 472 / 472 of 472 | 605 / 472 / 132 | 0 |
 
-Sources: `scratch/e-campaign/results/e_campaign/20261008T103412Z_e_onnx/summary/E3_table.csv`, `E3_per_condition.csv`, and `README.md`. Counts/time/rates are medians per run, not pooled totals; peak is the maximum across runs. Expanded peak values retain the source table's rounding.
+Sources: `results/2026-10-11_e1_e2_e3_pty/20261008T103412Z_e_onnx/summary/E3_table.csv`, `E3_per_condition.csv`, and `README.md`. Counts/time/rates are medians per run, not pooled totals; peak is the maximum across runs. Expanded peak values retain the source table's rounding.
 
 The bridge replaced no results under load, while input-to-completion latency grew.
 MEASURED completion-interval medians were **121.72 / 125.89 / 127.99 ms** for FIFO
@@ -206,14 +215,14 @@ and **129.07 / 123.32 / 130.49 ms** for latest, versus the ASSUMED **100 ms** so
 period. INFERRED: work accumulated before inference, upstream of the bridge's
 latest-value slot. Multi-second service age was not multi-second model compute
 time. Source: main-checkout `slides_course/REVIEW_LOG.md`, round 11, tracing to
-`scratch/e-campaign/results/e_campaign/20261008T103412Z_e_onnx/E3_P1_B2_memrate_c23_{fifo,latest}_r*/pipeline/infer.csv`.
+`results/2026-10-11_e1_e2_e3_pty/20261008T103412Z_e_onnx/E3_P1_B2_memrate_c23_{fifo,latest}_r*/pipeline/infer.csv`.
 
 ### E3b input latest-value fix, still power-flagged
 
 The fix drains available source datagrams before each inference, retains the
 latest valid arrival, and logs superseded inputs as `skipped_stale`. It leaves
 the bridge policy at latest and compares input FIFO against input latest.
-Source: `scratch/e3-input-latest/linux/inference/infer_server.py` and `README.md`.
+Source: `linux/inference/infer_server.py` and `README.md`.
 
 CALCULATED from MEASURED raw software timestamps, ms: nearest-rank reception age
 P50/P99 over all CRC-valid INFERENCE receptions, including drain. **Every loaded
@@ -229,7 +238,7 @@ observations, not accepted causal evidence for the improvement.
 | Latest r2 | 435 | 190.3 | 256.0 | 172 |
 | Latest r3 | 432 | 190.7 | 267.9 | 173 |
 
-Sources: `scratch/e3-input-latest/results/e3b/20261012T091415Z_e3b/E3B_P1_B2_memrate_c23_{fifo,latest}_r*/pipeline/rx.csv`, `infer.csv`, and per-run `validity`; main-checkout `slides_course/REVIEW_LOG.md`, round 12. Age = `(t_rx_ns - t_input_ns) / 1e6`; nearest rank selects sorted sample `ceil(p*n)`. Skips count `status=skipped_stale`, separate from drops, replacements, and misses.
+Sources: `results/2026-10-12_e3b_input_latest/20261012T091415Z_e3b/E3B_P1_B2_memrate_c23_{fifo,latest}_r*/pipeline/rx.csv`, `infer.csv`, and per-run `validity`; main-checkout `slides_course/REVIEW_LOG.md`, round 12. Age = `(t_rx_ns - t_input_ns) / 1e6`; nearest rank selects sorted sample `ceil(p*n)`. Skips count `status=skipped_stale`, separate from drops, replacements, and misses.
 
 CALCULATED idle P50 spans **46.9–47.5 ms** over the raw idle records; its unequal
 valid repeats are in the run-count table. No clean loaded E3b comparison exists.
@@ -295,7 +304,7 @@ above 200 µs in all nine memrate runs, and missing STATE_EVENT in 14/18.
 Idle FIFO/FIFO r1 also flags negative age (12 negative mapped samples, retained
 in the mapped quantiles). Pi supply: 5 V / 3 A. No run is promoted to VALID.
 
-Sources: `scratch/e3-real/results/e3_real/*_e3real/E3_REAL_P1_*/pipeline/{inf_rx,state_events}.csv`,
+Sources: `results/2026-10-12_e3_real_uart/*_e3real/E3_REAL_P1_*/pipeline/{inf_rx,state_events}.csv`,
 per-run `condition.json`, `settings.json`, and `validity`.
 Reproduction: `PYTHONPATH=slides_course python3 slides_course/qa/round14_evidence.py`
 from repository root. Calculated records and SHA-256 source manifest:
@@ -321,11 +330,11 @@ P95 equals max for these small samples.
 | F4 FIFO-99 hog; 7/14 attempts | Six direct FAILSAFE / 3; one HOLD / 9 | 100.639 / 175.229 / 175.229 | 3 (heartbeat) | 100.556 / 100.931 / 100.931 | 85.625 / 87.871 / 87.871 | 87.277 / 97.344 / 97.344 |
 | F5 SIGUSR1 inference suppression; 5/5 | FRESH→HOLD / 9 | 175.596 / 175.917 / 175.917 | 10 (source age) | 475.596 / 475.917 / 475.917 | 83.608 / 85.563 / 85.563 | 383.603 / 385.558 / 385.558 |
 
-Sources: raw `scratch/fw-rx-fix/results/e4/20261012T093526Z_e4/F*/pipeline/state_events.csv`
+Sources: raw `results/2026-10-12_e4_faults/20261012T093526Z_e4/F*/pipeline/state_events.csv`
 and `F1-r01/capture/state_events.csv`, with run/power/echo records;
-`scratch/tick-f5/results/f5/20261012T101949Z_f5/r{1,2,3,4,5}/F5-r01/pipeline/state_events.csv`,
+`results/2026-10-12_f5_stale/20261012T101949Z_f5/r{1,2,3,4,5}/F5-r01/pipeline/state_events.csv`,
 `run.json`, and `power.csv`. Recomputed using the reason-based logic in
-`scratch/tick-f5/analysis/e4_summary.py`, read-only with temporary outputs.
+`analysis/e4_summary.py`, read-only with temporary outputs.
 The older `e4_faults.csv` local first-transition references are superseded here.
 
 ASSUMED injection duration for F2/F3/F4 was 1 s. F5 uses documented SIGUSR1
@@ -370,7 +379,7 @@ There is no physical actuator or independent MCU watchdog in this port.
 
 MEASURED: all accepted runs report **0 false transitions** during the checked
 pre-fault interval. Original E4 accepted-run maximum residual RMS spans **55.123–77.609 µs**; extra F4 values are listed below.
-Sources: the same `e4_runs.csv`; `scratch/fw-rx-fix/stm32/firmware/README.md`.
+Sources: the same `e4_runs.csv`; `stm32/firmware/README.md`.
 These observations do not establish a false-trip rate or worst-case safety bound.
 
 ### Extra F4 attempts — Round 14
@@ -401,7 +410,7 @@ heartbeat FAILSAFE is 100.405–100.818 ms. Original F4 2/5 plus extra 5/9 is
 7/14 retained attempts (7/11 completed fault runs; 3 failed startups excluded).
 The accepted first-batch r1 HOLD occurs 175.229 ms after inference, before
 heartbeat FAILSAFE at 100.405 ms after heartbeat. These intervals use different
-reference events. Sources: `scratch/e3-real/results/e4_f4_more/{20261012T102112Z_f4,20261012T105039Z_f4b}/r*/F4-r01/{run.json,power.csv,pipeline/state_events.csv,pipeline/echo.csv}`.
+reference events. Sources: `results/2026-10-12_f4_extra/{20261012T102112Z_f4,20261012T105039Z_f4b}/r*/F4-r01/{run.json,power.csv,pipeline/state_events.csv,pipeline/echo.csv}`.
 
 ## Problems found and how they were traced
 
@@ -416,14 +425,14 @@ reference events. Sources: `scratch/e3-real/results/e4_f4_more/{20261012T102112Z
 | F4 clock-sync starvation | A higher-priority FIFO hog starved the bridge. MEASURED excluded RMS maxima: 226.585 / 445.817 / 346.040 µs, exceeding the ASSUMED 200 µs gate; one also has live power flags. MCU events remain recorded, but all invalid runs are excluded from both timing summaries. The fault also disrupts its mapped-time observer. |
 | Corrected transition interpretation; tick-rate issue closed | The earlier roughly 98 ms value measures heartbeat age at source-age HOLD (reason 9), not heartbeat timeout. Recompute each local interval using its event reason. F1/F2 HOLD is about 175 ms after INFERENCE; heartbeat FAILSAFE reason 3 is 100.128–100.641 ms after HEARTBEAT. Original accepted F4 is direct FAILSAFE reason 3; one extra accepted run first enters HOLD (see Round 14). MEASURED F5 r5 SysTick/TIM2 self-check: -8 ppm over a 1000 ms window (`tick_rate_ppm`, `tick_window_ms`). There is no tick-rate bug behind this value. Independent absolute clock/GPIO calibration remains pending. |
 
-Sources: this ticket's cyclictest incident description; `scratch/pi-timing-tools/tools/timing/cyclictest_campaign.sh`, `scratch/pi-timing-tools/results/cyclictest/SUMMARY.md`, and `scratch/pi-timing-tools/results/cyclictest/20261008T091937Z_cyc_P0/B0_idle_r1/sched_check.txt`; `scratch/inference-baseline/results/20261008T085429Z_inference_livepower/SUMMARY.md`; `scratch/fw-rx-fix/results/hw_bringup/hw_smoke{1,2,3_hsi,4_batt,5_oldfw,6_dma}/mcu_status.csv`, `echo.csv`, `config.json`, and `summary.json`; `scratch/fw-rx-fix/stm32/firmware/README.md`; E3/E3b sources above; `scratch/fw-rx-fix/results/e4/20261012T093526Z_e4/e4_runs.csv`; main-checkout `slides_course/REVIEW_LOG.md`, rounds 11–13. UART/CRC pairs are cumulative counters at the final retained status, not normalized equal-duration error rates.
+Sources: this ticket's cyclictest incident description; `tools/timing/cyclictest_campaign.sh`, `results/2026-10-11_cyclictest/SUMMARY.md`, and `results/2026-10-11_cyclictest/20261008T091937Z_cyc_P0/B0_idle_r1/sched_check.txt`; `results/2026-10-11_inference_baseline/SUMMARY.md`; `results/2026-10-12_hw_bringup/hw_smoke{1,2,3_hsi,4_batt,5_oldfw,6_dma}/mcu_status.csv`, `echo.csv`, `config.json`, and `summary.json`; `stm32/firmware/README.md`; E3/E3b sources above; `results/2026-10-12_e4_faults/20261012T093526Z_e4/e4_runs.csv`; main-checkout `slides_course/REVIEW_LOG.md`, rounds 11–13. UART/CRC pairs are cumulative counters at the final retained status, not normalized equal-duration error rates.
 
 The RX fix also exposed a build reproducibility hazard: rapid configuration
 switches could reuse objects with coarse make timestamps. Configuration changes
 now force rebuilding. INFERRED hazard from static/build checks; UNKNOWN whether
-any earlier measured image was affected. Source: `scratch/fw-rx-fix/stm32/firmware/README.md`.
+any earlier measured image was affected. Source: `stm32/firmware/README.md`.
 
-Additional correction sources: `scratch/tick-f5/results/f5/20261012T101949Z_f5/r5/F5-r01/pipeline/mcu_status.csv`; raw E4/F5 events and power records cited above.
+Additional correction sources: `results/2026-10-12_f5_stale/20261012T101949Z_f5/r5/F5-r01/pipeline/mcu_status.csv`; raw E4/F5 events and power records cited above.
 
 ## Limits and transfer to WBR
 
@@ -437,7 +446,7 @@ Additional correction sources: `scratch/tick-f5/results/f5/20261012T101949Z_f5/r
 | WBR method | Timestamp each stage; separate liveness from freshness; place latest-value before costly work; record actual priorities/power; use fault injection and an independent observer. | Transferring this rig's latency numbers, thresholds, baud accuracy, or safe-state definition to another workload, MCU and control loop. |
 | Balancing-robot FAILSAFE | Proposed semantic boundary: reject stale Pi commands and preserve local balancing control. | Copying this demo's low GPIO outputs or stopping all motor control as the robot's safe action. Actual WBR fallback and rearm behavior require a control/interface review and measured trials. |
 
-Sources: `PROJECT.md`; `docs/ROADMAP.md`; `docs/SYSTEM_OVERVIEW.md` (WBR fallback distinction); `scratch/e-campaign/results/e_campaign/20261008T103412Z_e_onnx/summary/README.md`; `scratch/e3-input-latest/results/e3b/20261012T091415Z_e3b/summary/E3B_per_run.csv`; `scratch/fw-rx-fix/stm32/firmware/README.md`; `scratch/fw-rx-fix/results/e4/20261012T093526Z_e4/e4_runs.csv`; main-checkout `slides_course/REVIEW_LOG.md`, round 12.
+Sources: `PROJECT.md`; `docs/ROADMAP.md`; `docs/SYSTEM_OVERVIEW.md` (WBR fallback distinction); `results/2026-10-11_e1_e2_e3_pty/20261008T103412Z_e_onnx/summary/README.md`; `results/2026-10-12_e3b_input_latest/20261012T091415Z_e3b/summary/E3B_per_run.csv`; `stm32/firmware/README.md`; `results/2026-10-12_e4_faults/20261012T093526Z_e4/e4_runs.csv`; main-checkout `slides_course/REVIEW_LOG.md`, round 12.
 
 **Method transfers; numbers do not.** WBR integration remains proposed future
 work. This report does not establish compatibility with its target MCU, motor
@@ -471,5 +480,5 @@ access to its separate Pi (`docs/ROADMAP.md`).
   claim on that rig.
 
 Checklist basis: `docs/STAGE_PI_ONLY_BRIEF.md`; `docs/ROADMAP.md`;
-`scratch/fw-rx-fix/stm32/firmware/README.md`; the experiment limitations and
+`stm32/firmware/README.md`; the experiment limitations and
 exclusion records cited above. These are proposed checks, not completed results.

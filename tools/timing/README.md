@@ -66,23 +66,6 @@ directory after resolving the recorded cause. Label actual measurements
 **MEASURED** with valid run counts, kernel, cooling, governor, and profile.
 Observed maxima are not WCET guarantees.
 
-## `p0_cyclictest.sh`
-
-**COMMAND:**
-
-```sh
-bash tools/timing/p0_cyclictest.sh results/2026-10-11/p0-legacy-entry 3 600
-```
-
-**PURPOSE:** preserve the old P0 entry point by forwarding to the generalized
-campaign script.
-
-**EXPECTED:** identical P0 artifacts and checks. The duration argument now means
-measurement seconds, as described above.
-
-**DECISION:** existing P0 callers can keep this entry point; use the generalized
-script when selecting P1.
-
 ## `analysis/cyclictest_summary.py`
 
 **COMMAND:**
@@ -143,7 +126,7 @@ runs. A zero-valid-run condition needs replacement measurements.
 **COMMAND:**
 
 ```sh
-bash -n tools/timing/cyclictest_campaign.sh tools/timing/p0_cyclictest.sh
+bash -n tools/timing/cyclictest_campaign.sh
 python3 -m py_compile analysis/cyclictest_summary.py
 python3 -m unittest discover -s analysis/tests -v
 ```

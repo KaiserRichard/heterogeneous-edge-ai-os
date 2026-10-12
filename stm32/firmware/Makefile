@@ -1,7 +1,7 @@
-FREERTOS_REF ?= /Users/quockaiser/Desktop/OS/OS-project/heterogeneous-edge-ai-os/third_party/nucleo-f446re-freertos
+FREERTOS_REF ?= $(abspath ../../third_party/nucleo-f446re-freertos)
 REF_BOARD := $(FREERTOS_REF)/004LEDsNotifyISR
 KERNEL := $(FREERTOS_REF)/ThirdParty/FreeRTOS
-CROSS_COMPILE ?= /usr/local/bin/arm-none-eabi-
+CROSS_COMPILE ?= arm-none-eabi-
 CC := $(CROSS_COMPILE)gcc
 OBJCOPY := $(CROSS_COMPILE)objcopy
 SIZE := $(CROSS_COMPILE)size

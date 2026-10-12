@@ -63,10 +63,10 @@ Use the installed ONNX interpreter and model paths if they differ. The output
 directory must be new. E3B uses the same scheduling, stress warm-up, shutdown
 drain, cooldown and validity rules as E3; it does not claim a measured improvement
 until the Pi campaign is run. `ALL` includes E3B after E3.
-For the paths recorded by `results/e_campaign/20261008T103412Z_e_onnx/campaign.json`:
+For the paths recorded by `results/2026-10-11_e1_e2_e3_pty/20261008T103412Z_e_onnx/campaign.json`:
 
 ```sh
-PYTHON=/home/richard/osbuild/venv/bin/python bash tools/experiments/e_campaign.sh E3B results/e_campaign/e3b-input-latest 3 60 --stage onnx --model /home/richard/osbuild/wheels/mobilenetv2-12.onnx
+PYTHON=/home/richard/osbuild/venv/bin/python bash tools/experiments/e_campaign.sh E3B results/2026-10-11_e1_e2_e3_pty/e3b-input-latest 3 60 --stage onnx --model /home/richard/osbuild/wheels/mobilenetv2-12.onnx
 ```
 P2 is **not done**: systemd scope delegation and cgroup-v2 quotas have not been
 validated on the target. No quota comparison is labeled as measured.

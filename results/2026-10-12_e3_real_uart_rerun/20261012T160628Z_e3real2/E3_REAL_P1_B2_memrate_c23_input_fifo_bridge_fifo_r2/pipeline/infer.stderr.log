@@ -1,0 +1,2 @@
+inference ready: clock=CLOCK_MONOTONIC_RAW; source must use the same clock
+{"processed": 228, "skipped": 0}

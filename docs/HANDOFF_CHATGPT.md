@@ -1,3 +1,5 @@
+> Historical planning snapshot; superseded for this submission by [STAGE_REPORT.md](STAGE_REPORT.md).
+
 # Handoff prompt for ChatGPT (paste as the first message)
 
 Written 2026-10-07 by Claude. Paste everything between the lines into ChatGPT, then attach or
