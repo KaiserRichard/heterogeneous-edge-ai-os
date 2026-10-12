@@ -10,6 +10,8 @@ sys.path.insert(0, str(ROOT / 'analysis'))
 sys.path.insert(0, str(ROOT / 'tools/experiments'))
 import e3_real_summary as summary
 import e3_real
+import e3_startup
+from unittest.mock import patch
 
 
 def csv_write(path, records):
@@ -74,7 +76,7 @@ class RealSummaryTests(unittest.TestCase):
                 self.assertEqual(r[prefix+'_misses_150'], 1)
             self.assertEqual((r['delivered'],r['skipped'],r['overwritten']), (3,1,2))
             self.assertAlmostEqual(r['hold_seconds'], .4)
-            self.assertAlmostEqual(r['failsafe_seconds'], .2)
+            self.assertAlmostEqual(r['failsafe_seconds'], .199)
             runs, conditions = summary.write_summary(Path(temp))
             self.assertEqual(conditions[0]['delivered'], 3)
             self.assertIn(summary.EVIDENCE, (Path(temp)/'summary/per_run.tex').read_text())
@@ -136,11 +138,68 @@ class RealSummaryTests(unittest.TestCase):
             root = Path(temp)
             run = fixture(root)
             r = summary.summarize_run(run)
-            invalid = dict(r, valid=False, run='missing', validity='INVALID')
+            invalid = dict(r, valid=False, mcu_valid=False, run='missing', validity='INVALID')
             group = summary.aggregate([r, r, invalid], root)[0]
             self.assertEqual((group['valid_reps'],group['total_reps']), (2,3))
             self.assertEqual((group['delivered'],group['mapped_misses_150']), (6,2))
             self.assertAlmostEqual(group['hold_seconds'], .8)
+
+    def test_fresh_gate_and_timeout(self):
+        with tempfile.TemporaryDirectory() as temp:
+            p = Path(temp)
+            (p / 'state_events.csv').write_text('t_rx_pi_ns,mcu_us,old,new,lost_count\n1,1,0,3,0\n')
+            with self.assertRaises(TimeoutError):
+                e3_startup.wait_fresh(p, .01)
+            def publish(_):
+                (p / 'state_events.csv').write_text('t_rx_pi_ns,mcu_us,old,new,lost_count\n2,2,0,1,0\n')
+            with patch.object(e3_startup.time, 'sleep', side_effect=publish):
+                event = e3_startup.wait_fresh(p, 1)
+            self.assertEqual(event['new'], '1')
+            self.assertTrue((p / 'fresh_start.json').is_file())
+
+    def test_transition_free_fresh_window(self):
+        with tempfile.TemporaryDirectory() as temp:
+            run = fixture(Path(temp))
+            p = run / 'pipeline'
+            (p / 'fresh_start.json').write_text(json.dumps(dict(new=1, old=0,
+                lost_count=0, t_rx_pi_ns=9900000000, mcu_us=9900000)))
+            (p / 'state_events.csv').write_text('t_rx_pi_ns,mcu_us,old,new,lost_count\n')
+            r = summary.summarize_run(run)
+            self.assertTrue(r['mcu_valid'], r['mcu_validity'])
+            self.assertEqual(r['fresh_seconds'], 1)
+            self.assertEqual(r['failsafe_seconds'], 0)
+            (p / 'fresh_start.json').unlink()
+            self.assertFalse(summary.summarize_run(run)['mcu_valid'])
+
+    def test_bad_or_missing_sync_preserves_local_metrics(self):
+        for missing in (False, True):
+            with self.subTest(missing=missing), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                run = fixture(root)
+                path = run / 'pipeline/echo.csv'
+                rows = summary.pipeline.rows(path)
+                for row in rows:
+                    row['accepted'] = 0 if missing else 1
+                    row['rms_residual_us'] = 201
+                csv_write(path, rows)
+                r = summary.summarize_run(run)
+                self.assertTrue(r['mcu_valid'], r['mcu_validity'])
+                self.assertFalse(r['mapped_valid'])
+                self.assertEqual(r['mcu_max_us'], 150001)
+                self.assertNotIn('mapped_max_us', r)
+                self.assertAlmostEqual(r['hold_seconds'], .4)
+                pooled = summary.aggregate([r], root)[0]
+                self.assertEqual(pooled['mcu_valid_reps'], 1)
+                self.assertEqual(pooled['mapped_valid_reps'], 0)
+                self.assertEqual(pooled['mcu_max_us'], 150001)
+
+    def test_model_ready_reset_bridge_source_gate_order(self):
+        script = (ROOT / 'scripts/pi/run_pipeline.sh').read_text()
+        stages = ['wait_ready "$ipc_dir/source.sock"', 'subprocess.run(command, check=True, timeout=15)',
+                  'launch hea_bridge --serial', 'launch hea_source --output',
+                  '"$repo/tools/experiments/e3_startup.py"', '> "$run/window_start_ns"']
+        positions = [script.index(stage) for stage in stages]
+        self.assertEqual(positions, sorted(positions))
 
     def test_plan(self):
         order = e3_real.plan(3)

@@ -53,6 +53,26 @@ tools/la/la_e4.sh results/la-e4-F4-001 5 fault=F4
 python3 tools/la/la_analyze.py results/la-e4-F1-001
 ```
 
+Tonight checklist (Mac, after deploying this branch and its E4 firmware):
+
+1. Read-only preflight: `tools/la/la_e4.sh --dry-run`.
+2. One F2 capture: `tools/la/la_e4.sh results/la-tonight-F2-check 1 fault=F2`.
+3. Inspect `results/la-tonight-F2-check/F2-r01/capture.sr` in PulseView and
+   `results/la-tonight-F2-check/la_e4.csv`: FRESH before D3, marker present,
+   sufficient UART prehistory, HOLD/safe edges, and no event loss.
+4. Run five of each:
+   ```bash
+   tools/la/la_e4.sh results/la-tonight-F1 5 fault=F1
+   tools/la/la_e4.sh results/la-tonight-F2 5 fault=F2
+   tools/la/la_e4.sh results/la-tonight-F4 5 fault=F4
+   ```
+
+Dry-run scans fx2lafw, connects to the Pi, discovers the actual unused GPIO27
+chip/offset and prints gpiod 1.x toggle commands, then checks ST-LINK with a
+four-byte read using st-flash. It does not toggle GPIO, reset, write flash, or
+capture. Availability is a preflight check; actual electrical toggling is verified
+by the one F2 capture. The regular runner uses the retained GPIO ioctl handle.
+
 Directories must be new. Pi requires existing build tools, gpiod 1.6.3
 `gpioinfo`, vcgencmd, passwordless sudo, and the E4-compatible bridge decoder.
 The script runs the Pi entry point with sudo for GPIO permissions and F4;

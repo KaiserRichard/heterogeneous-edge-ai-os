@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # UNVERIFIED ON HARDWARE. Mac owns ST-LINK and FX2; Pi owns UART/GPIO.
 set -euo pipefail
-[[ $# -ge 2 && $# -le 3 ]] || { echo 'Usage: tools/la/la_e4.sh <outdir> <n_faults> [fault=F1|F2|F4]' >&2; exit 2; }
+dry_run=0
+if [[ ${1:-} == --dry-run ]]; then dry_run=1; shift; fi
+if ((dry_run)); then set -- "${1:-unused}" "${2:-1}" "${3:-F2}"; fi
+[[ $# -ge 2 && $# -le 3 ]] || { echo 'Usage: tools/la/la_e4.sh [--dry-run] <outdir> <n_faults> [fault=F1|F2|F4]' >&2; exit 2; }
 out=$1
 count=$2
 fault=${3:-F1}; fault=${fault#fault=}
@@ -17,6 +20,33 @@ sigrok=${SIGROK_CLI:-/usr/local/bin/sigrok-cli}
 [[ ! -e $out ]] || { echo 'Output directory already exists' >&2; exit 2; }
 command -v st-flash >/dev/null
 [[ -x $sigrok ]] || exit 2
+if ((dry_run)); then
+  "$sigrok" --scan | python3 -c 'import sys; text=sys.stdin.read(); print(text, end=""); sys.exit(0 if "fx2lafw" in text else 1)'
+  # Read-only discovery: no GPIO request, edge, reset, flash write or capture.
+  ssh -o BatchMode=yes -o ConnectTimeout=10 "$pi" 'sudo -n python3 -' <<'PYDRY'
+from pathlib import Path
+import os, re, shlex, subprocess
+subprocess.run(['gpioset', '--version'], check=True)
+matches = []
+for chip in sorted(Path('/dev').glob('gpiochip*')):
+    info = subprocess.check_output(['gpioinfo', str(chip)], text=True)
+    for offset, label, rest in re.findall(r'line\s+(\d+):\s+"([^"]+)"([^
+]*)', info):
+        if label == 'GPIO27':
+            matches.append((chip, offset, rest))
+if len(matches) != 1:
+    raise SystemExit(f'expected one GPIO27: {matches}')
+chip, offset, rest = matches[0]
+if '[used]' in rest or not os.access(chip, os.R_OK | os.W_OK):
+    raise SystemExit('GPIO27 is in use or inaccessible')
+print('Pi reachable; GPIO27 available (toggle not executed). Would run:')
+print(shlex.join(['gpioset', '--mode=time', '--sec=1', str(chip), f'{offset}=1']))
+print(shlex.join(['gpioset', str(chip), f'{offset}=0']))
+PYDRY
+  st-flash read /dev/null 0x08000000 4
+  echo 'Dry-run checks passed; GPIO toggling and acquisition still require physical verification.'
+  exit 0
+fi
 mkdir -p "$out"
 out=$(cd "$out" && pwd)
 remote_pid= capture_pid= watchdog_pid=

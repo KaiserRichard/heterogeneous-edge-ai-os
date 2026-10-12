@@ -190,11 +190,6 @@ def execute_run(args, experiment, condition):
     json_write(run / 'condition.json', dict(experiment=experiment, profile=profile, stressor=stressor,
                policy=bridge_policy, input_policy=input_policy, repetition=repetition,
                exact_load=' ; '.join(shlex.join(c) for c in stress) or 'idle'))
-    if experiment == 'E3_REAL':
-        rearm = shlex.split(args.rearm_command)
-        with (run / 'rearm.log').open('w') as log:
-            log.write(shlex.join(rearm) + '\n'); log.flush()
-            subprocess.run(rearm, stdout=log, stderr=log, cwd=ROOT, timeout=15, check=True)
     snapshot(run / 'meta_before.json')
     stop = threading.Event()
     evidence = []
@@ -211,7 +206,8 @@ def execute_run(args, experiment, condition):
                '--source-cpu', '1', '--infer-cpu', '0', '--bridge-cpu', '1',
                '--run-dir', str(run / 'pipeline')]
     if experiment == 'E3_REAL':
-        command += ['--serial', '/dev/ttyAMA0', '--baud', '921600', '--echo-ms', '100']
+        command += ['--serial', '/dev/ttyAMA0', '--baud', '921600', '--echo-ms', '100', '--fresh-timeout', str(getattr(args, 'fresh_timeout', 30)),
+                    '--reset-command', args.rearm_command]
     if args.model:
         command += ['--model', str(args.model)]
     elevated = profile == 'P1'

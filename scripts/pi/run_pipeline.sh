@@ -2,6 +2,8 @@
 # Pi-only PTY or physical UART run. No system configuration changes or pushes.
 set -euo pipefail
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+reset_command=""
+fresh_timeout=0
 serial=""
 sync_gpio=""
 echo_ms=1000
@@ -28,6 +30,7 @@ usage() {
 Usage: scripts/pi/run_pipeline.sh [--duration SECONDS] [--policy fifo|latest]
   [--input-policy fifo|latest] (inference input, default fifo; --policy controls bridge)
   [--period-ms N] [--heartbeat-ms N] [--work-us N | --durations FILE]
+  [--reset-command COMMAND] [--fresh-timeout SECONDS] (real UART startup gate)
   [--stage stub|onnx] [--model PATH] [--threads N]
   [--serial DEVICE] [--sync-gpio N] [--echo-ms N] [--baud N] [--run-dir PATH] [--drain-seconds N]
   [--source-priority N] [--source-cpu N] [--infer-priority N] [--infer-cpu N]
@@ -44,10 +47,12 @@ while (($#)); do
   case "$1" in
     --help) usage; exit 0 ;;
     --mlock) lock_memory=1; source_options+=(--mlock); bridge_options+=(--mlock); shift ;;
-    --serial|--sync-gpio|--echo-ms|--stage|--model|--threads|--duration|--policy|--input-policy|--period-ms|--heartbeat-ms|--work-us|--durations|--baud|--run-dir|--drain-seconds|--source-priority|--source-cpu|--infer-priority|--infer-cpu|--bridge-priority|--bridge-cpu)
+    --reset-command|--fresh-timeout|--serial|--sync-gpio|--echo-ms|--stage|--model|--threads|--duration|--policy|--input-policy|--period-ms|--heartbeat-ms|--work-us|--durations|--baud|--run-dir|--drain-seconds|--source-priority|--source-cpu|--infer-priority|--infer-cpu|--bridge-priority|--bridge-cpu)
       (($# >= 2)) || { echo "missing value for $1" >&2; exit 2; }
       key="$1"; value="$2"; shift 2
       case "$key" in
+        --reset-command) reset_command="$value" ;;
+        --fresh-timeout) fresh_timeout="$value" ;;
         --serial) serial="$value" ;;
         --sync-gpio) sync_gpio="$value" ;;
         --echo-ms) echo_ms="$value" ;;
@@ -74,6 +79,7 @@ while (($#)); do
     *) echo "unknown option: $1" >&2; usage >&2; exit 2 ;;
   esac
 done
+[[ "$fresh_timeout" =~ ^[0-9]+$ ]] || { echo 'invalid FRESH timeout' >&2; exit 2; }
 [[ "$duration" =~ ^[1-9][0-9]*$ && ${#duration} -le 5 ]] && ((10#$duration <= 86400)) || {
   echo "--duration must be an integer in 1..86400 seconds" >&2; exit 2;
 }
@@ -198,13 +204,6 @@ launch hea_rx --serial "$ipc_dir/rx" --baud "$baud" --csv "$run/rx.csv" > "$run/
 rx_pid=$launched_pid
 wait_ready "$run/rx.csv" "$rx_pid" file
 fi
-launch hea_bridge --serial "$serial" --baud "$baud" --socket "$ipc_dir/bridge.sock" --csv "$run/bridge.csv" --status-csv "$run/mcu_status.csv" --echo-csv "$run/echo.csv" --state-events-csv "$run/state_events.csv" --inf-rx-csv "$run/inf_rx.csv" --echo-ms "$echo_ms" --policy "$policy" --heartbeat-ms "$heartbeat_ms" "${bridge_options[@]}" > "$run/bridge.stdout.log" 2> "$run/bridge.stderr.log"
-bridge_pid=$launched_pid
-printf '%s\n' "$bridge_pid" > "$run/bridge.pid"
-if [[ -n "$sync_gpio" ]]; then
-  python3 "$repo/scripts/pi/uart_tools.py" gpio "$sync_gpio" "$run/gpio.csv" > "$run/gpio.stdout.log" 2> "$run/gpio.stderr.log" & gpio_pid=$!
-fi
-wait_ready "$ipc_dir/bridge.sock" "$bridge_pid" socket
 if [[ "$stage" == stub ]]; then
   launch hea_infer_stub --socket "$ipc_dir/source.sock" --output "$ipc_dir/bridge.sock" --csv "$run/infer.csv" "${infer_options[@]}" > "$run/infer.stdout.log" 2> "$run/infer.stderr.log"
   infer_pid=$launched_pid
@@ -217,9 +216,31 @@ else
 fi
 printf '%s\n' "$infer_pid" > "$run/infer.pid"
 wait_ready "$ipc_dir/source.sock" "$infer_pid" socket
+# Initialize inference before reset: no UART traffic can relatch the old session.
+if [[ -n "$reset_command" ]]; then
+  python3 - "$reset_command" > "$run/rearm.log" 2>&1 <<'PYRESET'
+import os, shlex, subprocess, sys
+command = shlex.split(sys.argv[1])
+# Preserve the campaign user's SSH identity for the Mac reset helper.
+if os.environ.get('SUDO_USER'):
+    command = ['sudo', '-n', '-u', os.environ['SUDO_USER'], '--'] + command
+print(shlex.join(command), flush=True)
+subprocess.run(command, check=True, timeout=15)
+PYRESET
+fi
+launch hea_bridge --serial "$serial" --baud "$baud" --socket "$ipc_dir/bridge.sock" --csv "$run/bridge.csv" --status-csv "$run/mcu_status.csv" --echo-csv "$run/echo.csv" --state-events-csv "$run/state_events.csv" --inf-rx-csv "$run/inf_rx.csv" --echo-ms "$echo_ms" --policy "$policy" --heartbeat-ms "$heartbeat_ms" "${bridge_options[@]}" > "$run/bridge.stdout.log" 2> "$run/bridge.stderr.log"
+bridge_pid=$launched_pid
+printf '%s\n' "$bridge_pid" > "$run/bridge.pid"
+if [[ -n "$sync_gpio" ]]; then
+  python3 "$repo/scripts/pi/uart_tools.py" gpio "$sync_gpio" "$run/gpio.csv" > "$run/gpio.stdout.log" 2> "$run/gpio.stderr.log" & gpio_pid=$!
+fi
+wait_ready "$ipc_dir/bridge.sock" "$bridge_pid" socket
 launch hea_source --output "$ipc_dir/source.sock" --period-ms "$period_ms" --csv "$run/source.csv" "${source_options[@]}" > "$run/source.stdout.log" 2> "$run/source.stderr.log"
 source_pid=$launched_pid
 printf '%s\n' "$source_pid" > "$run/source.pid"
+if ((fresh_timeout)); then
+  python3 "$repo/tools/experiments/e3_startup.py" "$run" "$fresh_timeout" "$source_pid" "$infer_pid" "$bridge_pid"
+fi
 python3 -c 'import time; print(time.clock_gettime_ns(time.CLOCK_MONOTONIC_RAW))' > "$run/window_start_ns"
 sleep "$duration" & timer_pid=$!
 while kill -0 "$timer_pid" 2>/dev/null; do

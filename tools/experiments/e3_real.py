@@ -32,7 +32,8 @@ def main():
     parser.add_argument('seconds', type=campaign.positive, nargs='?', default=60)
     parser.add_argument('--model', type=Path, required=True)
     parser.add_argument('--rearm-command', default=f"bash {shlex.quote(str(Path.home() / 'osbuild/rearm_via_mac.sh'))}",
-                        help='argv parsed with shlex; called before every run, timeout 15 s')
+                        help='synchronous MCU reset argv; after model initialization, before UART launch, timeout 15 s')
+    parser.add_argument('--fresh-timeout', type=campaign.positive, default=30)
     args = parser.parse_args()
     args.out = args.out.resolve()
     args.model = args.model.resolve()
