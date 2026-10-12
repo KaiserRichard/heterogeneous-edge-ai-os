@@ -35,8 +35,9 @@ startup, enables the FPU before C, and maps the FreeRTOS exception handlers.
 Build options (command-line changes automatically rebuild objects):
 
 ```sh
-make -C stm32 firmware CLOCK_SOURCE=HSE UART_BAUD=921600 DEBUG_VCP=0 BRINGUP_BLINK=0
+make -C stm32 firmware CLOCK_SOURCE=HSE RX_MODE=DMA UART_BAUD=921600 DEBUG_VCP=0 BRINGUP_BLINK=0
 make -C stm32 firmware CLOCK_SOURCE=HSI # deliberate fallback profile
+make -C stm32 firmware RX_MODE=IRQ # per-byte ISR fallback
 make -C stm32 firmware DEBUG_VCP=1 BRINGUP_BLINK=1
 ```
 
@@ -85,19 +86,38 @@ Ownership and scheduling support the OS experiments:
 | Task | Priority | Work |
 |---|---:|---|
 | supervisor | 3 | Absolute 1 ms releases; periodic update even without traffic; at most eight queued frames/release; sole supervisor owner; output update |
-| rx | 2 | ISR stream records to `hea_parser`; CRC-valid frames queued with receipt time and generation; valid echo requests queued for reply |
+| rx | 2 | Circular DMA bytes (or IRQ stream records) to `hea_parser`; CRC-valid frames queued with receipt time and generation; valid echo requests queued for reply |
 | status_tx | 1 | Sole USART1 transmitter; checks every tick, one echo per iteration, transition ring every tick, status every 100 ms; drains bounded capture queue |
 
-The byte stream holds 256 fixed-size timestamped byte records (2 KiB). T2 is the
-TIM2 sample at final CRC-byte RXNE handling, before task/queue delay. RX reconstructs
-its extended time from a current chronological clock sample, then stamps generation
-at handoff under the same critical section used by the owner. It never extends an
-old raw timestamp as a new chronological sample. Session changes can deliberately
-invalidate already queued frames; subsequent sender traffic establishes health.
-Frames/echoes each have eight slots; capture has eight slots. Overflow is counted,
-never blocks the supervisor, and does not refresh liveness. A stream overflow marks
-the next retained byte as a discontinuity to reset partial parsing. UART PE/FE/NE/ORE
-are counted and discard the affected byte. Saturating counters do not wrap.
+Default `RX_MODE=DMA` uses a static 2048-byte circular buffer on DMA2 Stream2,
+Channel 4 (USART1_RX), direct byte mode, high DMA arbitration priority. The RX task
+wakes on USART IDLE/error notification and polls with a one-tick timeout (1 ms).
+There is no per-byte RX interrupt or DMA IRQ. Each drain snapshots NDTR and reads
+only that bounded batch; notifications may coalesce without losing positions.
+This removes the per-byte CPU service deadline while retaining the scheduling,
+queueing and freshness mechanisms studied by this project. Pinout and task/IRQ
+priorities are unchanged. Register mapping and SR/DR clearing follow
+[ST RM0390](https://www.st.com/resource/en/reference_manual/rm0390-stm32f446xx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf).
+
+DMA T2/receipt is the TIM2 sample when the RX task reads the last CRC byte. It is
+later than physical receipt by at most the poll period **plus** task release jitter,
+higher-priority execution and batch drain time; IDLE usually wakes it sooner. The
+poll contribution is bounded by 1 ms, but a strict total 1 ms bound is not claimed
+without a hardware scheduling measurement. At nominal baud the ring holds about
+22.19 ms of continuous traffic. A possible whole unseen lap (including a stalled
+drain) discards the batch and resets partial parsing rather than treating equal
+indices as empty. This guard assumes the configured line rate; it is not an
+unbounded-lossless buffer. DMA bus/FIFO/direct-mode errors fail closed. UART errors
+or an RXNE byte possibly consumed by IDLE clearing mark a discontinuity; the next
+drain discards its snapshot. `rx_dropped` counts such incidents, not exact DMA bytes.
+
+`RX_MODE=IRQ` retains the 256 fixed-size timestamped byte records (2 KiB), with T2
+sampled in RXNE handling. A full stream marks the next retained byte as a gap.
+Both modes reconstruct extended receipt from a current chronological clock sample
+and capture generation in a short critical section. They never extend an old raw
+timestamp as a new clock sample. Frame/echo queues each have eight slots; capture
+has eight. Overflow never blocks the supervisor or refreshes liveness. UART
+PE/FE/NE/ORE counters and aggregate error count saturate rather than wrap.
 
 The adapter is called only by the supervisor owner, not concurrently from RX.
 T3 is sampled after the previous UART transmission completes and before response
@@ -107,10 +127,11 @@ edges on PA0 are captured by hardware, queued by the ISR, and reported in status
 Overcapture and queue loss share a counter. Match GPIO pulses slowly enough to avoid
 losing correspondence (start at 1 Hz); status reports only the latest retained edge.
 
-MCU_STATUS uses the optional 38-byte v3 extension documented in
+MCU_STATUS uses the optional 58-byte v3 extension documented in
 `protocol/PROTOCOL.md`: normal state/counters plus last capture, capture count,
-RX drops, UART errors, queue drops, capture losses, clock fallback and event losses. Update the Pi decoder to this
-shared library; older strict nine/33-byte decoders reject this status.
+RX drops, split UART errors, queue drops, capture losses, clock fallback, event losses
+and maximum observed IRQ-masked cycles. Update the Pi decoder to this
+shared library; older strict nine/33/38-byte decoders reject this status.
 No heartbeat, inference, echo, sequence, or supervisor policy format changes.
 `missed_heartbeats` counts transitions into heartbeat-timeout FAILSAFE, not the
 number of absent 20 ms packets. Queue drops aggregate frame and echo queue failures.
@@ -220,7 +241,7 @@ The supervisor notifies the status/TX owner, which drains it on wakeup
 (and polls every tick) using optional v3 STATE_EVENT, independent
 of 10 Hz status. Overflow drops the newest event and increments a saturating loss
 counter in events/status. This instrumentation serves E4 deadline/fault latency
-measurement without changing task priorities, ISR work or supervisor policy.
+measurement without changing task priorities or supervisor policy.
 See `protocol/PROTOCOL.md` for the wire layout and Pi mapped-time CSV semantics.
 
 Local validation for this change: protocol/clock-sync and supervisor tests passed
@@ -234,3 +255,84 @@ image: text 11996 B, data 4 B, bss 11332 B: **12000 B flash**, **11336 B static 
 (includes task stacks/queues), plus **2048 B reserved MSP** (13384 B RAM budget).
 HSI image: 11872 B flash, same RAM. Timer accuracy, HSE timeout/fallback, event TX
 latency and GPIO correspondence remain **UNVERIFIED ON HARDWARE**.
+
+## RX regression investigation (2026-10-12)
+
+**UNVERIFIED ON HARDWARE.** The ticket's 40 s A/B measurements are user-supplied;
+no new rig measurements or numeric DWT maxima are available from this host.
+
+Static inspection of `git diff 68aa5be..fec09e1 -- stm32/` found transition-ring
+recording added inside the existing critical sections around `supervisor_update`
+and `supervisor_receive_frame`, plus a new critical section copying events on
+status wakeups. The adapter includes 64-bit division for inference validation
+(already present before this regression). Masking that entire call is unnecessary
+and leaves RXNE vulnerable to the added work. This patch removes those masked
+calls: the priority-3 supervisor is the sole writer; lower-priority status readers
+suspend scheduling for ring dequeue/snapshots while leaving interrupts enabled.
+Only clock/generation and short ISR-counter snapshots need application masking.
+This is a statically verified latency hazard/remediation, **not proof** that those
+extra instructions account for 99–125 errors. ORE vs FE/NE and timing must be
+measured on the rig before assigning the physical root cause.
+
+`supervisor_pop_transition` does decrement `transition_count`; its host test drains
+the ring to empty. Thus the never-cleared-count hypothesis is false. The old status
+task already polled each tick. Notifications now occur only on an empty-to-nonempty
+ring transition, avoiding repeated notifications when TX has pending events.
+STATE_EVENT and default HSE remain enabled.
+
+DWT CYCCNT instrumentation uses a local `portmacro.h` wrapper, leaving the reference
+kernel untouched. It tracks outermost BASEPRI intervals across task critical
+sections, kernel queue/notification masks, ISR API masks and SysTick. A linker
+wrapper additionally measures the masked `vTaskSwitchContext` body in PendSV.
+Disassembly verifies these hook calls. `max_irq_masked_cycles` is the maximum
+observed **instrumented body**, not exact edge-to-edge interrupt latency: the
+entry/exit bookkeeping and PendSV instructions outside its wrapped call are not
+included, while bookkeeping inside an outer measurement is included. No attempt
+is made to subtract instrumentation overhead. It excludes boot and fatal PRIMASK
+fault loops, resets when the supervisor starts, and tolerates DWT wrap for intervals
+shorter than 51 s. The next status reports the maximum; cycles / 84 gives us.
+An observed value below 21 us alone does not prove RXNE can always meet its deadline.
+
+Build validation also exposed a reproducibility bug: macOS GNU make 3.81 can reuse
+some objects when configuration stamps change within the same second, producing a
+mixed HSI/HSE or IRQ/DMA image. Changed configurations now force every object,
+ELF and binary to rebuild irrespective of timestamp resolution. This does not
+establish that the ticket's measured images were affected.
+
+Reproduce the checks from the worktree root:
+
+```sh
+make -C protocol test-char-modes
+make -C stm32 test
+make -C linux all test
+python3 -m unittest discover -s linux/inference/tests -v
+python3 -m unittest discover -s analysis/tests -v
+scripts/stm32/build.sh CLOCK_SOURCE=HSE RX_MODE=DMA
+scripts/stm32/build.sh CLOCK_SOURCE=HSE RX_MODE=IRQ
+```
+
+For the hardware rerun, repeat the same 40 s workload in both RX modes and capture
+`mcu_status.csv`, CRC failures and STATE_EVENT transitions. Compare deltas in ORE,
+FE, NE, PE, drops and `max_irq_masked_cycles`; retain the exact build configuration.
+Also exercise continuous RX (no IDLE), a split frame across DMA wrap and sender
+stop/restart. DMA timestamp offset/jitter, error recovery and absence of spurious
+HOLD remain **UNVERIFIED ON HARDWARE**.
+
+Local validation after this patch (Arm GCC 14.2.1, `-Wall -Wextra -Werror`):
+
+| Clock / RX | Flash (text + data) | Static RAM (data + bss) | RAM incl. 2048 B MSP |
+|---|---:|---:|---:|
+| HSE / DMA (default) | 11576 B | 11332 B | 13380 B |
+| HSE / IRQ | 12344 B | 11364 B | 13412 B |
+| HSI / DMA | 11448 B | 11324 B | 13372 B |
+| HSI / IRQ | 12232 B | 11364 B | 13412 B |
+
+All four configurations built with zero warnings; unchanged default rebuild reused
+objects, and rapid configuration switches rebuilt all objects. Protocol/clock-sync
+passed ASan/UBSan in both char modes. Supervisor: 23 scenarios, 66744 checks. New
+DMA cursor tests cover every physical wrap and frame split, NDTR reload, possible
+unseen laps and TIM2 wrap. Pi C executables and sanitized PTY tests passed, including
+9/33/38/58-byte status CSV compatibility. Summary tests: 6 passed; inference Python:
+34 tests, 3 platform/environment skips; E4 analysis: 21 passed. Unix socket bind is
+sandbox-denied (PTY tests use socketpair); Linux-only runtime checks skip on macOS.
+These tests do not emulate STM32 DMA arbitration, IDLE clearing or interrupt timing.

@@ -96,6 +96,8 @@ struct hea_mcu_status_extended {
     uint32_t capture_lost;
     uint8_t clock_fallback; /* HSE requested but startup failed; absent in 33-byte status. */
     uint32_t state_event_lost;
+    uint32_t uart_ore, uart_fe, uart_ne, uart_pe;
+    uint32_t max_irq_masked_cycles;
 };
 
 /* Extended TIM2 times; UINT64_MAX means no accepted frame in that clock history. */

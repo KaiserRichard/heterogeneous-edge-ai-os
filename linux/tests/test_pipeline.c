@@ -219,7 +219,7 @@ static void fake_mcu(void)
         "--echo-ms", "20", "--baud", "115200", NULL};
     pid_t bridge = launch(args, master, slave, 0); ready(status);
     uint8_t payload[64], wire[HEA_MAX_FRAME];
-    struct hea_mcu_status_extended x = {{123, 3, 4, 5}, 6, 7, 8, 9, 10, 11, 1, 12};
+    struct hea_mcu_status_extended x = {{123, 3, 4, 5}, 6, 7, 8, 9, 10, 11, 1, 12, 13, 14, 15, 16, 2100};
     uint8_t len = hea_pack_mcu_status(&x.base, payload);
     size_t n = hea_encode(HEA_MSG_MCU_STATUS, 40, payload, len, wire, sizeof(wire));
     wire[n-1] ^= 1; assert(write(master, wire, n) == (ssize_t)n);
@@ -230,6 +230,8 @@ static void fake_mcu(void)
     assert(write(master, wire, n) == (ssize_t)n);
     n = hea_encode(HEA_MSG_MCU_STATUS, 45, payload, 33, wire, sizeof(wire));
     assert(write(master, wire, n) == (ssize_t)n); /* Previous firmware diagnostics. */
+    n = hea_encode(HEA_MSG_MCU_STATUS, 46, payload, 38, wire, sizeof(wire));
+    assert(write(master, wire, n) == (ssize_t)n); /* Clock/event-era firmware. */
     struct hea_parser parser; hea_parser_init(&parser);
     struct hea_state_event ev = {UINT64_C(0x2ffffd8ef), 1, 2, 9, UINT64_MAX, UINT64_C(0x2ffffd800), 7};
     len = hea_pack_state_event(&ev, payload);
@@ -263,8 +265,9 @@ static void fake_mcu(void)
     FILE *f = fopen(status, "r"); assert(f); char line[1024];
     assert(fgets(line, sizeof(line), f)); assert(fgets(line, sizeof(line), f));
     assert(strstr(line, ",123,3,4,5,0,,,,,,"));
-    assert(fgets(line, sizeof(line), f)); assert(strstr(line, ",123,3,4,5,1,6,7,8,9,10,11,1,12"));
-    assert(fgets(line, sizeof(line), f)); assert(strstr(line, ",123,3,4,5,1,6,7,8,9,10,11,,"));
+    assert(fgets(line, sizeof(line), f)); assert(strstr(line, ",123,3,4,5,1,6,7,8,9,10,11,1,12,13,14,15,16,2100\n"));
+    assert(fgets(line, sizeof(line), f)); assert(strstr(line, ",123,3,4,5,1,6,7,8,9,10,11,,,,,,,\n"));
+    assert(fgets(line, sizeof(line), f)); assert(strstr(line, ",123,3,4,5,1,6,7,8,9,10,11,1,12,,,,,\n"));
     assert(!fgets(line, sizeof(line), f)); fclose(f);
     f = fopen(echo, "r"); assert(f); assert(fgets(line, sizeof(line), f));
     unsigned count = 0;

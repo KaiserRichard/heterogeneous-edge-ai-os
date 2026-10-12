@@ -162,22 +162,22 @@ input stream, not a byte-signedness or platform-specific parser defect.
 ## Optional firmware diagnostics in v3 MCU_STATUS
 
 **UNVERIFIED ON HARDWARE.** To observe ISR/queue contention and validate GPIO clock
-capture, v3 status may contain 33 or 38 bytes instead of nine. The first nine
+capture, v3 status may contain 33, 38 or 58 bytes instead of nine. The first nine
 bytes retain the base layout. Six little-endian u32 fields follow:
 
 | Offset | Field | Meaning |
 |---:|---|---|
 | 9 | last_capture_us | Last dequeued TIM2_CH1 rising-edge timestamp, raw us |
 | 13 | capture_count | Saturating number of dequeued captures; zero means absent |
-| 17 | rx_dropped | Saturating UART records lost to full stream buffer |
-| 21 | uart_errors | Saturating RX records with PE/FE/NE/ORE |
+| 17 | rx_dropped | Saturating IRQ stream record losses; DMA discarded batches/possible stolen bytes |
+| 21 | uart_errors | Saturating error-bearing SR samples (one sample may have multiple flags) |
 | 25 | queue_dropped | Saturating frame/echo queue enqueue failures |
 | 29 | capture_lost | Saturating capture queue loss plus hardware overcapture |
 
 `hea_pack_mcu_status` still emits nine bytes. Firmware uses the explicit
 `hea_pack_mcu_status_extended` API. The base decoder accepts nine bytes for v1/v2/v3
-and 33/38 bytes for v3; the extended decoder accepts v3/33 or v3/38.
-The current extended packer emits 38 bytes. For a 33-byte payload, the new
+and 33/38/58 bytes for v3; the extended decoder accepts those three v3 extensions.
+The current extended packer emits 58 bytes. Absent trailing
 fields decode as zero; use the payload length to distinguish absent diagnostics. All other lengths and
 versions are rejected. Existing strict nine-byte receivers must be updated before
 using this firmware. This is an optional v3 diagnostic payload, not a change to
@@ -190,6 +190,27 @@ requested but failed its startup timeout, 0 for HSE success or deliberate HSI)
 and `state_event_lost` (u32 LE, offset 34). The latter reports saturating event-ring
 overflow even if no subsequent transition occurs. Older strict 33-byte status
 decoders need updating; base nine-byte packing remains unchanged.
+
+The 58-byte status additionally appends five little-endian u32 fields:
+
+| Offset | Field | Meaning |
+|---:|---|---|
+| 38 | uart_ore | Saturating overrun flag observations |
+| 42 | uart_fe | Saturating framing error flag observations |
+| 46 | uart_ne | Saturating noise flag observations |
+| 50 | uart_pe | Saturating parity error flag observations (8N1 normally has none) |
+| 54 | max_irq_masked_cycles | DWT maximum observed masked-body duration since scheduler startup |
+
+The total `uart_errors` remains at offset 21 for existing analysis. It counts
+error-bearing SR samples, not the sum of the four flags. The Pi CSV appends the
+five new columns, leaving them empty for 9/33/38-byte status (absence is not zero).
+At 84 MHz divide cycles by 84 for microseconds. See the firmware README for
+measurement coverage/overhead; this is runtime instrumentation, not a proven WCET.
+
+DMA firmware timestamps ECHO T2 and supervisor receipt when the RX task reads the
+last CRC byte from RAM. IRQ fallback retains per-byte RXNE ISR timestamps. DMA
+adds up to one 1 ms poll period plus scheduling/drain latency, or an earlier IDLE
+wakeup; these timestamps must not be interpreted as hardware wire-arrival times.
 
 ## Optional v3 STATE_EVENT (0x85, MCU → Pi)
 

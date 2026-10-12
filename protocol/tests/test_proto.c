@@ -334,11 +334,11 @@ static void test_random_noise_recovers(void)
 static void test_status_extension(void)
 {
     struct hea_mcu_status_extended in = {{123, HEA_MCU_HOLD, 4, 5},
-        UINT32_C(0x12345678), 7, 8, 9, 10, UINT32_MAX, 1, 17}, out;
+        UINT32_C(0x12345678), 7, 8, 9, 10, UINT32_MAX, 1, 17, 18, 19, 20, UINT32_MAX, 2100}, out;
     struct hea_mcu_status base;
     uint8_t payload[HEA_MAX_PAYLOAD], wire[HEA_MAX_FRAME];
     uint8_t len = hea_pack_mcu_status_extended(&in, payload);
-    CHECK(len == 38 && payload[9] == 0x78 && payload[12] == 0x12);
+    CHECK(len == 58 && payload[9] == 0x78 && payload[12] == 0x12);
     struct hea_parser p;
     struct hea_frame f;
     hea_parser_init(&p);
@@ -350,19 +350,28 @@ static void test_status_extension(void)
     CHECK(out.last_capture_us == in.last_capture_us && out.capture_count == 7);
     CHECK(out.rx_dropped == 8 && out.uart_errors == 9 && out.queue_dropped == 10);
     CHECK(out.capture_lost == UINT32_MAX && out.clock_fallback == 1 && out.state_event_lost == 17);
+    CHECK(out.uart_ore == 18 && out.uart_fe == 19 && out.uart_ne == 20);
+    CHECK(out.uart_pe == UINT32_MAX && out.max_irq_masked_cycles == 2100);
+    f.len = 38;
+    CHECK(hea_unpack_mcu_status_extended(&f, &out) == 0);
+    CHECK(out.clock_fallback == 1 && out.state_event_lost == 17);
+    CHECK(out.uart_ore == 0 && out.uart_fe == 0 && out.uart_ne == 0 && out.uart_pe == 0);
+    CHECK(out.max_irq_masked_cycles == 0);
     f.len = 33;
     CHECK(hea_unpack_mcu_status_extended(&f, &out) == 0);
     CHECK(out.clock_fallback == 0 && out.state_event_lost == 0);
     for (unsigned length = 0; length <= HEA_MAX_PAYLOAD; ++length) {
         f.len = (uint8_t)length;
-        CHECK((hea_unpack_mcu_status(&f, &base) == 0) == (length == 9 || length == 33 || length == 38));
-        CHECK((hea_unpack_mcu_status_extended(&f, &out) == 0) == (length == 33 || length == 38));
+        CHECK((hea_unpack_mcu_status(&f, &base) == 0) == (length == 9 || length == 33 || length == 38 || length == 58));
+        CHECK((hea_unpack_mcu_status_extended(&f, &out) == 0) == (length == 33 || length == 38 || length == 58));
     }
-    f.len = 38;
-    for (uint8_t version = 1; version <= 4; ++version) {
-        f.version = version;
-        CHECK((hea_unpack_mcu_status(&f, &base) == 0) == (version == 3));
-        CHECK((hea_unpack_mcu_status_extended(&f, &out) == 0) == (version == 3));
+    for (uint8_t size = 38; size <= 58; size += 20) {
+        f.len = size;
+        for (uint8_t version = 1; version <= 4; ++version) {
+            f.version = version;
+            CHECK((hea_unpack_mcu_status(&f, &base) == 0) == (version == 3));
+            CHECK((hea_unpack_mcu_status_extended(&f, &out) == 0) == (version == 3));
+        }
     }
     f.version = HEA_PROTO_VERSION;
     f.type = HEA_MSG_ECHO_RESP;

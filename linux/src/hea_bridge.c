@@ -91,7 +91,7 @@ int main(int argc, char **argv)
     int serial = hea_serial_get(&o);
     int input = hea_socket_input(&o);
     FILE *csv = hea_csv_open(o.csv_path, "seq,frame_id,t_input_ns,t_done_ns,t_send_ns");
-    FILE *status = hea_csv_open(o.status_csv ? o.status_csv : "mcu_status.csv", "seq,version,t_rx_pi_ns,mcu_us,state,missed_heartbeats,rx_crc_errors,diagnostics_present,last_capture_us,capture_count,rx_dropped,uart_errors,queue_dropped,capture_lost,clock_fallback,state_event_lost");
+    FILE *status = hea_csv_open(o.status_csv ? o.status_csv : "mcu_status.csv", "seq,version,t_rx_pi_ns,mcu_us,state,missed_heartbeats,rx_crc_errors,diagnostics_present,last_capture_us,capture_count,rx_dropped,uart_errors,queue_dropped,capture_lost,clock_fallback,state_event_lost,uart_ore,uart_fe,uart_ne,uart_pe,max_irq_masked_cycles");
     FILE *echo = hea_csv_open(o.echo_csv ? o.echo_csv : "echo.csv", "seq,t1_pi_ns,t2_mcu_us,t3_mcu_us,t4_pi_ns,t2_mcu_extended_us,t3_mcu_extended_us,accepted,reference_pi_us,offset_us,delay_us,drift_ppm,rms_residual_us,sample_count,mapping_offset_us,mapping_drift,t1_mcu_est_us,t2_pi_est_us,t3_pi_est_us,t4_mcu_est_us");
     FILE *events = hea_csv_open(o.state_events_csv ? o.state_events_csv : "state_events.csv", "seq,t_rx_pi_ns,mcu_us,old,new,reason,last_hb_mcu_us,last_inf_mcu_us,lost_count,t_mcu_pi_est_ns");
     struct hea_parser parser; hea_parser_init(&parser);
@@ -139,8 +139,12 @@ int main(int argc, char **argv)
                     if (ext) fprintf(status, "%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32,
                         x.last_capture_us, x.capture_count, x.rx_dropped, x.uart_errors, x.queue_dropped, x.capture_lost);
                     else fprintf(status, ",,,,,");
-                    if (ext && f->len == 38) fprintf(status, ",%u,%" PRIu32, x.clock_fallback, x.state_event_lost);
+                    if (ext && f->len >= 38) fprintf(status, ",%u,%" PRIu32, x.clock_fallback, x.state_event_lost);
                     else fprintf(status, ",,");
+                    if (ext && f->len == 58) fprintf(status,
+                        ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32,
+                        x.uart_ore, x.uart_fe, x.uart_ne, x.uart_pe, x.max_irq_masked_cycles);
+                    else fprintf(status, ",,,,,");
                     fprintf(status, "\n");
                     if (ferror(status)) hea_fatal("status CSV");
                 } else if (f->type == HEA_MSG_STATE_EVENT) {
