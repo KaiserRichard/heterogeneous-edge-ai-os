@@ -1,0 +1,7 @@
+{
+  "fault": "F4",
+  "rep": 1,
+  "status": "FAILED",
+  "evidence": "UNVERIFIED ON HARDWARE",
+  "reason": "no FRESH STATE_EVENT plus clock fit before startup/recovery deadline"
+}

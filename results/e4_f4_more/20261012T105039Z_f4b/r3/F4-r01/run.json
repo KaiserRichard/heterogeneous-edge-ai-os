@@ -1,0 +1,12 @@
+{
+  "fault": "F4",
+  "rep": 1,
+  "status": "COMPLETE",
+  "evidence": "UNVERIFIED ON HARDWARE",
+  "steady_start_pi_ns": 2561375014936,
+  "onset_pi_ns": 2563457586064,
+  "fault_end_pi_ns": 2564457586860,
+  "marker_edges": [],
+  "observation_end_pi_ns": 2565457647230,
+  "recovery_start_pi_ns": 2565460944952
+}

@@ -1,0 +1,3 @@
+seq,t_rx_pi_ns,mcu_us,old,new,reason,last_hb_mcu_us,last_inf_mcu_us,lost_count,t_mcu_pi_est_ns
+2,34930339979,161120,0,1,1,157014,160476,0,34929648500.000
+35,38501882310,2818110,1,3,3,2717577,2668770,0,37586592812.433
