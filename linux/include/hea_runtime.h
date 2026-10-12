@@ -7,7 +7,7 @@
 
 struct hea_options {
     const char *socket_path, *output_path, *serial_path, *csv_path, *durations_path;
-    const char *status_csv, *echo_csv;
+    const char *status_csv, *echo_csv, *state_events_csv;
     uint64_t echo_ms;
     uint64_t period_ms, heartbeat_ms, work_us, count;
     unsigned baud;

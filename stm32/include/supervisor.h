@@ -3,6 +3,9 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "hea_proto.h"
+
+#define SUPERVISOR_TRANSITION_DEPTH 16u
 
 /* Step 2: duration-based source-age estimate; all local ticks are microseconds. */
 typedef enum {
@@ -62,6 +65,10 @@ typedef struct {
 } supervisor_event_t;
 
 typedef struct {
+    struct hea_state_event transitions[SUPERVISOR_TRANSITION_DEPTH];
+    uint32_t transition_lost;
+    unsigned transition_head, transition_count;
+    uint64_t accepted_hb_us, accepted_inf_us;
     supervisor_state_t state;
     supervisor_reason_t last_transition_reason;
     supervisor_config_t config;
@@ -116,6 +123,9 @@ supervisor_state_t supervisor_update(supervisor_t *sv,
  * The owner must serialize generation capture with update/rearm. Generation must
  * not wrap; reset the whole queue/core before UINT64_MAX is exhausted. */
 bool supervisor_rearm(supervisor_t *sv, uint64_t now_ticks);
+
+/* Caller serializes pop with update/rearm; nonblocking static ring. */
+bool supervisor_pop_transition(supervisor_t *sv, struct hea_state_event *out);
 
 /* Only FRESH permits new simulated output; HOLD policy is a port decision.
  * INIT and FAILSAFE must select the local safe output. */

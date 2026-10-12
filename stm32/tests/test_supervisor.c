@@ -807,8 +807,64 @@ static void test_mcu_timer_wrap_extension(void)
     CHECK(now == unchanged + UINT32_C(0x7fffffff));
 }
 
+static void test_transition_ring(void)
+{
+    supervisor_t sv;
+    struct hea_state_event e;
+    init(&sv);
+    CHECK(!supervisor_pop_transition(&sv, &e));
+    CHECK(sv.accepted_hb_us == UINT64_MAX && sv.accepted_inf_us == UINT64_MAX);
+    ready(&sv);
+    CHECK(supervisor_pop_transition(&sv, &e));
+    CHECK(e.old_state == SUPERVISOR_STATE_INIT && e.new_state == SUPERVISOR_STATE_FRESH);
+    CHECK(e.reason == SUPERVISOR_REASON_READY && e.mcu_us == 1u);
+    CHECK(e.last_hb_mcu_us == 0u && e.last_inf_mcu_us == 1u && e.lost_count == 0u);
+    /* One update expires the old result then accepts the replacement: both events. */
+    CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 2u, 0u, 30u) == SUPERVISOR_STATE_FRESH);
+    CHECK(event(&sv, SUPERVISOR_EVENT_RESULT, 3u, 1u, 31u) == SUPERVISOR_STATE_FRESH);
+    CHECK(supervisor_pop_transition(&sv, &e));
+    CHECK(e.old_state == SUPERVISOR_STATE_FRESH && e.new_state == SUPERVISOR_STATE_HOLD);
+    CHECK(e.mcu_us == 31u && e.last_inf_mcu_us == 1u && e.reason == SUPERVISOR_REASON_RESULT_SILENCE);
+    CHECK(supervisor_pop_transition(&sv, &e));
+    CHECK(e.old_state == SUPERVISOR_STATE_HOLD && e.new_state == SUPERVISOR_STATE_FRESH);
+    CHECK(e.mcu_us == 31u && e.last_inf_mcu_us == 31u);
+    CHECK(!supervisor_pop_transition(&sv, &e));
+    uint16_t wire = 4;
+    for (unsigned i = 1; i <= 10u; ++i) {
+        uint64_t now = 31u + 30u * i;
+        CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, wire++, 0, now - 1u) == SUPERVISOR_STATE_FRESH);
+        CHECK(event(&sv, SUPERVISOR_EVENT_RESULT, wire++, i + 1u, now) == SUPERVISOR_STATE_FRESH);
+    }
+    CHECK(sv.transition_count == 16u && sv.transition_lost == 4u);
+    for (unsigned i = 0; i < 16u; ++i) {
+        CHECK(supervisor_pop_transition(&sv, &e));
+        CHECK(e.mcu_us == 61u + 30u * (i / 2u));
+        CHECK(e.new_state == (i % 2u ? SUPERVISOR_STATE_FRESH : SUPERVISOR_STATE_HOLD));
+        CHECK(e.lost_count == 4u);
+    }
+    CHECK(!supervisor_pop_transition(&sv, &e));
+    CHECK(supervisor_update(&sv, NULL, 361u) == SUPERVISOR_STATE_HOLD);
+    CHECK(supervisor_pop_transition(&sv, &e) && e.mcu_us == 361u && e.lost_count == 4u);
+    sv.transition_count = SUPERVISOR_TRANSITION_DEPTH;
+    sv.transition_lost = UINT32_MAX;
+    CHECK(supervisor_update(&sv, NULL, 400u) == SUPERVISOR_STATE_FAILSAFE);
+    CHECK(sv.transition_lost == UINT32_MAX);
+    CHECK(!supervisor_pop_transition(NULL, &e) && !supervisor_pop_transition(&sv, NULL));
+    /* Full TIM2 epoch and rejected duplicates remain visible without truncation. */
+    uint64_t base = UINT64_C(0x100000001);
+    CHECK(supervisor_init(&sv, &config, base));
+    CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 0, 0, base) == SUPERVISOR_STATE_INIT);
+    CHECK(event(&sv, SUPERVISOR_EVENT_RESULT, 1, 1, base + 1u) == SUPERVISOR_STATE_FRESH);
+    CHECK(supervisor_pop_transition(&sv, &e) && e.mcu_us == base + 1u);
+    CHECK(event(&sv, SUPERVISOR_EVENT_HEARTBEAT, 1, 0, base + 2u) == SUPERVISOR_STATE_FRESH);
+    CHECK(supervisor_update(&sv, NULL, base + 50u) == SUPERVISOR_STATE_FAILSAFE);
+    CHECK(supervisor_pop_transition(&sv, &e));
+    CHECK(e.last_hb_mcu_us == base && e.last_inf_mcu_us == base + 1u);
+}
+
 int main(void)
 {
+    test_transition_ring();
     test_sequence_boundaries();
     test_configuration_and_startup();
     test_heartbeat_loss_and_expiry_precedence();
@@ -831,6 +887,6 @@ int main(void)
     test_age_validation_and_saturation();
     test_age_adapter_versions_and_invalid_data();
     test_mcu_timer_wrap_extension();
-    printf("22 supervisor scenarios passed (%u checks, including exhaustive 16-bit increment wrap).\n", checks);
+    printf("23 supervisor scenarios passed (%u checks, including exhaustive 16-bit increment wrap).\n", checks);
     return 0;
 }

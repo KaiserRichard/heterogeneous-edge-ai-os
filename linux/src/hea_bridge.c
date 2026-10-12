@@ -11,6 +11,29 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+/* Echo fields are raw u32. A full event timestamp supplies their boot epoch.
+ * UART observations must remain within half a TIM2 wrap of the echo sample. */
+static void align_mcu_epoch(struct hea_clock_wrap *wrap, struct hea_clock_filter *filter,
+                            uint64_t anchor)
+{
+    if (!wrap->initialized) return;
+    int64_t delta = (int64_t)(uint32_t)anchor - (int64_t)wrap->last_raw;
+    if (delta > INT32_MAX) delta -= INT64_C(4294967296);
+    if (delta < INT32_MIN) delta += INT64_C(4294967296);
+    uint64_t aligned;
+    if (delta >= 0) {
+        if (anchor < (uint64_t)delta) return;
+        aligned = anchor - (uint64_t)delta;
+    } else {
+        if (anchor > UINT64_MAX - (uint64_t)(-delta)) return;
+        aligned = anchor + (uint64_t)(-delta);
+    }
+    double shift = aligned >= wrap->last_extended ? (double)(aligned - wrap->last_extended)
+        : -(double)(wrap->last_extended - aligned);
+    for (size_t i = 0; i < filter->count; ++i) filter->samples[i].offset_us += shift;
+    wrap->last_extended = aligned;
+}
+
 struct pending {
     struct hea_result result;
     uint8_t bytes[HEA_MAX_FRAME];
@@ -68,14 +91,16 @@ int main(int argc, char **argv)
     int serial = hea_serial_get(&o);
     int input = hea_socket_input(&o);
     FILE *csv = hea_csv_open(o.csv_path, "seq,frame_id,t_input_ns,t_done_ns,t_send_ns");
-    FILE *status = hea_csv_open(o.status_csv ? o.status_csv : "mcu_status.csv", "seq,version,t_rx_pi_ns,mcu_us,state,missed_heartbeats,rx_crc_errors,diagnostics_present,last_capture_us,capture_count,rx_dropped,uart_errors,queue_dropped,capture_lost");
+    FILE *status = hea_csv_open(o.status_csv ? o.status_csv : "mcu_status.csv", "seq,version,t_rx_pi_ns,mcu_us,state,missed_heartbeats,rx_crc_errors,diagnostics_present,last_capture_us,capture_count,rx_dropped,uart_errors,queue_dropped,capture_lost,clock_fallback,state_event_lost");
     FILE *echo = hea_csv_open(o.echo_csv ? o.echo_csv : "echo.csv", "seq,t1_pi_ns,t2_mcu_us,t3_mcu_us,t4_pi_ns,t2_mcu_extended_us,t3_mcu_extended_us,accepted,reference_pi_us,offset_us,delay_us,drift_ppm,rms_residual_us,sample_count,mapping_offset_us,mapping_drift,t1_mcu_est_us,t2_pi_est_us,t3_pi_est_us,t4_mcu_est_us");
+    FILE *events = hea_csv_open(o.state_events_csv ? o.state_events_csv : "state_events.csv", "seq,t_rx_pi_ns,mcu_us,old,new,reason,last_hb_mcu_us,last_inf_mcu_us,lost_count,t_mcu_pi_est_ns");
     struct hea_parser parser; hea_parser_init(&parser);
     struct hea_clock_wrap wrap = {0};
     struct hea_clock_estimate storage[60];
     struct hea_clock_filter filter;
     (void)hea_clock_filter_init(&filter, storage, 60, UINT64_C(60000000));
-    uint64_t outstanding = 0;
+    uint64_t outstanding = 0, mcu_anchor_us = 0;
+    int have_mcu_anchor = 0;
     if (hea_schedule(&o)) { close(input); hea_socket_cleanup(&o); return 1; }
     struct hea_queue q; hea_queue_init(&q, o.latest);
     struct pending p; memset(&p, 0, sizeof(p));
@@ -114,15 +139,42 @@ int main(int argc, char **argv)
                     if (ext) fprintf(status, "%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32,
                         x.last_capture_us, x.capture_count, x.rx_dropped, x.uart_errors, x.queue_dropped, x.capture_lost);
                     else fprintf(status, ",,,,,");
+                    if (ext && f->len == 38) fprintf(status, ",%u,%" PRIu32, x.clock_fallback, x.state_event_lost);
+                    else fprintf(status, ",,");
                     fprintf(status, "\n");
                     if (ferror(status)) hea_fatal("status CSV");
+                } else if (f->type == HEA_MSG_STATE_EVENT) {
+                    struct hea_state_event e;
+                    if (hea_unpack_state_event(f, &e)) { ++malformed; continue; }
+                    mcu_anchor_us = e.mcu_us; have_mcu_anchor = 1;
+                    align_mcu_epoch(&wrap, &filter, mcu_anchor_us);
+                    fprintf(events, "%u,%" PRIu64 ",%" PRIu64 ",%u,%u,%u,%" PRIu64 ",%" PRIu64 ",%" PRIu32 ",",
+                        f->seq, t4, e.mcu_us, e.old_state, e.new_state, e.reason,
+                        e.last_hb_mcu_us, e.last_inf_mcu_us, e.lost_count);
+                    struct hea_clock_estimate best;
+                    if (!hea_clock_filter_min(&filter, &best)) {
+                        struct hea_clock_fit fit;
+                        double offset = best.offset_us, drift = 0.0;
+                        if (!hea_clock_fit(&filter, best.reference_pi_us, &fit)) {
+                            offset = fit.offset_us; drift = fit.drift;
+                        }
+                        long double slope = 1.0L + (long double)drift;
+                        long double ref = (long double)best.reference_pi_us;
+                        if (slope > 0.0L) fprintf(events, "%.3Lf",
+                            (ref + ((long double)e.mcu_us - ref - (long double)offset) / slope) * 1000.0L);
+                    }
+                    fprintf(events, "\n");
+                    if (ferror(events)) hea_fatal("state event CSV");
                 } else if (f->type == HEA_MSG_ECHO_RESP) {
                     struct hea_echo_resp e;
                     if (hea_unpack_echo_resp(f, &e)) { ++malformed; continue; }
                     uint64_t t2 = 0, t3 = 0;
                     int accepted = 0;
                     struct hea_clock_wrap candidate = wrap;
-                    if (!candidate.initialized) hea_clock_wrap_init(&candidate, e.mcu_rx_us);
+                    if (!candidate.initialized) {
+                        hea_clock_wrap_init(&candidate, e.mcu_rx_us);
+                        if (have_mcu_anchor) align_mcu_epoch(&candidate, &filter, mcu_anchor_us);
+                    }
                     if (outstanding && e.linux_t1_ns == outstanding &&
                         !hea_clock_wrap_extend(&candidate, e.mcu_rx_us, &t2) &&
                         !hea_clock_wrap_extend(&candidate, e.mcu_tx_us, &t3)) {
@@ -217,7 +269,7 @@ int main(int argc, char **argv)
             session, received, sent, heartbeats, q.overwritten, q.dropped, malformed,
             q.count + (size_t)(p.active && !p.heartbeat && !p.echo));
     close(input); close(serial); hea_socket_cleanup(&o);
-    if (fclose(status) || fclose(echo)) hea_fatal("close receive CSV");
+    if (fclose(status) || fclose(echo) || fclose(events)) hea_fatal("close receive CSV");
     if (fclose(csv)) hea_fatal("close bridge CSV");
     return 0;
 }

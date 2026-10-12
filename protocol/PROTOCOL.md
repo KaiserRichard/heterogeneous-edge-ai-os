@@ -1,7 +1,9 @@
 # UART Protocol v3 (v1/v2 decoding)
 
-Status: v3 session extension and v2 age-at-send extension, software-tested (`make -C protocol test`). Not yet run on the STM32 or over a real UART.
-This fills the framing/integrity TBD in `PROJECT.md` section 5.3; it can still change before firmware work starts.
+Status: software-tested (`make -C protocol test`). User-reported `hw_smoke1` validated
+the previous full-duplex link (322 status frames, zero CRC errors). The new
+STATE_EVENT and clock diagnostics are **UNVERIFIED ON HARDWARE**. This protocol
+serves the communication and deadline experiments in `PROJECT.md` section 5.3.
 
 ## Frame
 
@@ -35,6 +37,7 @@ encoding step that hides less of the OS-level behaviour we want to observe.
 | `0x03` ECHO_REQ | Pi to STM32 | `linux_t1_ns` u64 | Round-trip time and clock-offset estimation. |
 | `0x83` ECHO_RESP | STM32 to Pi | `linux_t1_ns` u64 (T1), `mcu_rx_us` u32 (T2), `mcu_tx_us` u32 (T3) | Linux adds T4 on receipt; offset and delay per RFC 4330 section 5 (see `docs/research/R8.md`). |
 | `0x84` MCU_STATUS | STM32 to Pi | `mcu_us` u32, `state` u8, `missed_heartbeats` u16, `rx_crc_errors` u16 | Supervisor state (INIT / FRESH / HOLD / FAILSAFE), matching the supervisor state machine. |
+| `0x85` STATE_EVENT | STM32 to Pi | 31 bytes: extended MCU time, old/new state, reason, last heartbeat/inference receipt times, losses (layout below) | Optional v3 event timing for E4. |
 
 Pi timestamp fields and the age-at-send calculation must use the same Pi monotonic
 clock (the planned sender uses `CLOCK_MONOTONIC_RAW`). `mcu_*_us` fields belong to the
@@ -159,7 +162,7 @@ input stream, not a byte-signedness or platform-specific parser defect.
 ## Optional firmware diagnostics in v3 MCU_STATUS
 
 **UNVERIFIED ON HARDWARE.** To observe ISR/queue contention and validate GPIO clock
-capture, v3 status may contain exactly 33 bytes instead of nine. The first nine
+capture, v3 status may contain 33 or 38 bytes instead of nine. The first nine
 bytes retain the base layout. Six little-endian u32 fields follow:
 
 | Offset | Field | Meaning |
@@ -173,9 +176,66 @@ bytes retain the base layout. Six little-endian u32 fields follow:
 
 `hea_pack_mcu_status` still emits nine bytes. Firmware uses the explicit
 `hea_pack_mcu_status_extended` API. The base decoder accepts nine bytes for v1/v2/v3
-and 33 bytes for v3; the extended decoder accepts only v3/33. All other lengths and
+and 33/38 bytes for v3; the extended decoder accepts v3/33 or v3/38.
+The current extended packer emits 38 bytes. For a 33-byte payload, the new
+fields decode as zero; use the payload length to distinguish absent diagnostics. All other lengths and
 versions are rejected. Existing strict nine-byte receivers must be updated before
 using this firmware. This is an optional v3 diagnostic payload, not a change to
 HEARTBEAT/INFERENCE/ECHO or their sequencing. Base counters in the firmware mean
 heartbeat-timeout latch transitions and saturated parser CRC failures. Tests cover
 wire round-trip, field byte order, every payload length, versions and wrong types.
+
+The 38-byte status appends `clock_fallback` (u8, offset 33: 1 when HSE was
+requested but failed its startup timeout, 0 for HSE success or deliberate HSI)
+and `state_event_lost` (u32 LE, offset 34). The latter reports saturating event-ring
+overflow even if no subsequent transition occurs. Older strict 33-byte status
+decoders need updating; base nine-byte packing remains unchanged.
+
+## Optional v3 STATE_EVENT (0x85, MCU → Pi)
+
+**UNVERIFIED ON HARDWARE.** This new optional type leaves protocol version 3 and
+all existing control-message layouts unchanged. Older receivers may skip the
+unknown type after normal framing/CRC validation. Payload is exactly 31 bytes
+(40 bytes including framing), little-endian, without alignment padding:
+
+| Offset | Type | Field |
+|---:|---|---|
+| 0 | u64 | mcu_us: extended TIM2 timestamp of state evaluation/change |
+| 8 | u8 | old_state |
+| 9 | u8 | new_state |
+| 10 | u8 | reason |
+| 11 | u64 | last_hb_mcu_us: last accepted heartbeat's receipt timestamp |
+| 19 | u64 | last_inf_mcu_us: last accepted inference's receipt timestamp |
+| 27 | u32 | lost_count: saturating cumulative event-ring losses at dequeue |
+
+State values retain INIT=0, FRESH=1, HOLD=2, FAILSAFE=3. Reasons follow the
+supervisor enum: NONE=0, READY=1, RESULT_SILENCE=2, HEARTBEAT_TIMEOUT=3,
+RESULT_TIMEOUT=4, REARM=5, CLOCK_REGRESSION=6, SESSION_CHANGE=7,
+INVALID_CONFIG=8, SOURCE_AGE_HOLD=9, SOURCE_AGE_TIMEOUT=10.
+`UINT64_MAX` means no frame of that kind has ever been accepted since core
+initialization; zero is a valid timestamp. These snapshots retain the most recent
+accepted receipt even across session/rearm health resets, and rejected frames do
+not change them. Every actual state change is recorded; initial setup is not a
+transition. A single update can emit multiple events, even at the same timestamp.
+
+The supervisor owner records transitions in a static 16-entry FIFO ring without
+blocking. The supervisor notifies the sole status/TX task when events are pending; TX
+drains them on wakeup (also polls every tick), ahead of echoes and periodic status. Events do not wait for the 100 ms status period and no ISR transmits them.
+No finite queue guarantees losslessness under unlimited traffic: on overflow the
+new event is dropped, existing event order is retained, and the loss counter
+saturates. Frame `seq` uses the existing shared MCU TX sequence across all types;
+a sequence gap alone does not indicate an event loss. TIM2 is extended across its
+32-bit wraps, sampled every supervisor release. Timestamp precision is nominally
+1 us, but actual decision latency still includes the supervisor's 1 ms release
+period and execution time; this is not a physical GPIO edge timestamp.
+
+The bridge logs `state_events.csv` (override `--state-events-csv PATH`):
+`seq,t_rx_pi_ns,mcu_us,old,new,reason,last_hb_mcu_us,last_inf_mcu_us,lost_count,t_mcu_pi_est_ns`.
+The last field is the affine inverse of the current echo clock fit (minimum-delay
+offset until a drift fit is available), in Pi CLOCK_MONOTONIC_RAW nanoseconds.
+It is blank before an estimator exists; RX time is logged separately. For reference
+Pi time R, offset O and drift D, mapped time is
+`1000 * (R + (mcu_us - R - O)/(1 + D))`. Extended event timestamps align the
+raw echo clock's boot epoch, including when capture starts after a timer wrap;
+observations must remain within half a timer wrap of the last echo sample. Mapping
+is an estimate with UART/scheduling uncertainty, not a measured common clock.

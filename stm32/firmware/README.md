@@ -1,7 +1,11 @@
 # Nucleo-F446RE FreeRTOS firmware
 
-**UNVERIFIED ON HARDWARE.** Cross-compilation and host tests only; no flashing,
-UART, scheduling latency, timer rate, pin mapping, or fault response measured yet.
+**UNVERIFIED ON HARDWARE:** the clock/event changes described here require a new
+hardware run. User-reported `hw_smoke1` measured full-duplex USART1 at 921600:
+322 status frames, zero CRC errors, FRESH held, then HOLD/FAILSAFE after stopping
+the bridge. HSI time ran fast (31 echoes: slope 1.01884, residual RMS about 1.08 ms;
+100.004 ms MCU status intervals per 98.19 ms Pi). Those observations describe the
+previous firmware, not validation of these changes.
 
 From the repository root on macOS:
 
@@ -31,7 +35,8 @@ startup, enables the FPU before C, and maps the FreeRTOS exception handlers.
 Build options (command-line changes automatically rebuild objects):
 
 ```sh
-make -C stm32 firmware UART_BAUD=921600 DEBUG_VCP=0 BRINGUP_BLINK=0
+make -C stm32 firmware CLOCK_SOURCE=HSE UART_BAUD=921600 DEBUG_VCP=0 BRINGUP_BLINK=0
+make -C stm32 firmware CLOCK_SOURCE=HSI # deliberate fallback profile
 make -C stm32 firmware DEBUG_VCP=1 BRINGUP_BLINK=1
 ```
 
@@ -44,18 +49,33 @@ need measurement under traffic and nested interrupts.
 
 Clock and timing decisions:
 
-- HSI nominal 16 MHz, PLL M=16/N=336/P=4 gives 84 MHz core/AHB/APB2. APB1 is
-  42 MHz, TIM2 gets 84 MHz. This avoids ST-LINK MCO/solder-bridge dependency and
-  demonstrates independent clock drift. HSI tolerance/temperature error remains
-  in both baud and timebase; this is not a precision microsecond calibration.
+- Default `CLOCK_SOURCE=HSE`: 8 MHz ST-LINK MCO enters PH0/OSC_IN in HSE bypass
+  mode, PLL M=8/N=336/P=4. `CLOCK_SOURCE=HSI` uses nominal 16 MHz with M=16 and
+  the same N/P. Both give nominal 84 MHz core/AHB/APB2, 42 MHz APB1 and 84 MHz
+  TIM2 input. TIM2 PSC=83 therefore preserves nominal 1 MHz; USART BRR is derived
+  from the unchanged PCLK. HSE removes the measured HSI drift from E4 timing
+  and improves baud margin while keeping scheduling and deadline configuration.
+- HSE startup waits at most 200000 SysTick HSI/8 cycles (nominal 100 ms; actual
+  duration has HSI tolerance). If not ready, PLL uses HSI and status sets
+  `clock_fallback=1`. Deliberate HSI selection sets no fallback flag. This is a
+  startup fallback, not recovery from loss of MCO after switching to HSE.
+  FreeRTOS reconfigures SysTick when starting the scheduler.
+- [ST UM1724 §6.7](https://www.st.com/resource/en/user_manual/dm00105823.pdf)
+  specifies ST-LINK MCO fixed at 8 MHz: SB54/SB16/SB50 ON, SB55 OFF, R35/R37
+  removed. MB1136 C-02 and later default to MCO; C-01 defaults to no HSE. Check
+  the actual board revision/routing and keep ST-LINK powered; no UART pin changes.
 - Flash uses two wait states at the board's 3.3 V supply, per
   [ST RM0390](https://www.st.com/resource/en/reference_manual/dm00135183.pdf).
 - FreeRTOS owns SysTick at 1 kHz; TIM2 PSC=83/ARR=0xffffffff gives nominal 1 MHz.
   Raw timer wraps every 4294.967296 s. A critical-section-protected extended clock
   is sampled by the supervisor every millisecond; ambiguous deltas fail closed.
 - USART1 is 8N1, no flow control, oversampling 16. At 84 MHz and requested 921600,
-  BRR=91, calculated baud=923076.923, error **+0.16026%**, excluding HSI error.
-  `UART_BAUD` selects rounded BRR. USART2 debug at 115200 uses BRR=365 at 42 MHz:
+  BRR=91, calculated baud=923076.923, error **+0.16026%** for both clock sources
+  before oscillator error. HSE total error is this divider error plus MCO accuracy
+  (not measured here). With the `hw_smoke1` HSI slope 1.01884, inferred baud is
+  940467.692 (**+2.04728%** relative to 921600); this is inferred from timer drift,
+  not directly measured UART bit timing. HSI fallback retains that risk and its
+  oscillator/temperature variation. `UART_BAUD` selects rounded BRR. USART2 debug at 115200 uses BRR=365 at 42 MHz:
   115068.493, **-0.11416%**, excluding HSI error.
 - IRQs USART1 and TIM2 use preemption priority 6; four priority bits, grouping 3,
   syscall ceiling 5 (0x50), SysTick/PendSV 15. Both use `FromISR` APIs and yield.
@@ -66,7 +86,7 @@ Ownership and scheduling support the OS experiments:
 |---|---:|---|
 | supervisor | 3 | Absolute 1 ms releases; periodic update even without traffic; at most eight queued frames/release; sole supervisor owner; output update |
 | rx | 2 | ISR stream records to `hea_parser`; CRC-valid frames queued with receipt time and generation; valid echo requests queued for reply |
-| status_tx | 1 | Sole USART1 transmitter; checks every tick, one echo per iteration, status every 100 ms; drains bounded capture queue |
+| status_tx | 1 | Sole USART1 transmitter; checks every tick, one echo per iteration, transition ring every tick, status every 100 ms; drains bounded capture queue |
 
 The byte stream holds 256 fixed-size timestamped byte records (2 KiB). T2 is the
 TIM2 sample at final CRC-byte RXNE handling, before task/queue delay. RX reconstructs
@@ -87,10 +107,10 @@ edges on PA0 are captured by hardware, queued by the ISR, and reported in status
 Overcapture and queue loss share a counter. Match GPIO pulses slowly enough to avoid
 losing correspondence (start at 1 Hz); status reports only the latest retained edge.
 
-MCU_STATUS uses the optional 33-byte v3 extension documented in
+MCU_STATUS uses the optional 38-byte v3 extension documented in
 `protocol/PROTOCOL.md`: normal state/counters plus last capture, capture count,
-RX drops, UART errors, queue drops and capture losses. Update the Pi decoder to this
-shared library before bring-up; older strict nine-byte decoders reject this status.
+RX drops, UART errors, queue drops, capture losses, clock fallback and event losses. Update the Pi decoder to this
+shared library; older strict nine/33-byte decoders reject this status.
 No heartbeat, inference, echo, sequence, or supervisor policy format changes.
 `missed_heartbeats` counts transitions into heartbeat-timeout FAILSAFE, not the
 number of absent 20 ms packets. Queue drops aggregate frame and echo queue failures.
@@ -192,3 +212,25 @@ Compile-only validation (macOS, Arm GNU Toolchain 14.2.Rel1 / GCC 14.2.1):
   ELF attributes checked. No heap allocator linked. Shell wrappers pass `sh -n`.
 
 These checks establish build/interface consistency only: **UNVERIFIED ON HARDWARE**.
+
+Each core state change records a 64-bit TIM2 timestamp, reason and last accepted
+heartbeat/inference receipt timestamps in a 16-entry static ring. Recording inside
+the transition function preserves multiple changes within one supervisor update.
+The supervisor notifies the status/TX owner, which drains it on wakeup
+(and polls every tick) using optional v3 STATE_EVENT, independent
+of 10 Hz status. Overflow drops the newest event and increments a saturating loss
+counter in events/status. This instrumentation serves E4 deadline/fault latency
+measurement without changing task priorities, ISR work or supervisor policy.
+See `protocol/PROTOCOL.md` for the wire layout and Pi mapped-time CSV semantics.
+
+Local validation for this change: protocol/clock-sync and supervisor tests passed
+under ASan/UBSan with both signed and unsigned char; Linux programs and PTY pipeline
+(including fake-MCU event/status logging and estimator wrap alignment) passed with
+warnings treated as errors. Python host suite: 34 tests, 3 environment/platform
+skips; summary tests: 6 passed. Named Unix socket bind is denied in this sandbox;
+the C pipeline used socketpair and Linux-only checks were skipped on macOS.
+Both HSE and HSI firmware profiles cross-compiled with zero warnings. Default HSE
+image: text 11996 B, data 4 B, bss 11332 B: **12000 B flash**, **11336 B static RAM**
+(includes task stacks/queues), plus **2048 B reserved MSP** (13384 B RAM budget).
+HSI image: 11872 B flash, same RAM. Timer accuracy, HSE timeout/fallback, event TX
+latency and GPIO correspondence remain **UNVERIFIED ON HARDWARE**.

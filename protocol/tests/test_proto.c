@@ -334,11 +334,11 @@ static void test_random_noise_recovers(void)
 static void test_status_extension(void)
 {
     struct hea_mcu_status_extended in = {{123, HEA_MCU_HOLD, 4, 5},
-        UINT32_C(0x12345678), 7, 8, 9, 10, UINT32_MAX}, out;
+        UINT32_C(0x12345678), 7, 8, 9, 10, UINT32_MAX, 1, 17}, out;
     struct hea_mcu_status base;
     uint8_t payload[HEA_MAX_PAYLOAD], wire[HEA_MAX_FRAME];
     uint8_t len = hea_pack_mcu_status_extended(&in, payload);
-    CHECK(len == 33 && payload[9] == 0x78 && payload[12] == 0x12);
+    CHECK(len == 38 && payload[9] == 0x78 && payload[12] == 0x12);
     struct hea_parser p;
     struct hea_frame f;
     hea_parser_init(&p);
@@ -349,13 +349,16 @@ static void test_status_extension(void)
     CHECK(out.base.mcu_us == 123 && out.base.missed_heartbeats == 4 && out.base.rx_crc_errors == 5);
     CHECK(out.last_capture_us == in.last_capture_us && out.capture_count == 7);
     CHECK(out.rx_dropped == 8 && out.uart_errors == 9 && out.queue_dropped == 10);
-    CHECK(out.capture_lost == UINT32_MAX);
+    CHECK(out.capture_lost == UINT32_MAX && out.clock_fallback == 1 && out.state_event_lost == 17);
+    f.len = 33;
+    CHECK(hea_unpack_mcu_status_extended(&f, &out) == 0);
+    CHECK(out.clock_fallback == 0 && out.state_event_lost == 0);
     for (unsigned length = 0; length <= HEA_MAX_PAYLOAD; ++length) {
         f.len = (uint8_t)length;
-        CHECK((hea_unpack_mcu_status(&f, &base) == 0) == (length == 9 || length == 33));
-        CHECK((hea_unpack_mcu_status_extended(&f, &out) == 0) == (length == 33));
+        CHECK((hea_unpack_mcu_status(&f, &base) == 0) == (length == 9 || length == 33 || length == 38));
+        CHECK((hea_unpack_mcu_status_extended(&f, &out) == 0) == (length == 33 || length == 38));
     }
-    f.len = 33;
+    f.len = 38;
     for (uint8_t version = 1; version <= 4; ++version) {
         f.version = version;
         CHECK((hea_unpack_mcu_status(&f, &base) == 0) == (version == 3));
@@ -367,8 +370,40 @@ static void test_status_extension(void)
     CHECK(hea_pack_mcu_status(&in.base, payload) == 9);
 }
 
+static void test_state_event(void)
+{
+    struct hea_state_event in = {UINT64_C(0x1122334455667788), 1, 2, 9,
+        UINT64_MAX, UINT64_C(0x100000001), UINT32_MAX}, out;
+    struct hea_frame f = {0};
+    f.version = 3; f.type = HEA_MSG_STATE_EVENT;
+    f.len = hea_pack_state_event(&in, f.payload);
+    CHECK(f.len == 31 && f.payload[0] == 0x88 && f.payload[7] == 0x11);
+    CHECK(f.payload[8] == 1 && f.payload[9] == 2 && f.payload[10] == 9);
+    CHECK(f.payload[19] == 1 && f.payload[23] == 1 && f.payload[27] == 0xff);
+    uint8_t wire[HEA_MAX_FRAME];
+    struct hea_parser p; hea_parser_init(&p);
+    size_t n = hea_encode(f.type, UINT16_MAX, f.payload, f.len, wire, sizeof wire);
+    CHECK(feed_all(&p, wire, n, &f) == 1 && f.seq == UINT16_MAX);
+    CHECK(hea_unpack_state_event(&f, &out) == 0);
+    CHECK(out.mcu_us == in.mcu_us && out.old_state == 1 && out.new_state == 2 && out.reason == 9);
+    CHECK(out.last_hb_mcu_us == UINT64_MAX && out.last_inf_mcu_us == in.last_inf_mcu_us);
+    CHECK(out.lost_count == UINT32_MAX);
+    for (unsigned len = 0; len <= HEA_MAX_PAYLOAD; ++len) {
+        f.len = (uint8_t)len;
+        CHECK((hea_unpack_state_event(&f, &out) == 0) == (len == 31));
+    }
+    f.len = 31;
+    for (uint8_t version = 1; version <= 4; ++version) {
+        f.version = version;
+        CHECK((hea_unpack_state_event(&f, &out) == 0) == (version == 3));
+    }
+    f.version = 3; f.type = HEA_MSG_MCU_STATUS;
+    CHECK(hea_unpack_state_event(&f, &out) == -1);
+}
+
 int main(void)
 {
+    test_state_event();
     test_status_extension();
     test_crc_known_vector();
     test_roundtrip_all_types();

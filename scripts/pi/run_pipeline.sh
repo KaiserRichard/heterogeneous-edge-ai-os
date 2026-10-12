@@ -189,7 +189,7 @@ launch hea_rx --serial "$ipc_dir/rx" --baud "$baud" --csv "$run/rx.csv" > "$run/
 rx_pid=$launched_pid
 wait_ready "$run/rx.csv" "$rx_pid" file
 fi
-launch hea_bridge --serial "$serial" --baud "$baud" --socket "$ipc_dir/bridge.sock" --csv "$run/bridge.csv" --status-csv "$run/mcu_status.csv" --echo-csv "$run/echo.csv" --echo-ms "$echo_ms" --policy "$policy" --heartbeat-ms "$heartbeat_ms" "${bridge_options[@]}" > "$run/bridge.stdout.log" 2> "$run/bridge.stderr.log"
+launch hea_bridge --serial "$serial" --baud "$baud" --socket "$ipc_dir/bridge.sock" --csv "$run/bridge.csv" --status-csv "$run/mcu_status.csv" --echo-csv "$run/echo.csv" --state-events-csv "$run/state_events.csv" --echo-ms "$echo_ms" --policy "$policy" --heartbeat-ms "$heartbeat_ms" "${bridge_options[@]}" > "$run/bridge.stdout.log" 2> "$run/bridge.stderr.log"
 bridge_pid=$launched_pid
 printf '%s\n' "$bridge_pid" > "$run/bridge.pid"
 if [[ -n "$sync_gpio" ]]; then

@@ -269,7 +269,7 @@ uint8_t hea_pack_mcu_status(const struct hea_mcu_status *m, uint8_t *b)
 int hea_unpack_mcu_status(const struct hea_frame *f, struct hea_mcu_status *m)
 {
     if (check(f, HEA_MSG_MCU_STATUS, 9) &&
-        !(f->version == HEA_PROTO_VERSION && !check(f, HEA_MSG_MCU_STATUS, 33)))
+        !(f->version == HEA_PROTO_VERSION && (!check(f, HEA_MSG_MCU_STATUS, 33) || !check(f, HEA_MSG_MCU_STATUS, 38))))
         return -1;
     m->mcu_us = get_u32(&f->payload[0]);
     m->state = f->payload[4];
@@ -287,12 +287,14 @@ uint8_t hea_pack_mcu_status_extended(const struct hea_mcu_status_extended *m, ui
     put_u32(b + 21, m->uart_errors);
     put_u32(b + 25, m->queue_dropped);
     put_u32(b + 29, m->capture_lost);
-    return 33;
+    b[33] = m->clock_fallback;
+    put_u32(b + 34, m->state_event_lost);
+    return 38;
 }
 
 int hea_unpack_mcu_status_extended(const struct hea_frame *f, struct hea_mcu_status_extended *m)
 {
-    if (f->version != HEA_PROTO_VERSION || check(f, HEA_MSG_MCU_STATUS, 33))
+    if (f->version != HEA_PROTO_VERSION || (check(f, HEA_MSG_MCU_STATUS, 33) && check(f, HEA_MSG_MCU_STATUS, 38)))
         return -1;
     hea_unpack_mcu_status(f, &m->base);
     m->last_capture_us = get_u32(f->payload + 9);
@@ -301,5 +303,28 @@ int hea_unpack_mcu_status_extended(const struct hea_frame *f, struct hea_mcu_sta
     m->uart_errors = get_u32(f->payload + 21);
     m->queue_dropped = get_u32(f->payload + 25);
     m->capture_lost = get_u32(f->payload + 29);
+    m->clock_fallback = f->len == 38 ? f->payload[33] : 0;
+    m->state_event_lost = f->len == 38 ? get_u32(f->payload + 34) : 0;
+    return 0;
+}
+
+uint8_t hea_pack_state_event(const struct hea_state_event *m, uint8_t *b)
+{
+    put_u64(b, m->mcu_us);
+    b[8] = m->old_state; b[9] = m->new_state; b[10] = m->reason;
+    put_u64(b + 11, m->last_hb_mcu_us);
+    put_u64(b + 19, m->last_inf_mcu_us);
+    put_u32(b + 27, m->lost_count);
+    return 31;
+}
+
+int hea_unpack_state_event(const struct hea_frame *f, struct hea_state_event *m)
+{
+    if (f->version != HEA_PROTO_VERSION || check(f, HEA_MSG_STATE_EVENT, 31)) return -1;
+    m->mcu_us = get_u64(f->payload);
+    m->old_state = f->payload[8]; m->new_state = f->payload[9]; m->reason = f->payload[10];
+    m->last_hb_mcu_us = get_u64(f->payload + 11);
+    m->last_inf_mcu_us = get_u64(f->payload + 19);
+    m->lost_count = get_u32(f->payload + 27);
     return 0;
 }

@@ -207,4 +207,13 @@ UNKNOWN: Ubuntu aarch64 execution, Linux real-time permission/affinity behavior,
 the Pi runner, physical UART throughput and STM32 timing until run on those
 targets. No Pi benchmark numbers are supplied by this implementation ticket.
 
-Real UART and E4 commands: see [scripts/pi/UART.md](../scripts/pi/UART.md). Physical UART, GPIO pairing and faults are UNVERIFIED ON HARDWARE. Bridge options `--echo-ms`, `--status-csv`, `--echo-csv` control periodic sync and receive logs.
+Real UART and E4 commands: see [scripts/pi/UART.md](../scripts/pi/UART.md). Physical UART, GPIO pairing and faults are UNVERIFIED ON HARDWARE. Bridge options `--echo-ms`, `--status-csv`, `--echo-csv`, `--state-events-csv` control periodic sync and receive logs.
+
+The bridge writes optional v3 transition frames to `state_events.csv`, including
+extended MCU decision and last accepted receipt timestamps, reason, cumulative
+ring loss and `t_mcu_pi_est_ns`. The mapped Pi timestamp uses the current echo
+estimator and is blank before a sample is available. `--state-events-csv PATH`
+selects the destination; `run_pipeline.sh` puts it in the experiment run directory.
+MCU status also includes `clock_fallback` and `state_event_lost` for the new
+38-byte diagnostic layout; older nine/33-byte status still decodes. Clock/events
+from the updated firmware are **UNVERIFIED ON HARDWARE**.

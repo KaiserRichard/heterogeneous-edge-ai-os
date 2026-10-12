@@ -6,11 +6,19 @@ CC := $(CROSS_COMPILE)gcc
 OBJCOPY := $(CROSS_COMPILE)objcopy
 SIZE := $(CROSS_COMPILE)size
 BUILD := build
+CLOCK_SOURCE ?= HSE
+ifeq ($(CLOCK_SOURCE),HSE)
+CLOCK_HSE := 1
+else ifeq ($(CLOCK_SOURCE),HSI)
+CLOCK_HSE := 0
+else
+$(error CLOCK_SOURCE must be HSE or HSI)
+endif
 UART_BAUD ?= 921600
 DEBUG_VCP ?= 0
 BRINGUP_BLINK ?= 0
 ARCH := -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
-CPPFLAGS := -I. -I../include -I../../protocol/include -I$(REF_BOARD)/src -I$(KERNEL)/include -I$(KERNEL)/portable/GCC/ARM_CM4F -DUART_BAUD=$(UART_BAUD) -DDEBUG_VCP=$(DEBUG_VCP) -DBRINGUP_BLINK=$(BRINGUP_BLINK)
+CPPFLAGS := -I. -I../include -I../../protocol/include -I$(REF_BOARD)/src -I$(KERNEL)/include -I$(KERNEL)/portable/GCC/ARM_CM4F -DCLOCK_HSE=$(CLOCK_HSE) -DUART_BAUD=$(UART_BAUD) -DDEBUG_VCP=$(DEBUG_VCP) -DBRINGUP_BLINK=$(BRINGUP_BLINK)
 CFLAGS := $(ARCH) -std=c11 -Os -g3 -Wall -Wextra -Werror -ffunction-sections -fdata-sections -fno-common -MMD -MP
 SOURCES := main.c ../src/supervisor.c ../src/supervisor_protocol.c ../../protocol/src/hea_proto.c $(KERNEL)/tasks.c $(KERNEL)/queue.c $(KERNEL)/list.c $(KERNEL)/stream_buffer.c $(KERNEL)/portable/GCC/ARM_CM4F/port.c
 OBJECTS := $(addprefix $(BUILD)/,$(notdir $(SOURCES:.c=.o))) $(BUILD)/startup.o

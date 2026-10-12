@@ -13,7 +13,10 @@
 #ifndef UART_BAUD
 #define UART_BAUD 921600u
 #endif
-#define UART_BRR ((84000000u + UART_BAUD / 2u) / UART_BAUD)
+#define SYSCLK_HZ 84000000u
+#define PCLK1_HZ (SYSCLK_HZ / 2u)
+#define PCLK2_HZ SYSCLK_HZ
+#define UART_BRR ((PCLK2_HZ + UART_BAUD / 2u) / UART_BAUD)
 _Static_assert(UART_BRR >= 16u && UART_BRR <= 65535u, "USART1 baud out of range");
 
 /* Per-byte ISR timestamp keeps final-CRC-byte receipt independent of RX backlog.
@@ -38,6 +41,8 @@ static uint32_t queue_dropped;
 static uint16_t missed_heartbeats;
 static supervisor_state_t published_state;
 static uint16_t tx_seq;
+static TaskHandle_t status_handle;
+static uint8_t clock_fallback;
 
 static void increment(volatile uint32_t *counter)
 {
@@ -94,7 +99,7 @@ static void board_init(void)
     output(SUPERVISOR_STATE_INIT);
     GPIOA->MODER = (GPIOA->MODER & ~(3u << 10)) | (1u << 10);
     GPIOB->MODER = (GPIOB->MODER & ~(3u << 10)) | (1u << 10);
-    /* Reset HSI 16 MHz -> PLL M=16 N=336 P=4 -> 84 MHz.
+    /* HSE bypass 8 MHz: M=8; HSI 16 MHz: M=16. N=336/P=4 in both.
      * APB1 /2 = 42 MHz, timer clock doubles to 84 MHz; APB2 /1. */
     RCC->CR |= 1u;
     while (!(RCC->CR & 2u)) { }
@@ -105,7 +110,26 @@ static void board_init(void)
     RCC->APB1ENR |= 1u << 28;
     PWR->CR |= 3u << 14; /* voltage scale 1 */
     REG32(FLASHINTR_BASEADDR) = 2u | (7u << 8); /* 2 WS at 3.3 V, caches/prefetch */
-    RCC->PLLCFGR = 16u | (336u << 6) | (1u << 16) | (7u << 24);
+    uint32_t pll_source = 16u;
+#if CLOCK_HSE
+    /* SysTick at reset HSI/8 (2 MHz): bounded 100 ms startup timeout.
+     * FreeRTOS configures SysTick afresh when the scheduler starts. */
+    RCC->CR &= ~(1u << 16);
+    RCC->CR |= 1u << 18; /* HSEBYP: ST-LINK MCO on PH0/OSC_IN */
+    REG32(0xe000e014u) = 200000u - 1u;
+    REG32(0xe000e018u) = 0;
+    REG32(0xe000e010u) = 1u; /* enable, no interrupt, HCLK/8 */
+    RCC->CR |= 1u << 16;
+    while (!(RCC->CR & (1u << 17)) && !(REG32(0xe000e010u) & (1u << 16))) { }
+    REG32(0xe000e010u) = 0;
+    REG32(0xe000e018u) = 0;
+    if (RCC->CR & (1u << 17)) pll_source = 8u | (1u << 22);
+    else {
+        clock_fallback = 1;
+        RCC->CR &= ~(1u << 16);
+    }
+#endif
+    RCC->PLLCFGR = pll_source | (336u << 6) | (1u << 16) | (7u << 24);
     RCC->CFGR = 4u << 10;
     RCC->CR |= 1u << 24;
     while (!(RCC->CR & (1u << 25))) { }
@@ -118,7 +142,7 @@ static void board_init(void)
     (void)RCC->APB2ENR;
     alternate(GPIOA, 0, 1);
     GPIOA->PUPDR = (GPIOA->PUPDR & ~3u) | 2u; /* sync idle low */
-    TIM2->PSC = 83u;
+    TIM2->PSC = SYSCLK_HZ / 1000000u - 1u;
     TIM2->ARR = UINT32_MAX;
     TIM2->CCMR1 = 1u; /* CC1 mapped directly to TI1, no filter */
     TIM2->CCER = 1u; /* rising edge */
@@ -135,7 +159,7 @@ static void board_init(void)
     RCC->APB1ENR |= 1u << 17;
     (void)RCC->APB1ENR;
     alternate(GPIOA, 2, 7); alternate(GPIOA, 3, 7);
-    USART2->BRR = (42000000u + 57600u) / 115200u;
+    USART2->BRR = (PCLK1_HZ + 57600u) / 115200u;
     USART2->CR1 = (1u << 13) | (1u << 3) | (1u << 2);
     const char *s = "HEA 84MHz UNVERIFIED ON HARDWARE\r\n";
     while (*s) {
@@ -247,6 +271,7 @@ static void supervisor_task(void *argument)
             missed_heartbeats != UINT16_MAX) ++missed_heartbeats;
         published_state = supervisor.state;
         output(published_state);
+        if (supervisor.transition_count != 0u) xTaskNotifyGive(status_handle);
 #if BRINGUP_BLINK
         /* Diagnostic image only: PB5 stays safe; PA5 toggles at 1 Hz. */
         GPIOB->BSRR = 1u << 21;
@@ -279,6 +304,17 @@ static void status_task(void *argument)
             increment(&status.capture_count);
         }
         uint8_t payload[HEA_MAX_PAYLOAD];
+        /* Drain events every tick, independent of 10 Hz status; never TX in ISR.
+         * Bounded batch leaves time for echoes/status under sustained transitions. */
+        for (unsigned i = 0; i < SUPERVISOR_TRANSITION_DEPTH; ++i) {
+            struct hea_state_event event;
+            taskENTER_CRITICAL();
+            bool available = supervisor_pop_transition(&supervisor, &event);
+            taskEXIT_CRITICAL();
+            if (!available) break;
+            uint8_t length = hea_pack_state_event(&event, payload);
+            send_frame(HEA_MSG_STATE_EVENT, payload, length);
+        }
         /* Sole TX owner: at most one echo per iteration, bounded status delay. */
         struct hea_echo_resp echo;
         if (xQueueReceive(echoes, &echo, 0) == pdPASS) {
@@ -301,11 +337,13 @@ static void status_task(void *argument)
                                         (uint16_t)parser.stats.crc_errors;
             status.rx_dropped = rx_dropped; status.uart_errors = uart_errors;
             status.queue_dropped = queue_dropped; status.capture_lost = capture_lost;
+            status.clock_fallback = clock_fallback;
+            status.state_event_lost = supervisor.transition_lost;
             taskEXIT_CRITICAL();
             uint8_t length = hea_pack_mcu_status_extended(&status, payload);
             send_frame(HEA_MSG_MCU_STATUS, payload, length);
         }
-        vTaskDelay(1);
+        (void)ulTaskNotifyTake(pdTRUE, 1); /* event wakeup, otherwise one-tick polling */
     }
 }
 int main(void)
@@ -323,7 +361,8 @@ int main(void)
     configASSERT(rx_stream && frames && echoes && captures);
     configASSERT(xTaskCreateStatic(supervisor_task, "supervisor", APP_STACK, NULL, 3, stacks[0], &task_controls[0]));
     configASSERT(xTaskCreateStatic(rx_task, "rx", APP_STACK, NULL, 2, stacks[1], &task_controls[1]));
-    configASSERT(xTaskCreateStatic(status_task, "status_tx", APP_STACK, NULL, 1, stacks[2], &task_controls[2]));
+    status_handle = xTaskCreateStatic(status_task, "status_tx", APP_STACK, NULL, 1, stacks[2], &task_controls[2]);
+    configASSERT(status_handle);
     vTaskStartScheduler();
     firmware_fault();
 }

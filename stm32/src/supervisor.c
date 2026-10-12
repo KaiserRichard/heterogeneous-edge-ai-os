@@ -44,9 +44,18 @@ supervisor_seq_order_t supervisor_seq_compare(uint32_t current, uint32_t last)
 }
 
 static void transition(supervisor_t *sv, supervisor_state_t state,
-                       supervisor_reason_t reason)
+                       supervisor_reason_t reason, uint64_t now)
 {
     if (sv->state != state) {
+        if (sv->transition_count == SUPERVISOR_TRANSITION_DEPTH) {
+            if (sv->transition_lost != UINT32_MAX) ++sv->transition_lost;
+        } else {
+            unsigned tail = (sv->transition_head + sv->transition_count) % SUPERVISOR_TRANSITION_DEPTH;
+            struct hea_state_event *e = &sv->transitions[tail];
+            *e = (struct hea_state_event){now, (uint8_t)sv->state, (uint8_t)state,
+                (uint8_t)reason, sv->accepted_hb_us, sv->accepted_inf_us, sv->transition_lost};
+            ++sv->transition_count;
+        }
         sv->state = state;
         sv->last_transition_reason = reason;
     }
@@ -57,6 +66,8 @@ bool supervisor_init(supervisor_t *sv, const supervisor_config_t *config,
 {
     if (sv == NULL) return false;
     memset(sv, 0, sizeof(*sv));
+    sv->accepted_hb_us = UINT64_MAX;
+    sv->accepted_inf_us = UINT64_MAX;
     sv->state = SUPERVISOR_STATE_FAILSAFE;
     sv->last_transition_reason = SUPERVISOR_REASON_INVALID_CONFIG;
     sv->last_time_ticks = now_ticks;
@@ -88,20 +99,20 @@ static void evaluate(supervisor_t *sv, uint64_t now)
     if (sv->state == SUPERVISOR_STATE_INIT && sv->has_result &&
         !sv->receipt_silence_fallback &&
         result_age(sv, now) >= sv->config.result_failsafe_ticks)
-        transition(sv, SUPERVISOR_STATE_FAILSAFE, SUPERVISOR_REASON_SOURCE_AGE_TIMEOUT);
+        transition(sv, SUPERVISOR_STATE_FAILSAFE, SUPERVISOR_REASON_SOURCE_AGE_TIMEOUT, now);
     if (sv->state == SUPERVISOR_STATE_FRESH ||
         sv->state == SUPERVISOR_STATE_HOLD) {
         if (!hb_ok) {
             transition(sv, SUPERVISOR_STATE_FAILSAFE,
-                       SUPERVISOR_REASON_HEARTBEAT_TIMEOUT);
+                       SUPERVISOR_REASON_HEARTBEAT_TIMEOUT, now);
         } else if (result_age(sv, now) >= sv->config.result_failsafe_ticks) {
             transition(sv, SUPERVISOR_STATE_FAILSAFE,
                        sv->receipt_silence_fallback ? SUPERVISOR_REASON_RESULT_TIMEOUT :
-                       SUPERVISOR_REASON_SOURCE_AGE_TIMEOUT);
+                       SUPERVISOR_REASON_SOURCE_AGE_TIMEOUT, now);
         } else if (result_age(sv, now) >= sv->config.result_hold_ticks) {
             transition(sv, SUPERVISOR_STATE_HOLD,
                        sv->receipt_silence_fallback ? SUPERVISOR_REASON_RESULT_SILENCE :
-                       SUPERVISOR_REASON_SOURCE_AGE_HOLD);
+                       SUPERVISOR_REASON_SOURCE_AGE_HOLD, now);
         }
     }
 }
@@ -142,7 +153,7 @@ static void accept(supervisor_t *sv, const supervisor_event_t *event, uint64_t n
             sv->healthy_interval = false;
             sv->epoch_start_ticks = event->received_at_ticks;
             if (sv->state != SUPERVISOR_STATE_FAILSAFE)
-                transition(sv, SUPERVISOR_STATE_INIT, SUPERVISOR_REASON_SESSION_CHANGE);
+                transition(sv, SUPERVISOR_STATE_INIT, SUPERVISOR_REASON_SESSION_CHANGE, now);
         }
     }
     if (sv->has_wire_seq && supervisor_seq_compare16(event->wire_seq,
@@ -155,6 +166,7 @@ static void accept(supervisor_t *sv, const supervisor_event_t *event, uint64_t n
     if (event->kind == SUPERVISOR_EVENT_HEARTBEAT) {
         sv->has_heartbeat = true;
         sv->last_heartbeat_ticks = event->received_at_ticks;
+        sv->accepted_hb_us = event->received_at_ticks;
     } else if (event->kind == SUPERVISOR_EVENT_RESULT) {
         if (sv->has_input_seq && supervisor_seq_compare(event->input_seq,
             sv->last_input_seq) != SUPERVISOR_SEQ_NEWER) return;
@@ -162,6 +174,7 @@ static void accept(supervisor_t *sv, const supervisor_event_t *event, uint64_t n
         sv->last_input_seq = event->input_seq;
         sv->has_result = true;
         sv->last_result_ticks = event->received_at_ticks;
+        sv->accepted_inf_us = event->received_at_ticks;
         sv->last_age_at_send_us = (uint32_t)event->age_at_send_us;
         sv->receipt_silence_fallback = !event->has_age_at_send;
     }
@@ -174,7 +187,7 @@ supervisor_state_t supervisor_update(supervisor_t *sv,
     if (sv == NULL) return SUPERVISOR_STATE_FAILSAFE;
     if (!sv->configured) return sv->state;
     if (now_ticks < sv->last_time_ticks) {
-        sv->state = SUPERVISOR_STATE_FAILSAFE;
+        transition(sv, SUPERVISOR_STATE_FAILSAFE, SUPERVISOR_REASON_CLOCK_REGRESSION, now_ticks);
         sv->last_transition_reason = SUPERVISOR_REASON_CLOCK_REGRESSION;
         sv->healthy_interval = false;
         return sv->state;
@@ -191,7 +204,7 @@ supervisor_state_t supervisor_update(supervisor_t *sv,
         }
         if (sv->state == SUPERVISOR_STATE_INIT ||
             sv->state == SUPERVISOR_STATE_HOLD) {
-            transition(sv, SUPERVISOR_STATE_FRESH, SUPERVISOR_REASON_READY);
+            transition(sv, SUPERVISOR_STATE_FRESH, SUPERVISOR_REASON_READY, now_ticks);
         }
     }
     return sv->state;
@@ -209,7 +222,7 @@ bool supervisor_rearm(supervisor_t *sv, uint64_t now_ticks)
         now_ticks - sv->healthy_since_ticks < sv->config.rearm_healthy_ticks) {
         return false;
     }
-    transition(sv, SUPERVISOR_STATE_INIT, SUPERVISOR_REASON_REARM);
+    transition(sv, SUPERVISOR_STATE_INIT, SUPERVISOR_REASON_REARM, now_ticks);
     ++sv->generation;
     sv->epoch_start_ticks = now_ticks;
     sv->has_heartbeat = false;
@@ -229,4 +242,15 @@ const char *supervisor_state_to_str(supervisor_state_t state)
     case SUPERVISOR_STATE_FAILSAFE: return "FAILSAFE";
     }
     return "UNKNOWN";
+}
+
+bool supervisor_pop_transition(supervisor_t *sv, struct hea_state_event *out)
+{
+    if (sv == NULL || out == NULL || sv->transition_count == 0u) return false;
+    *out = sv->transitions[sv->transition_head];
+    /* Report cumulative losses through dequeue, including overflow after enqueue. */
+    out->lost_count = sv->transition_lost;
+    sv->transition_head = (sv->transition_head + 1u) % SUPERVISOR_TRANSITION_DEPTH;
+    --sv->transition_count;
+    return true;
 }

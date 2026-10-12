@@ -163,7 +163,7 @@ static void run_case(int full_pipeline)
     }
     char *bridge_args[] = {"build/san/hea_bridge", "--serial", tty,
         connected_ipc ? "--socket-fd" : "--socket", connected_ipc ? result_read : socket_path,
-        "--csv", bridge_csv, "--baud", "115200", "--heartbeat-ms", "5", "--policy", "fifo", "--echo-ms", "0", "--status-csv", "/dev/null", "--echo-csv", "/dev/null", NULL};
+        "--csv", bridge_csv, "--baud", "115200", "--heartbeat-ms", "5", "--policy", "fifo", "--echo-ms", "0", "--status-csv", "/dev/null", "--echo-csv", "/dev/null", "--state-events-csv", "/dev/null", NULL};
     pid_t bridge = launch(bridge_args, master, slave, 0); ready(connected_ipc ? bridge_csv : socket_path);
     if (!full_pipeline) {
         int sender = connected_ipc ? result_pair[0] : hea_socket_sender();
@@ -211,15 +211,15 @@ static void fake_mcu(void)
     assert(!hea_serial_configure(slave, 115200));
     assert(!socketpair(AF_UNIX, SOCK_DGRAM, 0, pair));
     snprintf(fd, sizeof(fd), "%d", pair[1]);
-    char status[256], echo[256], tx[256];
+    char status[256], echo[256], tx[256], events[256];
     path(status, sizeof(status), "status.csv"); path(echo, sizeof(echo), "echo.csv");
-    path(tx, sizeof(tx), "fake-tx.csv");
+    path(tx, sizeof(tx), "fake-tx.csv"); path(events, sizeof(events), "events.csv");
     char *args[] = {"build/san/hea_bridge", "--serial", tty, "--socket-fd", fd,
-        "--csv", tx, "--status-csv", status, "--echo-csv", echo,
+        "--csv", tx, "--status-csv", status, "--echo-csv", echo, "--state-events-csv", events,
         "--echo-ms", "20", "--baud", "115200", NULL};
     pid_t bridge = launch(args, master, slave, 0); ready(status);
     uint8_t payload[64], wire[HEA_MAX_FRAME];
-    struct hea_mcu_status_extended x = {{123, 3, 4, 5}, 6, 7, 8, 9, 10, 11};
+    struct hea_mcu_status_extended x = {{123, 3, 4, 5}, 6, 7, 8, 9, 10, 11, 1, 12};
     uint8_t len = hea_pack_mcu_status(&x.base, payload);
     size_t n = hea_encode(HEA_MSG_MCU_STATUS, 40, payload, len, wire, sizeof(wire));
     wire[n-1] ^= 1; assert(write(master, wire, n) == (ssize_t)n);
@@ -228,7 +228,13 @@ static void fake_mcu(void)
     len = hea_pack_mcu_status_extended(&x, payload);
     n = hea_encode(HEA_MSG_MCU_STATUS, 41, payload, len, wire, sizeof(wire));
     assert(write(master, wire, n) == (ssize_t)n);
+    n = hea_encode(HEA_MSG_MCU_STATUS, 45, payload, 33, wire, sizeof(wire));
+    assert(write(master, wire, n) == (ssize_t)n); /* Previous firmware diagnostics. */
     struct hea_parser parser; hea_parser_init(&parser);
+    struct hea_state_event ev = {UINT64_C(0x2ffffd8ef), 1, 2, 9, UINT64_MAX, UINT64_C(0x2ffffd800), 7};
+    len = hea_pack_state_event(&ev, payload);
+    n = hea_encode(HEA_MSG_STATE_EVENT, 42, payload, len, wire, sizeof wire);
+    assert(write(master, wire, n) == (ssize_t)n); /* Before estimator: empty mapped time. */
     unsigned replies = 0;
     uint64_t start = hea_now(CLOCK_MONOTONIC);
     uint64_t raw_start = hea_raw_now();
@@ -245,11 +251,20 @@ static void fake_mcu(void)
             assert(write(master, wire, n) == (ssize_t)n); ++replies;
         }
     }
-    assert(replies == 3); pause_ms(10); finish(bridge, 1);
+    assert(replies == 3); pause_ms(10);
+    ev.mcu_us = UINT64_C(0x2ffffd8ef) + (hea_raw_now() - raw_start) / 1000u;
+    len = hea_pack_state_event(&ev, payload);
+    n = hea_encode(HEA_MSG_STATE_EVENT, 43, payload, len, wire, sizeof wire);
+    assert(write(master, wire, n) == (ssize_t)n);
+    /* A malformed event must not produce a CSV row. */
+    n = hea_encode(HEA_MSG_STATE_EVENT, 44, payload, (uint8_t)(len - 1u), wire, sizeof wire);
+    assert(write(master, wire, n) == (ssize_t)n);
+    pause_ms(10); finish(bridge, 1);
     FILE *f = fopen(status, "r"); assert(f); char line[1024];
     assert(fgets(line, sizeof(line), f)); assert(fgets(line, sizeof(line), f));
     assert(strstr(line, ",123,3,4,5,0,,,,,,"));
-    assert(fgets(line, sizeof(line), f)); assert(strstr(line, ",123,3,4,5,1,6,7,8,9,10,11"));
+    assert(fgets(line, sizeof(line), f)); assert(strstr(line, ",123,3,4,5,1,6,7,8,9,10,11,1,12"));
+    assert(fgets(line, sizeof(line), f)); assert(strstr(line, ",123,3,4,5,1,6,7,8,9,10,11,,"));
     assert(!fgets(line, sizeof(line), f)); fclose(f);
     f = fopen(echo, "r"); assert(f); assert(fgets(line, sizeof(line), f));
     unsigned count = 0;
@@ -265,6 +280,19 @@ static void fake_mcu(void)
         ++count;
     }
     assert(count == 3); fclose(f);
+    f = fopen(events, "r"); assert(f); assert(fgets(line, sizeof(line), f));
+    assert(strstr(line, "lost_count,t_mcu_pi_est_ns"));
+    assert(fgets(line, sizeof(line), f));
+    assert(strstr(line, ",1,2,9,18446744073709551615,12884891648,7,\n"));
+    assert(fgets(line, sizeof(line), f));
+    unsigned seq_event, old, state, reason, lost;
+    uint64_t rx, mcu, hb, inf; long double mapped;
+    assert(sscanf(line, "%u,%" SCNu64 ",%" SCNu64 ",%u,%u,%u,%" SCNu64 ",%" SCNu64 ",%u,%Lf",
+        &seq_event, &rx, &mcu, &old, &state, &reason, &hb, &inf, &lost, &mapped) == 10);
+    assert(seq_event == 43 && mcu == ev.mcu_us && hb == UINT64_MAX && lost == 7);
+    assert(mapped > (long double)rx - 20000000.0L && mapped < (long double)rx + 20000000.0L);
+    assert(!fgets(line, sizeof(line), f)); fclose(f);
+    puts("PASS: state event CSV, absent estimator, full MCU epoch alignment and mapped Pi time");
     puts("PASS: fake MCU base/v3 diagnostics, CRC recovery, echo estimator and timer wrap over openpty"); close(master); close(slave); close(pair[0]); close(pair[1]);
 }
 int main(void)
