@@ -272,7 +272,7 @@ def decode_capture(directory, args, ipc):
         parent.close()
         child.close()
     save(directory / "replay.json", dict(t_rx_pi_ns="decoder replay time; use chunks.csv for original byte capture",
-                                          mapping="pre-fault pipeline echo estimator, not replay mapped_pi_ns"))
+                                          mapping="pre-fault pipeline echo estimator, not replay t_mcu_pi_est_ns"))
 
 
 def rearm(args, directory):

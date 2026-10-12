@@ -9,7 +9,7 @@ import re
 import sys
 
 EVIDENCE = "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)"
-EVENT_COLUMNS = "seq,t_rx_pi_ns,mcu_us,old,new,reason,last_hb_mcu_us,last_inf_mcu_us,lost_count,mapped_pi_ns".split(",")
+EVENT_COLUMNS = "seq,t_rx_pi_ns,mcu_us,old,new,reason,last_hb_mcu_us,last_inf_mcu_us,lost_count,t_mcu_pi_est_ns".split(",")
 METRICS = ("detection_us", "detection_mcu_us", "failsafe_us", "failsafe_mcu_us", "recovery_us")
 THRESHOLDS = ("heartbeat_timeout_us", "result_hold_us", "result_failsafe_us", "rearm_healthy_us", "transit_bound_us")
 
@@ -69,7 +69,7 @@ def events(directory, fits, replay=False):
         received = int(row["t_rx_pi_ns"])
         eligible = fits if replay else [fit for fit in fits if fit[0] <= received]
         fit = eligible[-1] if eligible else None
-        mapped = row["mapped_pi_ns"]
+        mapped = row["t_mcu_pi_est_ns"]
         # A replay decoder's Pi epoch is unrelated to the original receipt.
         pi = finite(mapped) if mapped and finite(mapped) > 0 and not replay else None
         if pi is None and fit:

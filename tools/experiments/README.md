@@ -8,7 +8,7 @@ Use the bridge/firmware from `feat/hw-fixes`: `hea_bridge` must decode
 `STATE_EVENT` into `state_events.csv` with exactly these columns:
 
 ```text
-seq,t_rx_pi_ns,mcu_us,old,new,reason,last_hb_mcu_us,last_inf_mcu_us,lost_count,mapped_pi_ns
+seq,t_rx_pi_ns,mcu_us,old,new,reason,last_hb_mcu_us,last_inf_mcu_us,lost_count,t_mcu_pi_est_ns
 ```
 
 The runner starts the bridge with its working directory set to each pipeline
@@ -116,7 +116,7 @@ that snapshot and the campaign's saved RMS bound. Explicit analysis options
 override those saved settings.
 
 All latency columns are microseconds. Detection is the first FRESH exit within
-observation, using `mapped_pi_ns` from the estimator, minus onset. Missing mappings
+observation, using `t_mcu_pi_est_ns` from the estimator, minus onset. Missing mappings
 are reconstructed with the logged inverse affine echo estimator. Startup events
 can use the first fit from that same MCU epoch. F1 replay uses the latest original
 fit. Reset/restart has a separate `recovery/echo.csv` and MCU epoch; never subtract
