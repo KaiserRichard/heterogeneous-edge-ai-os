@@ -1,0 +1,16 @@
+\begin{table}[H]
+\centering\small
+\caption{FLAGGED: all six loaded E3b runs fail live-power validity. Per-run input-to-software-reception age $(t_{rx,ns}-t_{input,ns})/10^6$ (ms); nearest-rank quantiles over CRC-valid inference receptions including shutdown drain.}\label{tab:e3b}
+\begin{tabular}{lrrrr}
+\toprule
+Input/repeat & Receptions & P50 (ms) & P99 (ms) & Skipped \\
+\midrule
+fifo/r1 & 455 & 8676.0 & 15891.0 & 0 \\
+fifo/r2 & 475 & 6527.4 & 13821.6 & 0 \\
+fifo/r3 & 457 & 7193.5 & 15579.1 & 0 \\
+latest/r1 & 435 & 189.3 & 254.0 & 171 \\
+latest/r2 & 435 & 190.3 & 256.0 & 172 \\
+latest/r3 & 432 & 190.7 & 267.9 & 173 \\
+\bottomrule
+\end{tabular}
+\end{table}

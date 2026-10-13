@@ -1,0 +1,2 @@
+Cyclic fields: ['condition', 'runs', 'invalid_runs', 'p50_us', 'p95_us', 'p99_us', 'p99_9_us', 'max_us', 'kernel', 'governor', 'max_temp_c', 'throttled']
+E4: 27/34 accepted. Analyzer: 15 captures, 10 matching; delta 47.524–67.649 µs. Sources: 164
