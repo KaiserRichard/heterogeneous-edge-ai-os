@@ -1,5 +1,6 @@
 <!-- COVER -->
 **ĐẠI HỌC BÁCH KHOA HÀ NỘI**
+![HUST](figures/logo_hust.jpg)
 **BÁO CÁO BÀI TẬP LỚN**
 **HỌC PHẦN: HỆ ĐIỀU HÀNH**
 **NỀN TẢNG THỰC THI EDGE-AI KHÔNG ĐỒNG NHẤT**

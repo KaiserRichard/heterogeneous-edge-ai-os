@@ -50,19 +50,20 @@ def dimensions(data):
         i += n
     raise ValueError('Unsupported image')
 
-PAGE = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
 # A4; top/bottom/left/right = 2.5/2/3/2 cm, rounded to twips.
 SECTION = '<w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1417" w:bottom="1134" w:left="1701" w:right="1134" w:header="567" w:footer="567" w:gutter="0"/>'
 
 PPR_ORDER = ['pStyle','keepNext','keepLines','pageBreakBefore','framePr','widowControl','numPr','suppressLineNumbers','pBdr','shd','tabs','suppressAutoHyphens','kinsoku','wordWrap','overflowPunct','topLinePunct','autoSpaceDE','autoSpaceDN','bidi','adjustRightInd','snapToGrid','spacing','ind','contextualSpacing','mirrorIndents','suppressOverlap','jc','textDirection','textAlignment','textboxTightWrap','outlineLvl','divId','cnfStyle','rPr','sectPr','pPrChange']
 RPR_ORDER = ['rStyle','rFonts','b','bCs','i','iCs','caps','smallCaps','strike','dstrike','outline','shadow','emboss','imprint','noProof','snapToGrid','vanish','webHidden','color','spacing','w','kern','position','sz','szCs','highlight','u','effect','bdr','shd','fitText','vertAlign','rtl','cs','em','lang','eastAsianLayout','specVanish','oMath']
 
+TBLPR_ORDER = ['tblStyle','tblpPr','tblOverlap','bidiVisual','tblStyleRowBandSize','tblStyleColBandSize','tblW','jc','tblCellSpacing','tblInd','tblBorders','shd','tblLayout','tblCellMar','tblLook']
+
 def schema_order(xml):
     """Word rejects pPr/rPr children out of schema order, so sort them before writing."""
     if '<w:' not in xml:
         return xml
     dom = minidom.parseString(xml)
-    for tag, order in (('w:pPr', PPR_ORDER), ('w:rPr', RPR_ORDER)):
+    for tag, order in (('w:pPr', PPR_ORDER), ('w:rPr', RPR_ORDER), ('w:tblPr', TBLPR_ORDER)):
         for node in dom.getElementsByTagName(tag):
             kids = [c for c in node.childNodes if c.nodeType == 1]
             for c in kids:
@@ -88,23 +89,23 @@ def build():
             continue
         if line == '<!-- PAGE -->':
             if cover:
-                body.append('<w:p><w:pPr><w:sectPr><w:type w:val="nextPage"/>' + SECTION + '</w:sectPr></w:pPr></w:p>')
+                border = '<w:pgBorders w:offsetFrom="page">' + ''.join(f'<w:{side} w:val="double" w:sz="6" w:space="24" w:color="000000"/>' for side in ('top', 'left', 'bottom', 'right')) + '</w:pgBorders>'
+                section = '<w:sectPr><w:type w:val="nextPage"/>' + SECTION + border + '</w:sectPr>'
+                body[-1] = body[-1].replace('</w:pPr>', section + '</w:pPr>', 1)
                 cover = False
-            else:
-                body.append(PAGE)
             continue
         if line == '<!-- TOC -->':
-            body.append(para('MỤC LỤC', 'FrontHeading'))
+            body.append(para('MỤC LỤC', 'FrontHeading', extra='<w:pageBreakBefore/>'))
             body.append('<w:p><w:r><w:fldChar w:fldCharType="begin" w:dirty="true"/></w:r><w:r><w:instrText xml:space="preserve"> TOC \\o "1-2" \\h \\z \\u </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r></w:p>')
             # Cached entries remain readable before Word updates the field.
             for entry in lines:
                 if entry.startswith(('# ', '## ')):
                     body.append(para(entry.lstrip('# ').strip(), 'TOC1'))
-            body.append('<w:p><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>')
+            body[-1] = body[-1].replace('</w:p>', '<w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>')
             continue
         if line == '<!-- GLOSSARY -->':
             glossary = True
-            body.append(para('DANH MỤC THUẬT NGỮ VÀ TỪ VIẾT TẮT', 'FrontHeading'))
+            body.append(para('DANH MỤC THUẬT NGỮ VÀ TỪ VIẾT TẮT', 'FrontHeading', extra='<w:pageBreakBefore/>'))
             continue
         if line == '<!-- ABSTRACT -->':
             body.append(para('TÓM TẮT', 'FrontHeading'))
@@ -116,7 +117,8 @@ def build():
             caption, path = m.groups()
             data = (ROOT / path).read_bytes()
             w, h = dimensions(data)
-            scale = min(4320000 / w, 2340000 / h)  # 12 cm × 6.5 cm
+            logo = cover
+            scale = 1080000 / w if logo else min(5760000 / w, 3600000 / h)  # Logo 3 cm; figures 16 × 10 cm
             cx, cy = int(w * scale), int(h * scale)
             index = len(media) + 1
             name = f'image{index}{Path(path).suffix.lower()}'
@@ -124,7 +126,8 @@ def build():
             media[name] = data
             rels.append(f'<Relationship Id="{rid}" Type="{R}/image" Target="media/{name}"/>')
             body.append(f'''<w:p><w:pPr><w:jc w:val="center"/><w:ind w:firstLine="0"/><w:keepNext/></w:pPr><w:r><w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" distT="0" distB="0" distL="0" distR="0"><wp:extent cx="{cx}" cy="{cy}"/><wp:docPr id="{index}" name="Hình {index}" descr="{escape(caption, {'"': '&quot;'})}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="{index}" name="{name}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="{rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>''')
-            body.append(para(caption, 'Caption', center=True))
+            if not logo:
+                body.append(para(caption, 'Caption', center=True))
             continue
         if line.startswith('|'):
             rows = [line]
@@ -132,15 +135,15 @@ def build():
                 rows.append(lines[i].strip()); i += 1
             rows = [r for r in rows if not re.fullmatch(r'[| :\-]+', r)]
             n = len(rows[0].strip('|').split('|'))
-            width = 9071 // n
+            widths = [2268, 3175, 3628] if glossary and n == 3 else [9071 // n] * n
             tbl = '<w:tbl><w:tblPr><w:tblW w:w="9071" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders>'
             tbl += ''.join(f'<w:{side} w:val="single" w:sz="4" w:color="808080"/>' for side in ('top','left','bottom','right','insideH','insideV'))
-            tbl += '</w:tblBorders><w:tblCellMar><w:top w:w="60" w:type="dxa"/><w:bottom w:w="60" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>'
-            tbl += f'<w:gridCol w:w="{width}"/>' * n + '</w:tblGrid>'
+            tbl += '</w:tblBorders><w:tblCellMar><w:top w:w="60" w:type="dxa"/><w:left w:w="115" w:type="dxa"/><w:bottom w:w="60" w:type="dxa"/><w:right w:w="115" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>'
+            tbl += ''.join(f'<w:gridCol w:w="{width}"/>' for width in widths) + '</w:tblGrid>'
             for idx, row in enumerate(rows):
                 tbl += '<w:tr><w:trPr><w:cantSplit/>' + ('<w:tblHeader/>' if idx == 0 else '') + '</w:trPr>'
-                for cell in row.strip('|').split('|'):
-                    tbl += f'<w:tc><w:tcPr><w:tcW w:w="{width}" w:type="dxa"/>' + ('<w:shd w:fill="E8EEF4"/>' if idx == 0 else '') + '</w:tcPr>' + para(('**'+cell.strip()+'**') if idx == 0 else cell.strip(), 'CoverTable' if cover else 'GlossaryText' if glossary else 'TableText') + '</w:tc>'
+                for width, cell in zip(widths, row.strip('|').split('|')):
+                    tbl += f'<w:tc><w:tcPr><w:tcW w:w="{width}" w:type="dxa"/>' + ('<w:shd w:fill="E8EEF4"/><w:vAlign w:val="center"/>' if idx == 0 else '') + '</w:tcPr>' + para(('**'+cell.strip()+'**') if idx == 0 else cell.strip(), 'CoverTable' if cover else 'GlossaryText' if glossary else 'TableText') + '</w:tc>'
                 tbl += '</w:tr>'
             body.append(tbl + '</w:tbl>'); continue
         m = re.match(r'^(#{1,3}) (.*)', line)
@@ -150,16 +153,23 @@ def build():
         if line.startswith('- '):
             body.append(para(line[2:], extra='<w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>')); continue
         style = ('CoverTitle' if 'NỀN TẢNG THỰC THI' in line else 'CoverDate' if line.startswith('Hà Nội,') else 'Cover') if cover else 'TableCaption' if re.match(r'^Bảng \d+\.', line) else 'Source' if line.startswith('Nguồn:') else None
-        body.append(para(line, style, center=cover))
+        extra = ''
+        if cover:
+            style = ('CoverUniversity' if 'ĐẠI HỌC BÁCH KHOA' in line else
+                     'CoverReport' if 'BÁO CÁO BÀI TẬP LỚN' in line else
+                     'CoverCourse' if 'HỌC PHẦN:' in line else style)
+            if style == 'CoverUniversity':
+                extra = '<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="8"/></w:pBdr><w:ind w:left="2400" w:right="2400" w:firstLine="0"/>'
+        body.append(para(line, style, center=cover, extra=extra))
     body.append('<w:sectPr><w:footerReference w:type="default" r:id="rIdFooter"/>'+SECTION+'<w:pgNumType w:start="1"/></w:sectPr>')
     document = f'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document {NS}><w:body>'+''.join(body)+'</w:body></w:document>'
     styles = f'''<w:styles {NS}><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="26"/><w:szCs w:val="26"/><w:lang w:val="vi-VN"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="80" w:line="288" w:lineRule="auto"/><w:jc w:val="both"/><w:ind w:firstLine="567"/><w:widowControl/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>'''
     for level in (1,2,3):
         styles += f'<w:style w:type="paragraph" w:styleId="Heading{level}"><w:name w:val="heading {level}"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr>{"<w:pageBreakBefore/>" if level == 1 else ""}<w:keepNext/><w:keepLines/><w:spacing w:before="160" w:after="100"/><w:ind w:firstLine="0"/><w:outlineLvl w:val="{level-1}"/><w:jc w:val="left"/></w:pPr><w:rPr><w:b/>{"<w:i/>" if level == 3 else ""}<w:sz w:val="{28 if level==1 else 26}"/></w:rPr></w:style>'
-    for name, size, align in [('Caption',24,'center'),('TableCaption',24,'center'),('GlossaryText',22,'left'),('TableText',22,'left'),('CoverTable',26,'center'),('Cover',28,'center'),('CoverTitle',36,'center'),('CoverDate',28,'center'),('FrontHeading',28,'center'),('TOC1',26,'left')]:
-        before = 900 if name == 'CoverDate' else 180 if name in ('Cover', 'CoverTitle') else 0
+    for name, size, align in [('Caption',24,'center'),('TableCaption',24,'center'),('GlossaryText',22,'left'),('TableText',22,'left'),('CoverTable',26,'center'),('Cover',28,'center'),('CoverTitle',40,'center'),('CoverUniversity',28,'center'),('CoverReport',32,'center'),('CoverCourse',28,'center'),('CoverDate',28,'center'),('FrontHeading',28,'center'),('TOC1',26,'left')]:
+        before = 1100 if name == 'CoverDate' else 160 if name.startswith('Cover') else 0
         keep = '<w:keepNext/>' if name in ('TableCaption', 'FrontHeading') else ''
-        styles += f'<w:style w:type="paragraph" w:styleId="{name}"><w:name w:val="{name}"/><w:basedOn w:val="Normal"/><w:pPr><w:ind w:firstLine="0"/><w:spacing w:before="{before}" w:after="{40 if name == "GlossaryText" else 120}" w:line="{240 if name == "GlossaryText" else 312}" w:lineRule="auto"/><w:jc w:val="{align}"/>{keep}</w:pPr><w:rPr><w:sz w:val="{size}"/>'+('<w:b/>' if name in ('FrontHeading',) else '')+('<w:i/>' if name in ('Caption','TableCaption') else '')+'</w:rPr></w:style>'
+        styles += f'<w:style w:type="paragraph" w:styleId="{name}"><w:name w:val="{name}"/><w:basedOn w:val="Normal"/><w:pPr><w:ind w:firstLine="0"/><w:spacing w:before="{before}" w:after="{40 if name == "GlossaryText" else 120}" w:line="{240 if name == "GlossaryText" else 312}" w:lineRule="auto"/><w:jc w:val="{align}"/>{keep}</w:pPr><w:rPr><w:sz w:val="{size}"/>'+('<w:b/>' if name in ('FrontHeading', 'CoverUniversity', 'CoverReport', 'CoverCourse', 'CoverTitle') else '')+('<w:i/>' if name in ('Caption','TableCaption') else '')+('<w:color w:val="1F5FA8"/>' if name == 'CoverTitle' else '')+'</w:rPr></w:style>'
     styles += '</w:styles>'
     footer = f'<w:ftr {NS}><w:p><w:pPr><w:ind w:firstLine="0"/><w:jc w:val="center"/></w:pPr><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>{run("1")}<w:r><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>'
     relationships = f'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="{R}/styles" Target="styles.xml"/><Relationship Id="rIdSettings" Type="{R}/settings" Target="settings.xml"/><Relationship Id="rIdNumbering" Type="{R}/numbering" Target="numbering.xml"/><Relationship Id="rIdFooter" Type="{R}/footer" Target="footer1.xml"/>'+''.join(rels)+'</Relationships>'
@@ -182,7 +192,7 @@ def build():
             info = zipfile.ZipInfo('word/media/'+name, (2026,10,17,0,0,0)); info.compress_type = zipfile.ZIP_DEFLATED
             archive.writestr(info, data)
     print(target)
-    print(f'Explicit layout blocks: {1 + sum(l.strip()=="<!-- PAGE -->" for l in lines)}; images: {len(media)}')
+    print(f'Sections: 2; report figures: {len(media) - 1}; cover logo: 1')
 
 if __name__ == '__main__':
     build()

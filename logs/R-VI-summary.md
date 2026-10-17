@@ -192,3 +192,5 @@ honestly retains rendered_page_count=null. No hardware measurements were rerun.
 - Không mở/chạy/script ứng dụng GUI, không git commit. Mục tiêu ≤20 trang;
   số trang sau rút gọn chưa được đo, rendered_page_count=null.
 - R-VI-8: Đã chép 3 PNG/SVG sinh viên (SVG nguyên bản, PNG chỉ cắt lề trắng chừa 15 px), cập nhật Hình 3.1–3.3 và nhãn kiến trúc, giữ aoi.png; dựng DOCX tái lập, validation/forbidden-text/style/pPr-rPr (779 nút) PASS, hình ≤12 × 6.5 cm đúng tỉ lệ; không GUI, không commit, chưa xác nhận số trang.
+
+R-VI-9 — Added HUST logo and cover-only double border, compact cover typography, heading-based front-matter breaks without empty break paragraphs, 16 × 10 cm figure bounds, table padding/header alignment and 25/35/40 glossary widths; rebuilt DOCX; ticket-adjusted in-memory validation, reproducible builds, ZIP/XML, schema order (785 nodes), forbidden-text scan, style and exact prose preservation PASS; original validator/validation.json retained per source-edit scope (their old layout expectations are stale); headless Python only, no commit, Word pagination unverified.
