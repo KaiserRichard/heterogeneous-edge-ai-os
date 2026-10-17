@@ -72,3 +72,78 @@ Target remains 17–19 Word pages. Actual rendered pagination and Word statistic
 cannot be measured here: no Word/LibreOffice renderer is available. validation.json
 explicitly records rendered_page_count=null. Open in Word and update fields for
 final pagination verification; no claim that the target has already been rendered.
+
+## R-VI-3 — clean submission version, 2026-10-17
+
+Rewrote the Vietnamese prose and rebuilt the submission DOCX without a commit.
+Removed repository paths, source appendix, internal evidence labels and production
+instructions from document text. Added the requested centered cover and members
+table, uppercase chapter headings, 1 cm body indentation, 6 pt paragraph spacing,
+and 12 pt italic captions. Retained seven report tables with identical numeric
+tokens and all three figures; the cover adds one separate members table.
+Body length is 5808 whitespace words including tables. ZIP/XML, relationships,
+formatting, forbidden-text grep and reproducible-build checks passed. Updated
+README, validator and validation.json. Actual 16–19-page Word pagination remains
+unverified because no Word/LibreOffice renderer is available; no hardware rerun.
+
+R-VI-4 — 2026-10-17: Rewrote prose across all eight chapters and abstract, grouped RQ prompts, explained specific table rows, retained every original numeric value/heading/table/figure and preliminary/implementation framing; rebuilt DOCX without changing builder/layout or committing; 5980 body / 6420 total whitespace words (under 3% growth), structural/reproducible-build/ZIP/XML/forbidden-text and preservation checks PASS; appended this line; Word pagination remains unverified because local Word automation failed.
+
+
+## R-VI-5 — connected prose rewrite, 2026-10-17
+
+Edited only `report_vi/content.md` as the source, regenerated the DOCX and
+`validation.json`, and appended this log; no commit. Existing edits to README,
+builder, validator and other files were preserved, not authored by this ticket.
+Reworked the argument across all eight chapters using causal and contrastive
+links, with longer explanations interspersed with short statements and related
+ideas grouped into paragraphs. Removed the rhetorical question outside the RQ
+list and corrected the accidental “Lượttime” spelling to “Runtime”.
+
+Exact `python3 report_vi/style_check.py` output before editing:
+
+```text
+sentences=259 mean=16.3 median=17 stdev=8.6 share>=28=0.07 share<=12=0.30
+paragraphs=51 mean_sentences_per_para=5.1
+```
+
+Exact `python3 report_vi/style_check.py` output after editing:
+
+```text
+sentences=204 mean=24.7 median=24.0 stdev=9.3 share>=28=0.38 share<=12=0.12
+paragraphs=50 mean_sentences_per_para=4.1
+```
+
+All requested ranges pass. The checker itself was not edited. It splits on blank
+lines, so the source now separates headings from prose and keeps cover/front
+matter and bibliography entries in consecutive non-prose blocks. Their displayed
+text and individual Word paragraphs remain intact because the builder consumes
+lines. This prevents bibliography author initials from counting as short prose
+sentences; the raw before/after outputs therefore differ in selection as well as
+writing. An independent check selecting actual body prose lines confirms the
+rewrite rather than relying on this formatting effect: before mean=18.58, stdev=5.61, share>=28=0.054, share<=12=0.158, sentences/paragraph=4.55;
+after mean=24.91, stdev=9.33, share>=28=0.394, share<=12=0.116,
+198 sentences / 49 paragraphs = 4.04 sentences per paragraph. This also passes
+every requested range.
+
+Preservation checks PASS against the exact pre-ticket content: every heading,
+table row, numbered caption, figure and RQ list entry matches; no numeric token
+occurrence was lost. Both implementation-in-progress and preliminary-results
+framing remain. Body length including tables is 6230 whitespace words versus
+5980 before (+4.2%); no findings or measured results were added.
+
+Ran `python3 report_vi/validate_docx.py`: PASS for two byte-identical builds,
+ZIP CRC, XML/.rels parsing, relationship targets, A4 layout/styles/TOC/footer,
+seven report tables plus cover table, three figures and continuous body flow.
+Forbidden-text scan PASS for the validator's internal-material pattern; separate
+scans of Markdown and extracted DOCX text found none of the four banned phrases,
+zero occurrences of “Do đó” / “Điều này cho thấy”, and no prose rhetorical
+questions outside the preserved RQ list.
+
+Pagination remains unverified. Microsoft Word is installed, but a fresh
+`osascript` version query failed with a macOS service connection error and
+“Can't get application Microsoft Word” (-1728); no LibreOffice executable is
+available. No claim that the <=19-page requirement has been verified: the JSON
+keeps `rendered_page_count=null`. Layout settings and the three front-matter
+breaks were preserved; actual pagination still requires Word rendering. The
+existing preview PDF was not regenerated and is not evidence for this revision.
+No hardware measurements were rerun.

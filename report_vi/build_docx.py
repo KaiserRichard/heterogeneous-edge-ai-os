@@ -19,8 +19,6 @@ NS = f'xmlns:w="{W}" xmlns:r="{R}"'
 
 def run(text, bold=False, italic=False):
     props = ('<w:b/>' if bold else '') + ('<w:i/>' if italic else '')
-    # Break long provenance paths at separators without changing visible text.
-    text = re.sub(r'([/_])', lambda m: m[0] + '\u200b', text) if '/' in text else text
     return f'<w:r><w:rPr>{props}</w:rPr><w:t xml:space="preserve">{escape(text)}</w:t></w:r>'
 
 def inline(text):
@@ -77,17 +75,16 @@ def build():
                 body.append(PAGE)
             continue
         if line == '<!-- TOC -->':
-            body.append(para('Mục lục', 'FrontHeading'))
+            body.append(para('MỤC LỤC', 'FrontHeading'))
             body.append('<w:p><w:r><w:fldChar w:fldCharType="begin" w:dirty="true"/></w:r><w:r><w:instrText xml:space="preserve"> TOC \\o "1-2" \\h \\z \\u </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r></w:p>')
             # Cached entries remain readable before Word updates the field.
             for entry in lines:
-                if entry.startswith('# ') and not entry.startswith('# Tóm'):
-                    body.append(para(entry[2:], 'TOC1'))
+                if entry.startswith(('# ', '## ')):
+                    body.append(para(entry.lstrip('# ').strip(), 'TOC1'))
             body.append('<w:p><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>')
-            body.append(para('Mở bằng Microsoft Word để tự động cập nhật mục lục và số trang; nếu được hỏi, chọn cập nhật trường.', 'Source'))
             continue
         if line == '<!-- ABSTRACT -->':
-            body.append(para('Tóm tắt', 'FrontHeading'))
+            body.append(para('TÓM TẮT', 'FrontHeading'))
             continue
         if line.startswith('<!--'):
             continue
@@ -103,7 +100,7 @@ def build():
             rid = f'rIdImage{index}'
             media[name] = data
             rels.append(f'<Relationship Id="{rid}" Type="{R}/image" Target="media/{name}"/>')
-            body.append(f'''<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" distT="0" distB="0" distL="0" distR="0"><wp:extent cx="{cx}" cy="{cy}"/><wp:docPr id="{index}" name="Hình {index}" descr="{escape(caption, {'"': '&quot;'})}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="{index}" name="{name}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="{rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>''')
+            body.append(f'''<w:p><w:pPr><w:jc w:val="center"/><w:ind w:firstLine="0"/><w:keepNext/></w:pPr><w:r><w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" distT="0" distB="0" distL="0" distR="0"><wp:extent cx="{cx}" cy="{cy}"/><wp:docPr id="{index}" name="Hình {index}" descr="{escape(caption, {'"': '&quot;'})}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="{index}" name="{name}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="{rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>''')
             body.append(para(caption, 'Caption', center=True))
             continue
         if line.startswith('|'):
@@ -120,7 +117,7 @@ def build():
             for idx, row in enumerate(rows):
                 tbl += '<w:tr><w:trPr><w:cantSplit/>' + ('<w:tblHeader/>' if idx == 0 else '') + '</w:trPr>'
                 for cell in row.strip('|').split('|'):
-                    tbl += f'<w:tc><w:tcPr><w:tcW w:w="{width}" w:type="dxa"/>' + ('<w:shd w:fill="E8EEF4"/>' if idx == 0 else '') + '</w:tcPr>' + para(('**'+cell.strip()+'**') if idx == 0 else cell.strip(), 'TableText') + '</w:tc>'
+                    tbl += f'<w:tc><w:tcPr><w:tcW w:w="{width}" w:type="dxa"/>' + ('<w:shd w:fill="E8EEF4"/>' if idx == 0 else '') + '</w:tcPr>' + para(('**'+cell.strip()+'**') if idx == 0 else cell.strip(), 'CoverTable' if cover else 'TableText') + '</w:tc>'
                 tbl += '</w:tr>'
             body.append(tbl + '</w:tbl>'); continue
         m = re.match(r'^(#{1,3}) (.*)', line)
@@ -128,18 +125,19 @@ def build():
             body.append(para(m[2], 'Heading'+str(len(m[1])))); continue
         if line.startswith('- '):
             body.append(para(line[2:], extra='<w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>')); continue
-        style = 'Cover' if cover else 'Caption' if re.match(r'^Bảng \d+\.', line) else 'Source' if line.startswith('Nguồn:') else None
+        style = ('CoverTitle' if 'NỀN TẢNG THỰC THI' in line else 'CoverDate' if line.startswith('Hà Nội,') else 'Cover') if cover else 'TableCaption' if re.match(r'^Bảng \d+\.', line) else 'Source' if line.startswith('Nguồn:') else None
         body.append(para(line, style, center=cover))
     body.append('<w:sectPr><w:footerReference w:type="default" r:id="rIdFooter"/>'+SECTION+'<w:pgNumType w:start="1"/></w:sectPr>')
     document = f'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document {NS}><w:body>'+''.join(body)+'</w:body></w:document>'
-    styles = f'''<w:styles {NS}><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="26"/><w:szCs w:val="26"/><w:lang w:val="vi-VN"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="80" w:line="312" w:lineRule="auto"/><w:jc w:val="both"/><w:widowControl/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>'''
+    styles = f'''<w:styles {NS}><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="26"/><w:szCs w:val="26"/><w:lang w:val="vi-VN"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="312" w:lineRule="auto"/><w:jc w:val="both"/><w:ind w:firstLine="567"/><w:widowControl/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>'''
     for level in (1,2,3):
-        styles += f'<w:style w:type="paragraph" w:styleId="Heading{level}"><w:name w:val="heading {level}"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:keepNext/><w:keepLines/><w:spacing w:before="160" w:after="100"/><w:outlineLvl w:val="{level-1}"/><w:jc w:val="left"/></w:pPr><w:rPr><w:b/><w:sz w:val="{30 if level==1 else 26}"/></w:rPr></w:style>'
-    for name, size, align in [('Caption',26,'center'),('Source',22,'left'),('TableText',26,'left'),('Cover',30,'center'),('FrontHeading',30,'center'),('TOC1',26,'left')]:
-        keep = '<w:keepNext/>' if name in ('Caption', 'FrontHeading') else ''
-        styles += f'<w:style w:type="paragraph" w:styleId="{name}"><w:name w:val="{name}"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="60" w:line="312" w:lineRule="auto"/><w:jc w:val="{align}"/>{keep}</w:pPr><w:rPr><w:sz w:val="{size}"/>'+('<w:b/>' if name in ('FrontHeading','Caption') else '')+'</w:rPr></w:style>'
+        styles += f'<w:style w:type="paragraph" w:styleId="Heading{level}"><w:name w:val="heading {level}"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:keepNext/><w:keepLines/><w:spacing w:before="160" w:after="100"/><w:ind w:firstLine="0"/><w:outlineLvl w:val="{level-1}"/><w:jc w:val="left"/></w:pPr><w:rPr><w:b/>{"<w:i/>" if level == 3 else ""}<w:sz w:val="{28 if level==1 else 26}"/></w:rPr></w:style>'
+    for name, size, align in [('Caption',24,'center'),('TableCaption',24,'center'),('TableText',26,'left'),('CoverTable',26,'center'),('Cover',28,'center'),('CoverTitle',36,'center'),('CoverDate',28,'center'),('FrontHeading',28,'center'),('TOC1',26,'left')]:
+        before = 900 if name == 'CoverDate' else 180 if name in ('Cover', 'CoverTitle') else 0
+        keep = '<w:keepNext/>' if name in ('TableCaption', 'FrontHeading') else ''
+        styles += f'<w:style w:type="paragraph" w:styleId="{name}"><w:name w:val="{name}"/><w:basedOn w:val="Normal"/><w:pPr><w:ind w:firstLine="0"/><w:spacing w:before="{before}" w:after="120" w:line="312" w:lineRule="auto"/><w:jc w:val="{align}"/>{keep}</w:pPr><w:rPr><w:sz w:val="{size}"/>'+('<w:b/>' if name in ('FrontHeading',) else '')+('<w:i/>' if name in ('Caption','TableCaption') else '')+'</w:rPr></w:style>'
     styles += '</w:styles>'
-    footer = f'<w:ftr {NS}><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>{run("1")}<w:r><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>'
+    footer = f'<w:ftr {NS}><w:p><w:pPr><w:ind w:firstLine="0"/><w:jc w:val="center"/></w:pPr><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>{run("1")}<w:r><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>'
     relationships = f'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="{R}/styles" Target="styles.xml"/><Relationship Id="rIdSettings" Type="{R}/settings" Target="settings.xml"/><Relationship Id="rIdNumbering" Type="{R}/numbering" Target="numbering.xml"/><Relationship Id="rIdFooter" Type="{R}/footer" Target="footer1.xml"/>'+''.join(rels)+'</Relationships>'
     files = {'word/document.xml': document, 'word/styles.xml': styles, 'word/footer1.xml': footer,
              'word/settings.xml': f'<w:settings {NS}><w:updateFields w:val="true"/></w:settings>',

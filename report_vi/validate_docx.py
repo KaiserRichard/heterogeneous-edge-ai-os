@@ -22,6 +22,10 @@ with zipfile.ZipFile(OUT) as z:
     for name in z.namelist():
         if name.endswith(('.xml', '.rels')):
             minidom.parseString(z.read(name))
+    xml = z.read('word/document.xml').decode()
+    text = ''.join(ET.fromstring(xml).itertext())
+    forbidden = r'results/|release/|slides/|docs/|\.md\b|\.csv\b|\.tex\b|\.onnx\b|FLAGGED|INVALID|MEASURED|\bSIM\b|PLANNED|conductor|provenance|bản trình bày|v2 validity rule|Phụ lục|Nguồn:|<!--|2026-10-\d|\d{8}T\d{6}Z'
+    assert not re.search(forbidden, xml, re.I), 'Internal material remains'
     document = ET.fromstring(z.read('word/document.xml'))
     styles = ET.fromstring(z.read('word/styles.xml'))
     settings = ET.fromstring(z.read('word/settings.xml'))
@@ -38,7 +42,7 @@ with zipfile.ZipFile(OUT) as z:
         assert sec.find('w:pgSz', NS).attrib == {w+'w':'11906', w+'h':'16838'}
         margins = sec.find('w:pgMar', NS)
         assert [margins.get(w+k) for k in ('top','bottom','left','right')] == ['1417','1134','1701','1134']
-    assert len(document.findall('.//w:tbl', NS)) == 7
+    assert len(document.findall('.//w:tbl', NS)) == 8
     assert len([n for n in z.namelist() if n.startswith('word/media/')]) == 3
     assert len(document.findall('.//w:br[@w:type="page"]', NS)) == 2
     assert not document.findall('.//w:pageBreakBefore', NS)
@@ -51,6 +55,15 @@ with zipfile.ZipFile(OUT) as z:
     for extent in document.iter(wp+'extent'):
         assert int(extent.get('cx')) <= 4320000
         assert int(extent.get('cy')) <= 2880000
+    default = styles.find('w:docDefaults/w:pPrDefault/w:pPr', NS)
+    assert default.find('w:ind', NS).get(w+'firstLine') == '567'
+    assert default.find('w:spacing', NS).get(w+'after') == '120'
+    assert default.find('w:spacing', NS).get(w+'line') == '312'
+    for name in ('Caption', 'TableCaption'):
+        st = styles.find(f"w:style[@w:styleId='{name}']", NS)
+        assert st.find('w:rPr/w:sz', NS).get(w+'val') == '24'
+        assert st.find('w:rPr/w:i', NS) is not None
+    assert len(re.findall(r'CHƯƠNG [1-8]\.', text)) == 16  # headings and cached TOC
     heading = styles.find("w:style[@w:styleId='Heading1']", NS)
     assert heading.find('.//w:keepNext', NS) is not None
     # All internal document relationship targets must exist.
@@ -58,25 +71,25 @@ with zipfile.ZipFile(OUT) as z:
     for rel in rels:
         assert 'word/'+rel.get('Target') in z.namelist()
 content = (ROOT/'content.md').read_text()
-body = content.split('# 1 Giới thiệu',1)[1].split('# Tài liệu tham khảo',1)[0]
+body = content.split('# CHƯƠNG 1. GIỚI THIỆU',1)[1].split('# TÀI LIỆU THAM KHẢO',1)[0]
 body = re.sub(r'<!--.*?-->', '', body)
 words = len(body.split())
-assert 5300 <= words <= 5600, words
+assert 5400 <= words <= 6400, words
 assert content.count('<!-- PAGE -->') == 3
-assert '<!-- PAGE -->' not in content.split('# 1 Giới thiệu', 1)[1]
+assert '<!-- PAGE -->' not in content.split('# CHƯƠNG 1. GIỚI THIỆU', 1)[1]
 assert len(re.findall(r'^Bảng \d+\.',content,re.M)) == 7
-assert len(re.findall(r'^!\[Hình \d+\.',content,re.M)) == 3
+assert len(re.findall(r'^!\[Hình \d+\.\d+\.',content,re.M)) == 3
 for ref in range(1,9):
     assert f'[{ref}]' in body
 report = {
-    'zip_crc': 'PASS', 'all_xml_and_relationships_parse': 'PASS',
+    'clean_submission_text': 'PASS', 'zip_crc': 'PASS', 'all_xml_and_relationships_parse': 'PASS',
     'continuous_flow_figure_limits_table_pagination': 'PASS',
     'relationship_targets': 'PASS', 'reproducible_build': 'PASS',
     'a4_margins_styles_toc_cover_footer': 'PASS',
-    'body_whitespace_words_including_tables_and_sources': words,
-    'forced_front_matter_breaks': 3, 'target_word_pages': '17–19', 'tables': 7, 'figures': 3,
+    'body_whitespace_words_including_tables': words,
+    'forced_front_matter_breaks': 3, 'target_word_pages': '16–19', 'report_tables': 7, 'cover_members_table': 1, 'figures': 3,
     'rendered_page_count': None,
-    'rendering_limit': 'Word pagination requires rendering; continuous flow targets 17–19 pages, not a verified page count.',
+    'rendering_limit': 'Word pagination requires rendering; continuous flow targets 16–19 pages, not a verified page count.',
     'docx_sha256': hashlib.sha256(first).hexdigest()
 }
 (ROOT/'validation.json').write_text(json.dumps(report, ensure_ascii=False, indent=2)+'\n')
