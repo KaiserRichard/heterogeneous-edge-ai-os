@@ -191,3 +191,4 @@ honestly retains rendered_page_count=null. No hardware measurements were rerun.
   bảng, heading, hình, RQ và tập token số của thân bài được giữ nguyên.
 - Không mở/chạy/script ứng dụng GUI, không git commit. Mục tiêu ≤20 trang;
   số trang sau rút gọn chưa được đo, rendered_page_count=null.
+- R-VI-8: Đã chép 3 PNG/SVG sinh viên (SVG nguyên bản, PNG chỉ cắt lề trắng chừa 15 px), cập nhật Hình 3.1–3.3 và nhãn kiến trúc, giữ aoi.png; dựng DOCX tái lập, validation/forbidden-text/style/pPr-rPr (779 nút) PASS, hình ≤12 × 6.5 cm đúng tỉ lệ; không GUI, không commit, chưa xác nhận số trang.

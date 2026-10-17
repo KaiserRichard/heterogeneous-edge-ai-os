@@ -4,15 +4,15 @@ Bản nộp: `BaoCao_HDH_Nhom3Stars.docx`; nguồn biên soạn: `content.md`.
 Từ gốc kho mã:
 
 ```sh
-python3 report_vi/figures/draw_figures.py
 python3 report_vi/validate_docx.py
 python3 report_vi/style_check.py
 ```
 
-Dựng hình dùng matplotlib có sẵn trên system Python; không cài thêm thư viện.
+Hình 2.1 giữ nguyên `figures/aoi.png`. Hình 3.1–3.3 dùng bản vẽ của sinh viên
+(`Hinh_3_1_System_architecture`, `Hinh_3_2_UART_frame`, `Hinh_3_3_Queue_policies`):
+SVG được giữ nguyên; PNG chỉ cắt lề trắng, chừa khoảng 15 px mỗi cạnh.
 Builder DOCX và validator chỉ dùng thư viện chuẩn. Validator dựng hai lần để
-kiểm tra tái lập; kết quả ghi vào `validation.json`. Bốn hình PNG được dựng ở
-200 dpi; `IMAGE_PROMPTS.md` có prompt để vẽ lại cùng nhãn.
+kiểm tra tái lập; kết quả ghi vào `validation.json`. `IMAGE_PROMPTS.md` lưu prompt tham khảo trước khi thay hình sinh viên.
 
 Bản Word gồm bìa, tóm tắt, mục lục, bảng thuật ngữ 25 dòng, tám Phần và tài liệu
 tham khảo. Bảy bảng nội dung giữ nguyên số liệu; có thêm bảng thành viên và bảng

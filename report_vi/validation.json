@@ -9,7 +9,7 @@
   "relationship_targets": "PASS",
   "reproducible_build": "PASS",
   "a4_margins_styles_toc_cover_footer": "PASS",
-  "body_whitespace_words_including_tables": 4565,
+  "body_whitespace_words_including_tables": 4574,
   "forced_front_matter_breaks": 3,
   "target_word_pages": "≤20",
   "report_tables": 7,
@@ -18,5 +18,5 @@
   "figures": 4,
   "rendered_page_count": null,
   "rendering_limit": "Word pagination requires rendering; target is at most 20 pages, not a verified page count.",
-  "docx_sha256": "5620ac00e023f6dc697e991e8c896b3e5eb41e2ba51c33cee23358f66e276244"
+  "docx_sha256": "b31338ccc87395214b73d18f4c1e0275ba2d21e82dc47f48c72183719e11b919"
 }

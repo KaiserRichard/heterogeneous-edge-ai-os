@@ -90,15 +90,15 @@ Simplex phân quyền giữa khối tính toán phức tạp và bộ điều kh
 
 ## 3.1 Kiến trúc và ranh giới quyền điều khiển
 
-Hình 3.1 mô tả source → inference → bridge trên Pi, qua UART tới RX → supervisor → GPIO trên STM32. Logger ghi timestamp để tái dựng hành trình dưới tải, nhưng thiếu log có thể khiến nhóm chưa đủ bằng chứng dù MCU vẫn giám sát. Supervisor độc quyền ghi output; heartbeat xác nhận bridge hoạt động, còn INFERENCE cung cấp kết quả để kiểm tra freshness. Đầu ra mới là GPIO. Hệ thống chưa có cơ cấu chấp hành hoặc watchdog phần cứng độc lập.
+Hình 3.1 mô tả Linux workload (ONNX Runtime, MobileNetV2) → bridge trên Pi, qua UART tới UART ISR → bounded buffer → RX task → supervisor → output/LED trên STM32. Logger ghi timestamp để tái dựng hành trình dưới tải, nhưng thiếu log có thể khiến nhóm chưa đủ bằng chứng dù MCU vẫn giám sát. Supervisor độc quyền ghi output; heartbeat xác nhận bridge hoạt động, còn INFERENCE cung cấp kết quả để kiểm tra freshness. Đầu ra mới là GPIO. Hệ thống chưa có cơ cấu chấp hành hoặc watchdog phần cứng độc lập.
 
-![Hình 3.1. Kiến trúc hệ thống và ranh giới quyền điều khiển.](figures/architecture.png)
+![Hình 3.1. Kiến trúc hệ thống và ranh giới quyền điều khiển.](figures/Hinh_3_1_System_architecture.png)
 
 ## 3.2 Khung UART và loại bản tin
 
 Hình 3.2 và Bảng 1 mô tả frame UART: parser tìm SOF, kiểm độ dài và CRC trước khi giao cho logic chính sách. Giới hạn payload là 64 byte. CRC kiểm toàn vẹn, còn số thứ tự giúp nhận ra dữ liệu cũ, trùng hoặc mất, nên supervisor vẫn phải kiểm tuổi và phiên. Frame hợp lệ chưa bảo đảm nội dung inference đúng.
 
-![Hình 3.2. Cấu trúc frame UART và phạm vi kiểm tra CRC.](figures/frame.png)
+![Hình 3.2. Cấu trúc frame UART và phạm vi kiểm tra CRC.](figures/Hinh_3_2_UART_frame.png)
 
 Bảng 1. Cấu trúc frame truyền UART.
 | Trường | Kích thước và vai trò |
@@ -121,7 +121,7 @@ Session phân biệt lần bridge khởi động, còn generation gắn vào d�
 
 FIFO giữ thứ tự dữ liệu đến, nhưng tuổi có thể tăng dần nếu nguồn sinh nhanh hơn khả năng phục vụ. Với nhiệm vụ cần biết trạng thái hiện tại, latest-value thay dữ liệu đang chờ bằng dữ liệu mới nhất để tránh tiếp tục xử lý đầu vào đã cũ. Sự khác nhau trong Hình 3.3 chỉ nằm ở phần dữ liệu chờ, bởi inference đang chạy vẫn được hoàn tất thay vì bị hủy khi có đầu vào mới [4].
 
-![Hình 3.3. FIFO giữ backlog; latest-value thay kết quả chưa gửi.](figures/queues.png)
+![Hình 3.3. FIFO giữ backlog; latest-value thay kết quả chưa gửi.](figures/Hinh_3_3_Queue_policies.png)
 
 Nếu chỉ đặt latest-value tại bridge, nhóm chỉ thay được kết quả đã inference xong và đang chờ gửi, trong khi đầu vào của kết quả vừa hoàn tất đã chờ lâu trước MobileNetV2. Vì vậy, nhóm thử rút các datagram sẵn có trước inference, giữ đầu vào hợp lệ mới nhất và đếm số bỏ, giữ cùng tải, nguồn và scheduler để tách tác động của vị trí queue.
 
