@@ -3,7 +3,7 @@
 
 Subset: #/##/### headings, paragraphs, - bullets, **bold**, *italic*, pipe
  tables, ![caption](relative-image), <!-- PAGE -->, <!-- COVER -->,
- <!-- ABSTRACT --> and <!-- TOC -->. Only front matter uses explicit page breaks.
+ <!-- ABSTRACT --> and <!-- TOC -->. Parts use the Heading 1 page-break property.
 """
 from pathlib import Path
 import re
@@ -54,10 +54,29 @@ PAGE = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
 # A4; top/bottom/left/right = 2.5/2/3/2 cm, rounded to twips.
 SECTION = '<w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1417" w:bottom="1134" w:left="1701" w:right="1134" w:header="567" w:footer="567" w:gutter="0"/>'
 
+PPR_ORDER = ['pStyle','keepNext','keepLines','pageBreakBefore','framePr','widowControl','numPr','suppressLineNumbers','pBdr','shd','tabs','suppressAutoHyphens','kinsoku','wordWrap','overflowPunct','topLinePunct','autoSpaceDE','autoSpaceDN','bidi','adjustRightInd','snapToGrid','spacing','ind','contextualSpacing','mirrorIndents','suppressOverlap','jc','textDirection','textAlignment','textboxTightWrap','outlineLvl','divId','cnfStyle','rPr','sectPr','pPrChange']
+RPR_ORDER = ['rStyle','rFonts','b','bCs','i','iCs','caps','smallCaps','strike','dstrike','outline','shadow','emboss','imprint','noProof','snapToGrid','vanish','webHidden','color','spacing','w','kern','position','sz','szCs','highlight','u','effect','bdr','shd','fitText','vertAlign','rtl','cs','em','lang','eastAsianLayout','specVanish','oMath']
+
+def schema_order(xml):
+    """Word rejects pPr/rPr children out of schema order, so sort them before writing."""
+    if '<w:' not in xml:
+        return xml
+    dom = minidom.parseString(xml)
+    for tag, order in (('w:pPr', PPR_ORDER), ('w:rPr', RPR_ORDER)):
+        for node in dom.getElementsByTagName(tag):
+            kids = [c for c in node.childNodes if c.nodeType == 1]
+            for c in kids:
+                node.removeChild(c)
+            kids.sort(key=lambda c: order.index(c.tagName[2:]) if c.tagName[2:] in order else len(order))
+            for c in kids:
+                node.appendChild(c)
+    return dom.documentElement.toxml() if not xml.startswith('<?xml') else dom.toxml()
+
 def build():
     lines = (ROOT / 'content.md').read_text().splitlines()
     body, media, rels = [], {}, []
     i = 0
+    glossary = False
     cover = False
     while i < len(lines):
         line = lines[i].strip()
@@ -83,6 +102,10 @@ def build():
                     body.append(para(entry.lstrip('# ').strip(), 'TOC1'))
             body.append('<w:p><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>')
             continue
+        if line == '<!-- GLOSSARY -->':
+            glossary = True
+            body.append(para('DANH MỤC THUẬT NGỮ VÀ TỪ VIẾT TẮT', 'FrontHeading'))
+            continue
         if line == '<!-- ABSTRACT -->':
             body.append(para('TÓM TẮT', 'FrontHeading'))
             continue
@@ -93,7 +116,7 @@ def build():
             caption, path = m.groups()
             data = (ROOT / path).read_bytes()
             w, h = dimensions(data)
-            scale = min(4320000 / w, 2880000 / h)  # 12 cm × 8 cm
+            scale = min(4320000 / w, 2340000 / h)  # 12 cm × 6.5 cm
             cx, cy = int(w * scale), int(h * scale)
             index = len(media) + 1
             name = f'image{index}{Path(path).suffix.lower()}'
@@ -117,11 +140,12 @@ def build():
             for idx, row in enumerate(rows):
                 tbl += '<w:tr><w:trPr><w:cantSplit/>' + ('<w:tblHeader/>' if idx == 0 else '') + '</w:trPr>'
                 for cell in row.strip('|').split('|'):
-                    tbl += f'<w:tc><w:tcPr><w:tcW w:w="{width}" w:type="dxa"/>' + ('<w:shd w:fill="E8EEF4"/>' if idx == 0 else '') + '</w:tcPr>' + para(('**'+cell.strip()+'**') if idx == 0 else cell.strip(), 'CoverTable' if cover else 'TableText') + '</w:tc>'
+                    tbl += f'<w:tc><w:tcPr><w:tcW w:w="{width}" w:type="dxa"/>' + ('<w:shd w:fill="E8EEF4"/>' if idx == 0 else '') + '</w:tcPr>' + para(('**'+cell.strip()+'**') if idx == 0 else cell.strip(), 'CoverTable' if cover else 'GlossaryText' if glossary else 'TableText') + '</w:tc>'
                 tbl += '</w:tr>'
             body.append(tbl + '</w:tbl>'); continue
         m = re.match(r'^(#{1,3}) (.*)', line)
         if m:
+            glossary = False
             body.append(para(m[2], 'Heading'+str(len(m[1])))); continue
         if line.startswith('- '):
             body.append(para(line[2:], extra='<w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>')); continue
@@ -129,13 +153,13 @@ def build():
         body.append(para(line, style, center=cover))
     body.append('<w:sectPr><w:footerReference w:type="default" r:id="rIdFooter"/>'+SECTION+'<w:pgNumType w:start="1"/></w:sectPr>')
     document = f'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document {NS}><w:body>'+''.join(body)+'</w:body></w:document>'
-    styles = f'''<w:styles {NS}><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="26"/><w:szCs w:val="26"/><w:lang w:val="vi-VN"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="312" w:lineRule="auto"/><w:jc w:val="both"/><w:ind w:firstLine="567"/><w:widowControl/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>'''
+    styles = f'''<w:styles {NS}><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="26"/><w:szCs w:val="26"/><w:lang w:val="vi-VN"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="80" w:line="288" w:lineRule="auto"/><w:jc w:val="both"/><w:ind w:firstLine="567"/><w:widowControl/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>'''
     for level in (1,2,3):
-        styles += f'<w:style w:type="paragraph" w:styleId="Heading{level}"><w:name w:val="heading {level}"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:keepNext/><w:keepLines/><w:spacing w:before="160" w:after="100"/><w:ind w:firstLine="0"/><w:outlineLvl w:val="{level-1}"/><w:jc w:val="left"/></w:pPr><w:rPr><w:b/>{"<w:i/>" if level == 3 else ""}<w:sz w:val="{28 if level==1 else 26}"/></w:rPr></w:style>'
-    for name, size, align in [('Caption',24,'center'),('TableCaption',24,'center'),('TableText',26,'left'),('CoverTable',26,'center'),('Cover',28,'center'),('CoverTitle',36,'center'),('CoverDate',28,'center'),('FrontHeading',28,'center'),('TOC1',26,'left')]:
+        styles += f'<w:style w:type="paragraph" w:styleId="Heading{level}"><w:name w:val="heading {level}"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr>{"<w:pageBreakBefore/>" if level == 1 else ""}<w:keepNext/><w:keepLines/><w:spacing w:before="160" w:after="100"/><w:ind w:firstLine="0"/><w:outlineLvl w:val="{level-1}"/><w:jc w:val="left"/></w:pPr><w:rPr><w:b/>{"<w:i/>" if level == 3 else ""}<w:sz w:val="{28 if level==1 else 26}"/></w:rPr></w:style>'
+    for name, size, align in [('Caption',24,'center'),('TableCaption',24,'center'),('GlossaryText',22,'left'),('TableText',22,'left'),('CoverTable',26,'center'),('Cover',28,'center'),('CoverTitle',36,'center'),('CoverDate',28,'center'),('FrontHeading',28,'center'),('TOC1',26,'left')]:
         before = 900 if name == 'CoverDate' else 180 if name in ('Cover', 'CoverTitle') else 0
         keep = '<w:keepNext/>' if name in ('TableCaption', 'FrontHeading') else ''
-        styles += f'<w:style w:type="paragraph" w:styleId="{name}"><w:name w:val="{name}"/><w:basedOn w:val="Normal"/><w:pPr><w:ind w:firstLine="0"/><w:spacing w:before="{before}" w:after="120" w:line="312" w:lineRule="auto"/><w:jc w:val="{align}"/>{keep}</w:pPr><w:rPr><w:sz w:val="{size}"/>'+('<w:b/>' if name in ('FrontHeading',) else '')+('<w:i/>' if name in ('Caption','TableCaption') else '')+'</w:rPr></w:style>'
+        styles += f'<w:style w:type="paragraph" w:styleId="{name}"><w:name w:val="{name}"/><w:basedOn w:val="Normal"/><w:pPr><w:ind w:firstLine="0"/><w:spacing w:before="{before}" w:after="{40 if name == "GlossaryText" else 120}" w:line="{240 if name == "GlossaryText" else 312}" w:lineRule="auto"/><w:jc w:val="{align}"/>{keep}</w:pPr><w:rPr><w:sz w:val="{size}"/>'+('<w:b/>' if name in ('FrontHeading',) else '')+('<w:i/>' if name in ('Caption','TableCaption') else '')+'</w:rPr></w:style>'
     styles += '</w:styles>'
     footer = f'<w:ftr {NS}><w:p><w:pPr><w:ind w:firstLine="0"/><w:jc w:val="center"/></w:pPr><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>{run("1")}<w:r><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>'
     relationships = f'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="{R}/styles" Target="styles.xml"/><Relationship Id="rIdSettings" Type="{R}/settings" Target="settings.xml"/><Relationship Id="rIdNumbering" Type="{R}/numbering" Target="numbering.xml"/><Relationship Id="rIdFooter" Type="{R}/footer" Target="footer1.xml"/>'+''.join(rels)+'</Relationships>'
@@ -151,7 +175,7 @@ def build():
     target = ROOT / 'BaoCao_HDH_Nhom3Stars.docx'
     with zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED) as archive:
         for name, data in files.items():
-            minidom.parseString(data)
+            data = schema_order(data)
             info = zipfile.ZipInfo(name, (2026,10,17,0,0,0)); info.compress_type = zipfile.ZIP_DEFLATED
             archive.writestr(info, data.encode('utf-8'))
         for name, data in media.items():

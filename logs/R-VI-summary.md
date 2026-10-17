@@ -147,3 +147,47 @@ keeps `rendered_page_count=null`. Layout settings and the three front-matter
 breaks were preserved; actual pagination still requires Word rendering. The
 existing preview PDF was not regenerated and is not evidence for this revision.
 No hardware measurements were rerun.
+
+## R-VI-6 — student feedback, 2026-10-17
+
+Renamed eight chapters to PHẦN; retained conventional English engineering terms,
+added an alphabetically ordered 45-row front-matter glossary, and implemented
+Heading 1 pageBreakBefore for all Phần and references. Tightened body to 5,189
+whitespace words including tables. All seven original body tables match verbatim;
+comparison against the pre-ticket source found no lost numeric token occurrence.
+Replaced three slide illustrations with four 200-dpi matplotlib diagrams (AoI,
+architecture, frame and queues), capped at 13 × 7.5 cm. Reviewed all four images;
+CRC coverage excludes SOF and CRC, FIFO sends oldest first, and current DMA versus
+conceptual ISR distinction remains in prose. Added four <120-word English redraw
+prompts, updated README and validator, and rebuilt the DOCX. No commit.
+
+Style before: sentences=204 mean=24.7 median=24.0 stdev=9.3 share>=28=0.38
+share<=12=0.12; paragraphs=50 mean_sentences_per_para=4.1.
+Style after: sentences=144 mean=25.6 median=26.0 stdev=9.3 share>=28=0.42
+share<=12=0.10; paragraphs=36 mean_sentences_per_para=4.0. TICKET5 targets pass.
+Validation passes: byte-identical builds, ZIP/XML/relationships, dimensions,
+page-break style, tables, four figures, glossary sorting/count, required framing,
+forbidden internal text and banned prose phrases. Prompt lengths pass.
+
+The <=20-page requirement remains unverified: Word automation failed with macOS
+service connection errors and -1728; LibreOffice is unavailable. validation.json
+honestly retains rendered_page_count=null. No hardware measurements were rerun.
+
+
+### TICKET R-VI-7 — rút gọn, headless Python
+
+- Thân bài 5,189 → 4,565 từ (kể cả bảng); giữ nguyên bảy bảng nội dung,
+  mọi heading, số liệu, bốn hình, danh sách RQ và framing đang triển khai/kết quả sơ bộ.
+- Thuật ngữ còn 25 dòng, chỉ giữ từ dùng trong thân bài; giải thích ≤12 từ,
+  GlossaryText 22 (11 pt). Hình ≤12 × 6.5 cm. Giữ giãn dòng 1.2, cách đoạn
+  4 pt, bảng 11 pt, schema-order sorting và updateFields=true; TOC tĩnh khớp headings.
+- Trước: sentences=144 mean=25.6 median=26.0 stdev=9.3 share>=28=0.42 share<=12=0.10;
+  paragraphs=36 mean_sentences_per_para=4.0.
+- Sau: sentences=136 mean=23.2 median=23.0 stdev=9.1 share>=28=0.34 share<=12=0.13;
+  paragraphs=33 mean_sentences_per_para=4.1. Tất cả mục tiêu TICKET5 PASS,
+  nay được assert trong style_check.py.
+- Rebuild hai lần giống byte; validation và forbidden-text scan PASS; kiểm tra
+  thứ tự schema của toàn bộ 779 pPr/rPr PASS. So sánh nguồn trước/sau xác nhận
+  bảng, heading, hình, RQ và tập token số của thân bài được giữ nguyên.
+- Không mở/chạy/script ứng dụng GUI, không git commit. Mục tiêu ≤20 trang;
+  số trang sau rút gọn chưa được đo, rendered_page_count=null.

@@ -1,25 +1,36 @@
 # Báo cáo Hệ điều hành — Nhóm 3 Stars
 
-Bản nộp là `BaoCao_HDH_Nhom3Stars.docx`; sửa nội dung tại `content.md`.
-Dựng lại từ gốc kho mã bằng `python3 report_vi/build_docx.py`.
-Kiểm tra bằng `python3 report_vi/validate_docx.py`; kết quả lưu ở `validation.json`.
-Chỉ dùng thư viện chuẩn Python; ba ảnh được lưu sẵn trong `figures/`.
+Bản nộp: `BaoCao_HDH_Nhom3Stars.docx`; nguồn biên soạn: `content.md`.
+Từ gốc kho mã:
 
-Bản Word có bìa riêng, tóm tắt, mục lục, tám chương và tài liệu tham khảo.
-Bảy bảng nội dung giữ nguyên số liệu; bìa có thêm bảng ba thành viên.
-Ba hình là minh họa khái niệm. Nội dung bản nộp không có đường dẫn kho mã,
-nhãn đánh giá nội bộ hoặc phụ lục nguồn dữ liệu.
+```sh
+python3 report_vi/figures/draw_figures.py
+python3 report_vi/validate_docx.py
+python3 report_vi/style_check.py
+```
+
+Dựng hình dùng matplotlib có sẵn trên system Python; không cài thêm thư viện.
+Builder DOCX và validator chỉ dùng thư viện chuẩn. Validator dựng hai lần để
+kiểm tra tái lập; kết quả ghi vào `validation.json`. Bốn hình PNG được dựng ở
+200 dpi; `IMAGE_PROMPTS.md` có prompt để vẽ lại cùng nhãn.
+
+Bản Word gồm bìa, tóm tắt, mục lục, bảng thuật ngữ 25 dòng, tám Phần và tài liệu
+tham khảo. Bảy bảng nội dung giữ nguyên số liệu; có thêm bảng thành viên và bảng
+thuật ngữ. Mỗi Phần và tài liệu tham khảo bắt đầu trang mới bằng thuộc tính
+`pageBreakBefore` của Heading 1. Thuật ngữ là front matter, không đánh số Phần.
 
 Khổ A4, lề trên/dưới/trái/phải 2.5/2/3/2 cm, Times New Roman 13 pt,
-giãn dòng 1.3, thụt đầu dòng 1 cm và cách đoạn 6 pt. Tiêu đề chương 14 pt;
-chú thích 12 pt nghiêng, giữa dòng. Chú thích bảng nằm trên bảng và chú thích
-hình nằm dưới hình. Bìa không có số trang; phần tóm tắt bắt đầu trang 1.
-Ba ngắt trang tách bìa, tóm tắt và mục lục; các chương chảy liên tục.
-Mục lục là trường TOC có các mục lưu sẵn; Word cập nhật trường và số trang khi mở.
+giãn dòng 1.2, thụt đầu dòng 1 cm và cách đoạn 4 pt. Tiêu đề Phần 14 pt;
+chú thích 12 pt nghiêng. Bảng thuật ngữ dùng 11 pt, giãn dòng đơn để tiết kiệm
+front matter; bảng nội dung dùng 11 pt. Hình tối đa 12 × 6.5 cm. Bìa không có số
+trang; phần tóm tắt bắt đầu trang 1. Word cập nhật trường TOC khi mở tài liệu.
 
-Thân bài khoảng 5,800 từ tách bằng khoảng trắng, kể cả bảng, gần độ dài bản trước.
-Mục tiêu là 16–19 trang A4. Không có Word/LibreOffice trong môi trường hiện tại,
-vì vậy số trang thực tế chưa được xác nhận; `rendered_page_count` vẫn là null.
-Kiểm tra tự động bao gồm ZIP/XML, quan hệ nội bộ, bố cục, văn bản cấm và hai lần
-dựng có kết quả giống nhau. Công việc này không chạy lại phép đo phần cứng.
-`source_manifest.json` là hồ sơ nguồn biên soạn trước đó, không nhúng vào bản Word.
+Thân bài khoảng 4,565 từ tách bằng khoảng trắng, kể cả bảng. Mục tiêu tối đa 20
+trang gồm toàn bộ front matter. Số trang chưa được xác nhận bằng dàn trang sau lần rút gọn này. Bản trước
+được đo là 24 trang với giãn dòng 1.3 và bảng 13 pt. TICKET7 chỉ cho phép
+Python headless, không mở hay tự động hóa ứng dụng GUI; vì vậy
+`rendered_page_count` vẫn là null. Kiểm tra XML không thay phép dàn trang.
+Kiểm tra tự động bao gồm ZIP/XML, quan hệ, bố cục, văn bản cấm, số bảng và hình,
+thuật ngữ, thứ tự con pPr/rPr, mục lục tĩnh và tính tái lập.
+`style_check.py` kiểm tra và assert toàn bộ mục tiêu nhịp văn TICKET5. Không chạy lại phép đo phần cứng.
+`source_manifest.json` là hồ sơ biên soạn trước đó, không nhúng vào bản Word.
