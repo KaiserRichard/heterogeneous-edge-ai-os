@@ -1,0 +1,16 @@
+{
+  "zip_crc": "PASS",
+  "all_xml_and_relationships_parse": "PASS",
+  "continuous_flow_figure_limits_table_pagination": "PASS",
+  "relationship_targets": "PASS",
+  "reproducible_build": "PASS",
+  "a4_margins_styles_toc_cover_footer": "PASS",
+  "body_whitespace_words_including_tables_and_sources": 5597,
+  "forced_front_matter_breaks": 3,
+  "target_word_pages": "17–19",
+  "tables": 7,
+  "figures": 3,
+  "rendered_page_count": null,
+  "rendering_limit": "Word pagination requires rendering; continuous flow targets 17–19 pages, not a verified page count.",
+  "docx_sha256": "c02893d11e59e28407f13da0a6216915154cbeb6f5d36cba0e17a678097df044"
+}

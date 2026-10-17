@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+"""Build the Vietnamese report offline using only Python's standard library.
+
+Subset: #/##/### headings, paragraphs, - bullets, **bold**, *italic*, pipe
+ tables, ![caption](relative-image), <!-- PAGE -->, <!-- COVER -->,
+ <!-- ABSTRACT --> and <!-- TOC -->. Only front matter uses explicit page breaks.
+"""
+from pathlib import Path
+import re
+import struct
+import zipfile
+from xml.sax.saxutils import escape
+from xml.dom import minidom
+
+ROOT = Path(__file__).resolve().parent
+W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
+NS = f'xmlns:w="{W}" xmlns:r="{R}"'
+
+def run(text, bold=False, italic=False):
+    props = ('<w:b/>' if bold else '') + ('<w:i/>' if italic else '')
+    # Break long provenance paths at separators without changing visible text.
+    text = re.sub(r'([/_])', lambda m: m[0] + '\u200b', text) if '/' in text else text
+    return f'<w:r><w:rPr>{props}</w:rPr><w:t xml:space="preserve">{escape(text)}</w:t></w:r>'
+
+def inline(text):
+    return ''.join(run(t[2:-2], bold=True) if t.startswith('**') else
+                   run(t[1:-1], italic=True) if t.startswith('*') else run(t)
+                   for t in re.split(r'(\*\*.*?\*\*|\*[^*]+\*)', text) if t)
+
+def para(text='', style=None, center=False, extra=''):
+    p = (f'<w:pStyle w:val="{style}"/>' if style else '')
+    p += '<w:jc w:val="center"/>' if center else ''
+    return f'<w:p><w:pPr>{p}{extra}</w:pPr>{inline(text)}</w:p>'
+
+def dimensions(data):
+    if data.startswith(b'\x89PNG'):
+        return struct.unpack('>II', data[16:24])
+    i = 2
+    while i < len(data):
+        if data[i] != 255:
+            i += 1
+            continue
+        marker = data[i+1]
+        i += 2
+        if marker in (0xD8, 0xD9):
+            continue
+        n = int.from_bytes(data[i:i+2], 'big')
+        if marker in (0xC0, 0xC1, 0xC2):
+            h, w = struct.unpack('>HH', data[i+3:i+7])
+            return w, h
+        i += n
+    raise ValueError('Unsupported image')
+
+PAGE = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
+# A4; top/bottom/left/right = 2.5/2/3/2 cm, rounded to twips.
+SECTION = '<w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1417" w:bottom="1134" w:left="1701" w:right="1134" w:header="567" w:footer="567" w:gutter="0"/>'
+
+def build():
+    lines = (ROOT / 'content.md').read_text().splitlines()
+    body, media, rels = [], {}, []
+    i = 0
+    cover = False
+    while i < len(lines):
+        line = lines[i].strip()
+        i += 1
+        if not line:
+            continue
+        if line == '<!-- COVER -->':
+            cover = True
+            continue
+        if line == '<!-- PAGE -->':
+            if cover:
+                body.append('<w:p><w:pPr><w:sectPr><w:type w:val="nextPage"/>' + SECTION + '</w:sectPr></w:pPr></w:p>')
+                cover = False
+            else:
+                body.append(PAGE)
+            continue
+        if line == '<!-- TOC -->':
+            body.append(para('Mục lục', 'FrontHeading'))
+            body.append('<w:p><w:r><w:fldChar w:fldCharType="begin" w:dirty="true"/></w:r><w:r><w:instrText xml:space="preserve"> TOC \\o "1-2" \\h \\z \\u </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r></w:p>')
+            # Cached entries remain readable before Word updates the field.
+            for entry in lines:
+                if entry.startswith('# ') and not entry.startswith('# Tóm'):
+                    body.append(para(entry[2:], 'TOC1'))
+            body.append('<w:p><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>')
+            body.append(para('Mở bằng Microsoft Word để tự động cập nhật mục lục và số trang; nếu được hỏi, chọn cập nhật trường.', 'Source'))
+            continue
+        if line == '<!-- ABSTRACT -->':
+            body.append(para('Tóm tắt', 'FrontHeading'))
+            continue
+        if line.startswith('<!--'):
+            continue
+        m = re.fullmatch(r'!\[(.*?)\]\((.*?)\)', line)
+        if m:
+            caption, path = m.groups()
+            data = (ROOT / path).read_bytes()
+            w, h = dimensions(data)
+            scale = min(4320000 / w, 2880000 / h)  # 12 cm × 8 cm
+            cx, cy = int(w * scale), int(h * scale)
+            index = len(media) + 1
+            name = f'image{index}{Path(path).suffix.lower()}'
+            rid = f'rIdImage{index}'
+            media[name] = data
+            rels.append(f'<Relationship Id="{rid}" Type="{R}/image" Target="media/{name}"/>')
+            body.append(f'''<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" distT="0" distB="0" distL="0" distR="0"><wp:extent cx="{cx}" cy="{cy}"/><wp:docPr id="{index}" name="Hình {index}" descr="{escape(caption, {'"': '&quot;'})}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="{index}" name="{name}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="{rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>''')
+            body.append(para(caption, 'Caption', center=True))
+            continue
+        if line.startswith('|'):
+            rows = [line]
+            while i < len(lines) and lines[i].strip().startswith('|'):
+                rows.append(lines[i].strip()); i += 1
+            rows = [r for r in rows if not re.fullmatch(r'[| :\-]+', r)]
+            n = len(rows[0].strip('|').split('|'))
+            width = 9071 // n
+            tbl = '<w:tbl><w:tblPr><w:tblW w:w="9071" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders>'
+            tbl += ''.join(f'<w:{side} w:val="single" w:sz="4" w:color="808080"/>' for side in ('top','left','bottom','right','insideH','insideV'))
+            tbl += '</w:tblBorders><w:tblCellMar><w:top w:w="60" w:type="dxa"/><w:bottom w:w="60" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>'
+            tbl += f'<w:gridCol w:w="{width}"/>' * n + '</w:tblGrid>'
+            for idx, row in enumerate(rows):
+                tbl += '<w:tr><w:trPr><w:cantSplit/>' + ('<w:tblHeader/>' if idx == 0 else '') + '</w:trPr>'
+                for cell in row.strip('|').split('|'):
+                    tbl += f'<w:tc><w:tcPr><w:tcW w:w="{width}" w:type="dxa"/>' + ('<w:shd w:fill="E8EEF4"/>' if idx == 0 else '') + '</w:tcPr>' + para(('**'+cell.strip()+'**') if idx == 0 else cell.strip(), 'TableText') + '</w:tc>'
+                tbl += '</w:tr>'
+            body.append(tbl + '</w:tbl>'); continue
+        m = re.match(r'^(#{1,3}) (.*)', line)
+        if m:
+            body.append(para(m[2], 'Heading'+str(len(m[1])))); continue
+        if line.startswith('- '):
+            body.append(para(line[2:], extra='<w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>')); continue
+        style = 'Cover' if cover else 'Caption' if re.match(r'^Bảng \d+\.', line) else 'Source' if line.startswith('Nguồn:') else None
+        body.append(para(line, style, center=cover))
+    body.append('<w:sectPr><w:footerReference w:type="default" r:id="rIdFooter"/>'+SECTION+'<w:pgNumType w:start="1"/></w:sectPr>')
+    document = f'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document {NS}><w:body>'+''.join(body)+'</w:body></w:document>'
+    styles = f'''<w:styles {NS}><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="26"/><w:szCs w:val="26"/><w:lang w:val="vi-VN"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="80" w:line="312" w:lineRule="auto"/><w:jc w:val="both"/><w:widowControl/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>'''
+    for level in (1,2,3):
+        styles += f'<w:style w:type="paragraph" w:styleId="Heading{level}"><w:name w:val="heading {level}"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:keepNext/><w:keepLines/><w:spacing w:before="160" w:after="100"/><w:outlineLvl w:val="{level-1}"/><w:jc w:val="left"/></w:pPr><w:rPr><w:b/><w:sz w:val="{30 if level==1 else 26}"/></w:rPr></w:style>'
+    for name, size, align in [('Caption',26,'center'),('Source',22,'left'),('TableText',26,'left'),('Cover',30,'center'),('FrontHeading',30,'center'),('TOC1',26,'left')]:
+        keep = '<w:keepNext/>' if name in ('Caption', 'FrontHeading') else ''
+        styles += f'<w:style w:type="paragraph" w:styleId="{name}"><w:name w:val="{name}"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="60" w:line="312" w:lineRule="auto"/><w:jc w:val="{align}"/>{keep}</w:pPr><w:rPr><w:sz w:val="{size}"/>'+('<w:b/>' if name in ('FrontHeading','Caption') else '')+'</w:rPr></w:style>'
+    styles += '</w:styles>'
+    footer = f'<w:ftr {NS}><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>{run("1")}<w:r><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>'
+    relationships = f'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="{R}/styles" Target="styles.xml"/><Relationship Id="rIdSettings" Type="{R}/settings" Target="settings.xml"/><Relationship Id="rIdNumbering" Type="{R}/numbering" Target="numbering.xml"/><Relationship Id="rIdFooter" Type="{R}/footer" Target="footer1.xml"/>'+''.join(rels)+'</Relationships>'
+    files = {'word/document.xml': document, 'word/styles.xml': styles, 'word/footer1.xml': footer,
+             'word/settings.xml': f'<w:settings {NS}><w:updateFields w:val="true"/></w:settings>',
+             'word/numbering.xml': f'<w:numbering {NS}><w:abstractNum w:abstractNumId="0"><w:multiLevelType w:val="singleLevel"/><w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="bullet"/><w:lvlText w:val="•"/><w:lvlJc w:val="left"/><w:pPr><w:tabs><w:tab w:val="num" w:pos="360"/></w:tabs><w:ind w:left="360" w:hanging="240"/></w:pPr></w:lvl></w:abstractNum><w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num></w:numbering>',
+             'word/_rels/document.xml.rels': relationships,
+             '_rels/.rels': f'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="{R}/officeDocument" Target="word/document.xml"/></Relationships>'}
+    types = '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpg" ContentType="image/jpeg"/><Default Extension="png" ContentType="image/png"/>'
+    for part, kind in [('document','document.main'),('styles','styles'),('settings','settings'),('numbering','numbering'),('footer1','footer')]:
+        types += f'<Override PartName="/word/{part}.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.{kind}+xml"/>'
+    files['[Content_Types].xml'] = types+'</Types>'
+    target = ROOT / 'BaoCao_HDH_Nhom3Stars.docx'
+    with zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED) as archive:
+        for name, data in files.items():
+            minidom.parseString(data)
+            info = zipfile.ZipInfo(name, (2026,10,17,0,0,0)); info.compress_type = zipfile.ZIP_DEFLATED
+            archive.writestr(info, data.encode('utf-8'))
+        for name, data in media.items():
+            info = zipfile.ZipInfo('word/media/'+name, (2026,10,17,0,0,0)); info.compress_type = zipfile.ZIP_DEFLATED
+            archive.writestr(info, data)
+    print(target)
+    print(f'Explicit layout blocks: {1 + sum(l.strip()=="<!-- PAGE -->" for l in lines)}; images: {len(media)}')
+
+if __name__ == '__main__':
+    build()
