@@ -1,0 +1,37 @@
+{
+  "fault": "F4",
+  "rep": 1,
+  "status": "COMPLETE",
+  "evidence": "UNVERIFIED ON HARDWARE",
+  "steady_start_pi_ns": 5475651794884,
+  "onset_pi_ns": 5478945299104,
+  "fault_end_pi_ns": 5479945300455,
+  "marker_edges": [
+    {
+      "value": 0,
+      "before_pi_ns": 5477741547179,
+      "after_pi_ns": 5477741551697,
+      "software_bracket_ns": 4518
+    },
+    {
+      "value": 1,
+      "before_pi_ns": 5478945280215,
+      "after_pi_ns": 5478945293641,
+      "software_bracket_ns": 13426
+    },
+    {
+      "value": 0,
+      "before_pi_ns": 5479945507270,
+      "after_pi_ns": 5479945518807,
+      "software_bracket_ns": 11537
+    },
+    {
+      "value": 0,
+      "before_pi_ns": 5479945526048,
+      "after_pi_ns": 5479945527900,
+      "software_bracket_ns": 1852
+    }
+  ],
+  "observation_end_pi_ns": 5480947242177,
+  "recovery_start_pi_ns": 5480950757677
+}

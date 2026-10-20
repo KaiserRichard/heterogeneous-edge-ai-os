@@ -1,0 +1,1 @@
+scripts/pi/run_pipeline.sh --serial /dev/ttyAMA0 --baud 921600 --duration 60 --bridge-cpu 2 --sync-gpio 17 --run-dir results/2026-10-20_rerun/PS1/link60 

@@ -1,0 +1,5 @@
+2026-10-20T14:15:23 INFO flash_loader.c: Successfully loaded flash loader in sram
+2026-10-20T14:15:23 INFO flash_loader.c: Clear DFSR
+2026-10-20T14:15:23 INFO flash_loader.c: enabling 32-bit flash writes
+2026-10-20T14:15:23 INFO common_flash.c: Starting verification of write complete
+2026-10-20T14:15:23 INFO common_flash.c: Flash written and verified! jolly good!

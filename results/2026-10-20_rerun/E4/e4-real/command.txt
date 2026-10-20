@@ -1,0 +1,1 @@
+/home/richard/os-rerun/tools/experiments/e4_campaign.sh results/2026-10-20_rerun/E4/e4-real 5

@@ -1,0 +1,16 @@
+condition,run,status,reason,samples,overflows,min_us,avg_us,avg_source,p50_us,p95_us,p99_us,p99_9_us,max_us,kernel,governor,max_temp_c,throttled
+P1_B0_idle,B0_idle_r1,VALID,,60000,0,2,5.176816666666666,histogram,5,6,15,20,34,6.8.0-1065-raspi,ondemand,52.35,0x0
+P1_B0_idle,B0_idle_r2,VALID,,60000,0,2,5.1491,histogram,5,6,13,19,31,6.8.0-1065-raspi,ondemand,51.8,0x0
+P1_B0_idle,B0_idle_r3,VALID,,60000,0,2,5.1696,histogram,5,6,14,19,52,6.8.0-1065-raspi,ondemand,53.45,0x0
+P1_B1_stream_c2,B1_stream_c2_r1,VALID,,60000,0,3,8.100333333333333,histogram,6,26,42,56,78,6.8.0-1065-raspi,ondemand,61.7,0x0
+P1_B1_stream_c2,B1_stream_c2_r2,VALID,,60000,0,3,8.11885,histogram,6,25,41,55,137,6.8.0-1065-raspi,ondemand,60.05,0x0
+P1_B1_stream_c2,B1_stream_c2_r3,VALID,,60000,0,3,8.33295,histogram,6,27,44,58,76,6.8.0-1065-raspi,ondemand,60.05,0x0
+P1_B2_memrate_c23,B2_memrate_c23_r1,VALID,,60000,0,3,16.515283333333333,histogram,5,67,114,182,391,6.8.0-1065-raspi,ondemand,62.8,0x0
+P1_B2_memrate_c23,B2_memrate_c23_r2,VALID,,60000,0,3,27.408133333333332,histogram,5,139,253,303,784,6.8.0-1065-raspi,ondemand,61.7,0x0
+P1_B2_memrate_c23,B2_memrate_c23_r3,VALID,,60000,0,2,24.93845,histogram,7,91,196,488,980,6.8.0-1065-raspi,ondemand,60.6,0x0
+P1_C1_cache2M_c2,C1_cache2M_c2_r1,VALID,,60000,0,2,5.3673,histogram,3,19,37,55,97,6.8.0-1065-raspi,ondemand,61.7,0x0
+P1_C1_cache2M_c2,C1_cache2M_c2_r2,VALID,,60000,0,2,5.3515,histogram,3,19,39,58,91,6.8.0-1065-raspi,ondemand,62.25,0x0
+P1_C1_cache2M_c2,C1_cache2M_c2_r3,VALID,,60000,0,2,5.2451,histogram,3,18,35,51,74,6.8.0-1065-raspi,ondemand,62.25,0x0
+P1_CPU_c23,CPU_c23_r1,VALID,,60000,0,2,3.3324,histogram,3,5,11,17,41,6.8.0-1065-raspi,ondemand,61.15,0x0
+P1_CPU_c23,CPU_c23_r2,VALID,,60000,0,2,3.3776333333333333,histogram,3,5,13,19,84,6.8.0-1065-raspi,ondemand,60.6,0x0
+P1_CPU_c23,CPU_c23_r3,VALID,,60000,0,2,3.4259666666666666,histogram,3,5,13,21,88,6.8.0-1065-raspi,ondemand,61.7,0x0

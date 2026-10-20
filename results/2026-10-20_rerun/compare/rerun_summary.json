@@ -1,0 +1,5407 @@
+{
+  "schema_version": 1,
+  "rerun_date": "2026-10-20",
+  "root": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun",
+  "notes": [
+    "Original v1 summaries are retained; reruns use current v2 acceptance.",
+    "R3 physical E3 and R7 standalone inference are not repeated by the supplied layout.",
+    "E4 original includes short F4/F5 windows; new full-campaign acceptance is separate.",
+    "Counts are independent runs; samples separately counts observed transitions/captures."
+  ],
+  "original_sources": {
+    "P0": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-11_cyclictest/20261008T091937Z_cyc_P0",
+    "P1": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-11_cyclictest/20261008T091937Z_cyc_P1",
+    "E123": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-11_e1_e2_e3_pty/20261008T103412Z_e_onnx",
+    "E3B": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-12_e3b_input_latest/20261012T091415Z_e3b",
+    "E4": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-12_e4_faults/20261012T093526Z_e4",
+    "LA": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-12_logic_analyzer"
+  },
+  "parts": {
+    "P0": {
+      "status": "ok",
+      "source": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/P1/cyclictest_p0",
+      "valid": 15,
+      "total": 15,
+      "records": [
+        {
+          "condition": "P0_B0_idle",
+          "run": "B0_idle_r1",
+          "status": "VALID",
+          "reason": "",
+          "samples": 59903,
+          "overflows": 0,
+          "min_us": 9,
+          "avg_us": 61.08550489958767,
+          "avg_source": "histogram",
+          "p50_us": 56,
+          "p95_us": 60,
+          "p99_us": 142,
+          "p99_9_us": 1126,
+          "max_us": 1505,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 52.9,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P0_B0_idle",
+          "run": "B0_idle_r2",
+          "status": "VALID",
+          "reason": "",
+          "samples": 59906,
+          "overflows": 0,
+          "min_us": 12,
+          "avg_us": 60.798467599238805,
+          "avg_source": "histogram",
+          "p50_us": 56,
+          "p95_us": 60,
+          "p99_us": 88,
+          "p99_9_us": 1108,
+          "max_us": 1525,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 52.35,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P0_B0_idle",
+          "run": "B0_idle_r3",
+          "status": "VALID",
+          "reason": "",
+          "samples": 59902,
+          "overflows": 0,
+          "min_us": 9,
+          "avg_us": 60.723765483623254,
+          "avg_source": "histogram",
+          "p50_us": 56,
+          "p95_us": 60,
+          "p99_us": 95,
+          "p99_9_us": 1128,
+          "max_us": 2338,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 53.45,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P0_B1_stream_c2",
+          "run": "B1_stream_c2_r1",
+          "status": "VALID",
+          "reason": "",
+          "samples": 59641,
+          "overflows": 0,
+          "min_us": 14,
+          "avg_us": 73.83757817608692,
+          "avg_source": "histogram",
+          "p50_us": 56,
+          "p95_us": 77,
+          "p99_us": 677,
+          "p99_9_us": 1798,
+          "max_us": 5442,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 60.6,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P0_B1_stream_c2",
+          "run": "B1_stream_c2_r2",
+          "status": "VALID",
+          "reason": "",
+          "samples": 59684,
+          "overflows": 0,
+          "min_us": 13,
+          "avg_us": 73.14710810267408,
+          "avg_source": "histogram",
+          "p50_us": 57,
+          "p95_us": 73,
+          "p99_us": 675,
+          "p99_9_us": 1893,
+          "max_us": 2978,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 60.05,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P0_B1_stream_c2",
+          "run": "B1_stream_c2_r3",
+          "status": "VALID",
+          "reason": "",
+          "samples": 59716,
+          "overflows": 0,
+          "min_us": 12,
+          "avg_us": 71.02967378926921,
+          "avg_source": "histogram",
+          "p50_us": 56,
+          "p95_us": 73,
+          "p99_us": 618,
+          "p99_9_us": 1602,
+          "max_us": 2488,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 61.15,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P0_B2_memrate_c23",
+          "run": "B2_memrate_c23_r1",
+          "status": "VALID",
+          "reason": "",
+          "samples": 59303,
+          "overflows": 0,
+          "min_us": 9,
+          "avg_us": 98.65089455845404,
+          "avg_source": "histogram",
+          "p50_us": 55,
+          "p95_us": 249,
+          "p99_us": 1027,
+          "p99_9_us": 2214,
+          "max_us": 4109,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 61.7,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P0_B2_memrate_c23",
+          "run": "B2_memrate_c23_r2",
+          "status": "VALID",
+          "reason": "",
+          "samples": 59397,
+          "overflows": 0,
+          "min_us": 12,
+          "avg_us": 96.0925130898867,
+          "avg_source": "histogram",
+          "p50_us": 56,
+          "p95_us": 187,
+          "p99_us": 950,
+          "p99_9_us": 1973,
+          "max_us": 3976,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 62.8,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P0_B2_memrate_c23",
+          "run": "B2_memrate_c23_r3",
+          "status": "VALID",
+          "reason": "",
+          "samples": 59231,
+          "overflows": 0,
+          "min_us": 8,
+          "avg_us": 91.1808005942834,
+          "avg_source": "histogram",
+          "p50_us": 55,
+          "p95_us": 120,
+          "p99_us": 1020,
+          "p99_9_us": 2168,
+          "max_us": 3192,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 60.05,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P0_C1_cache2M_c2",
+          "run": "C1_cache2M_c2_r1",
+          "status": "VALID",
+          "reason": "",
+          "samples": 59797,
+          "overflows": 0,
+          "min_us": 8,
+          "avg_us": 65.34856263692159,
+          "avg_source": "histogram",
+          "p50_us": 54,
+          "p95_us": 72,
+          "p99_us": 438,
+          "p99_9_us": 1585,
+          "max_us": 2603,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 61.7,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P0_C1_cache2M_c2",
+          "run": "C1_cache2M_c2_r2",
+          "status": "VALID",
+          "reason": "",
+          "samples": 59813,
+          "overflows": 0,
+          "min_us": 8,
+          "avg_us": 65.5168441643121,
+          "avg_source": "histogram",
+          "p50_us": 54,
+          "p95_us": 77,
+          "p99_us": 403,
+          "p99_9_us": 1451,
+          "max_us": 2830,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 61.15,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P0_C1_cache2M_c2",
+          "run": "C1_cache2M_c2_r3",
+          "status": "VALID",
+          "reason": "",
+          "samples": 59827,
+          "overflows": 0,
+          "min_us": 8,
+          "avg_us": 64.09662861249937,
+          "avg_source": "histogram",
+          "p50_us": 54,
+          "p95_us": 72,
+          "p99_us": 403,
+          "p99_9_us": 1355,
+          "max_us": 2253,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 62.25,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P0_CPU_c23",
+          "run": "CPU_c23_r1",
+          "status": "VALID",
+          "reason": "",
+          "samples": 59947,
+          "overflows": 0,
+          "min_us": 8,
+          "avg_us": 58.18676497572856,
+          "avg_source": "histogram",
+          "p50_us": 53,
+          "p95_us": 56,
+          "p99_us": 183,
+          "p99_9_us": 936,
+          "max_us": 2322,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 60.6,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P0_CPU_c23",
+          "run": "CPU_c23_r2",
+          "status": "VALID",
+          "reason": "",
+          "samples": 59959,
+          "overflows": 0,
+          "min_us": 7,
+          "avg_us": 57.77758134725396,
+          "avg_source": "histogram",
+          "p50_us": 53,
+          "p95_us": 56,
+          "p99_us": 175,
+          "p99_9_us": 888,
+          "max_us": 2545,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 60.05,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P0_CPU_c23",
+          "run": "CPU_c23_r3",
+          "status": "VALID",
+          "reason": "",
+          "samples": 59935,
+          "overflows": 0,
+          "min_us": 6,
+          "avg_us": 59.161858680236925,
+          "avg_source": "histogram",
+          "p50_us": 53,
+          "p95_us": 56,
+          "p99_us": 228,
+          "p99_9_us": 1016,
+          "max_us": 2679,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 60.6,
+          "throttled": "0x0"
+        }
+      ]
+    },
+    "P1": {
+      "status": "ok",
+      "source": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/P1/cyclictest_p1",
+      "valid": 15,
+      "total": 15,
+      "records": [
+        {
+          "condition": "P1_B0_idle",
+          "run": "B0_idle_r1",
+          "status": "VALID",
+          "reason": "",
+          "samples": 60000,
+          "overflows": 0,
+          "min_us": 2,
+          "avg_us": 5.176816666666666,
+          "avg_source": "histogram",
+          "p50_us": 5,
+          "p95_us": 6,
+          "p99_us": 15,
+          "p99_9_us": 20,
+          "max_us": 34,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 52.35,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P1_B0_idle",
+          "run": "B0_idle_r2",
+          "status": "VALID",
+          "reason": "",
+          "samples": 60000,
+          "overflows": 0,
+          "min_us": 2,
+          "avg_us": 5.1491,
+          "avg_source": "histogram",
+          "p50_us": 5,
+          "p95_us": 6,
+          "p99_us": 13,
+          "p99_9_us": 19,
+          "max_us": 31,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 51.8,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P1_B0_idle",
+          "run": "B0_idle_r3",
+          "status": "VALID",
+          "reason": "",
+          "samples": 60000,
+          "overflows": 0,
+          "min_us": 2,
+          "avg_us": 5.1696,
+          "avg_source": "histogram",
+          "p50_us": 5,
+          "p95_us": 6,
+          "p99_us": 14,
+          "p99_9_us": 19,
+          "max_us": 52,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 53.45,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P1_B1_stream_c2",
+          "run": "B1_stream_c2_r1",
+          "status": "VALID",
+          "reason": "",
+          "samples": 60000,
+          "overflows": 0,
+          "min_us": 3,
+          "avg_us": 8.100333333333333,
+          "avg_source": "histogram",
+          "p50_us": 6,
+          "p95_us": 26,
+          "p99_us": 42,
+          "p99_9_us": 56,
+          "max_us": 78,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 61.7,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P1_B1_stream_c2",
+          "run": "B1_stream_c2_r2",
+          "status": "VALID",
+          "reason": "",
+          "samples": 60000,
+          "overflows": 0,
+          "min_us": 3,
+          "avg_us": 8.11885,
+          "avg_source": "histogram",
+          "p50_us": 6,
+          "p95_us": 25,
+          "p99_us": 41,
+          "p99_9_us": 55,
+          "max_us": 137,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 60.05,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P1_B1_stream_c2",
+          "run": "B1_stream_c2_r3",
+          "status": "VALID",
+          "reason": "",
+          "samples": 60000,
+          "overflows": 0,
+          "min_us": 3,
+          "avg_us": 8.33295,
+          "avg_source": "histogram",
+          "p50_us": 6,
+          "p95_us": 27,
+          "p99_us": 44,
+          "p99_9_us": 58,
+          "max_us": 76,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 60.05,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P1_B2_memrate_c23",
+          "run": "B2_memrate_c23_r1",
+          "status": "VALID",
+          "reason": "",
+          "samples": 60000,
+          "overflows": 0,
+          "min_us": 3,
+          "avg_us": 16.515283333333333,
+          "avg_source": "histogram",
+          "p50_us": 5,
+          "p95_us": 67,
+          "p99_us": 114,
+          "p99_9_us": 182,
+          "max_us": 391,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 62.8,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P1_B2_memrate_c23",
+          "run": "B2_memrate_c23_r2",
+          "status": "VALID",
+          "reason": "",
+          "samples": 60000,
+          "overflows": 0,
+          "min_us": 3,
+          "avg_us": 27.408133333333332,
+          "avg_source": "histogram",
+          "p50_us": 5,
+          "p95_us": 139,
+          "p99_us": 253,
+          "p99_9_us": 303,
+          "max_us": 784,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 61.7,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P1_B2_memrate_c23",
+          "run": "B2_memrate_c23_r3",
+          "status": "VALID",
+          "reason": "",
+          "samples": 60000,
+          "overflows": 0,
+          "min_us": 2,
+          "avg_us": 24.93845,
+          "avg_source": "histogram",
+          "p50_us": 7,
+          "p95_us": 91,
+          "p99_us": 196,
+          "p99_9_us": 488,
+          "max_us": 980,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 60.6,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P1_C1_cache2M_c2",
+          "run": "C1_cache2M_c2_r1",
+          "status": "VALID",
+          "reason": "",
+          "samples": 60000,
+          "overflows": 0,
+          "min_us": 2,
+          "avg_us": 5.3673,
+          "avg_source": "histogram",
+          "p50_us": 3,
+          "p95_us": 19,
+          "p99_us": 37,
+          "p99_9_us": 55,
+          "max_us": 97,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 61.7,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P1_C1_cache2M_c2",
+          "run": "C1_cache2M_c2_r2",
+          "status": "VALID",
+          "reason": "",
+          "samples": 60000,
+          "overflows": 0,
+          "min_us": 2,
+          "avg_us": 5.3515,
+          "avg_source": "histogram",
+          "p50_us": 3,
+          "p95_us": 19,
+          "p99_us": 39,
+          "p99_9_us": 58,
+          "max_us": 91,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 62.25,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P1_C1_cache2M_c2",
+          "run": "C1_cache2M_c2_r3",
+          "status": "VALID",
+          "reason": "",
+          "samples": 60000,
+          "overflows": 0,
+          "min_us": 2,
+          "avg_us": 5.2451,
+          "avg_source": "histogram",
+          "p50_us": 3,
+          "p95_us": 18,
+          "p99_us": 35,
+          "p99_9_us": 51,
+          "max_us": 74,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 62.25,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P1_CPU_c23",
+          "run": "CPU_c23_r1",
+          "status": "VALID",
+          "reason": "",
+          "samples": 60000,
+          "overflows": 0,
+          "min_us": 2,
+          "avg_us": 3.3324,
+          "avg_source": "histogram",
+          "p50_us": 3,
+          "p95_us": 5,
+          "p99_us": 11,
+          "p99_9_us": 17,
+          "max_us": 41,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 61.15,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P1_CPU_c23",
+          "run": "CPU_c23_r2",
+          "status": "VALID",
+          "reason": "",
+          "samples": 60000,
+          "overflows": 0,
+          "min_us": 2,
+          "avg_us": 3.3776333333333333,
+          "avg_source": "histogram",
+          "p50_us": 3,
+          "p95_us": 5,
+          "p99_us": 13,
+          "p99_9_us": 19,
+          "max_us": 84,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 60.6,
+          "throttled": "0x0"
+        },
+        {
+          "condition": "P1_CPU_c23",
+          "run": "CPU_c23_r3",
+          "status": "VALID",
+          "reason": "",
+          "samples": 60000,
+          "overflows": 0,
+          "min_us": 2,
+          "avg_us": 3.4259666666666666,
+          "avg_source": "histogram",
+          "p50_us": 3,
+          "p95_us": 5,
+          "p99_us": 13,
+          "p99_9_us": 21,
+          "max_us": 88,
+          "kernel": "6.8.0-1065-raspi",
+          "governor": "ondemand",
+          "max_temp_c": 61.7,
+          "throttled": "0x0"
+        }
+      ]
+    },
+    "E123": {
+      "status": "not run",
+      "source": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/E123/e-onnx",
+      "valid": 0,
+      "total": 0
+    },
+    "E4": {
+      "status": "ok",
+      "source": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/E4/e4-real",
+      "valid": 25,
+      "total": 25,
+      "records": [
+        {
+          "run": "F1-r01",
+          "fault": "F1",
+          "rep": 1,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 2.411458,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "3",
+          "local_reference": "last_hb_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_hb_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 85142.7079189453,
+          "detection_mcu_us": 175066,
+          "failsafe_us": 86142.62103320312,
+          "failsafe_mcu_us": 100433,
+          "recovery_us": 215782.683
+        },
+        {
+          "run": "F1-r02",
+          "fault": "F1",
+          "rep": 2,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 4.013821,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "3",
+          "local_reference": "last_hb_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_hb_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 84102.77737304688,
+          "detection_mcu_us": 174975,
+          "failsafe_us": 85102.69031152343,
+          "failsafe_mcu_us": 100427,
+          "recovery_us": 216149.783
+        },
+        {
+          "run": "F1-r03",
+          "fault": "F1",
+          "rep": 3,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 3.306277,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "3",
+          "local_reference": "last_hb_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_hb_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 84495.62812792968,
+          "detection_mcu_us": 174409,
+          "failsafe_us": 85495.54101074219,
+          "failsafe_mcu_us": 100418,
+          "recovery_us": 215221.995
+        },
+        {
+          "run": "F1-r04",
+          "fault": "F1",
+          "rep": 4,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 2.561117,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "3",
+          "local_reference": "last_hb_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_hb_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 84769.12634960937,
+          "detection_mcu_us": 174738,
+          "failsafe_us": 86768.95218652344,
+          "failsafe_mcu_us": 100432,
+          "recovery_us": 197730.04
+        },
+        {
+          "run": "F1-r05",
+          "fault": "F1",
+          "rep": 5,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 3.1,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "3",
+          "local_reference": "last_hb_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_hb_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 84999.96111328126,
+          "detection_mcu_us": 174931,
+          "failsafe_us": 85999.87414746094,
+          "failsafe_mcu_us": 100285,
+          "recovery_us": 198739.862
+        },
+        {
+          "run": "F2-r01",
+          "fault": "F2",
+          "rep": 1,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 4.56998,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "3",
+          "local_reference": "last_hb_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_hb_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 82891.07420605469,
+          "detection_mcu_us": 174911,
+          "failsafe_us": 84890.90037109375,
+          "failsafe_mcu_us": 100419,
+          "recovery_us": 9221024.364
+        },
+        {
+          "run": "F2-r02",
+          "fault": "F2",
+          "rep": 2,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 3.809295,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "3",
+          "local_reference": "last_hb_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_hb_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 85668.54123828125,
+          "detection_mcu_us": 174450,
+          "failsafe_us": 86668.45424511719,
+          "failsafe_mcu_us": 100291,
+          "recovery_us": 9218833.502
+        },
+        {
+          "run": "F2-r03",
+          "fault": "F2",
+          "rep": 3,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 4.6978,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "3",
+          "local_reference": "last_hb_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_hb_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 82983.95790234375,
+          "detection_mcu_us": 175022,
+          "failsafe_us": 83983.87102148437,
+          "failsafe_mcu_us": 100275,
+          "recovery_us": 9199254.658
+        },
+        {
+          "run": "F2-r04",
+          "fault": "F2",
+          "rep": 4,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 4.070119,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "3",
+          "local_reference": "last_hb_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_hb_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 84780.6900859375,
+          "detection_mcu_us": 174723,
+          "failsafe_us": 85780.603109375,
+          "failsafe_mcu_us": 100294,
+          "recovery_us": 9198949.795
+        },
+        {
+          "run": "F2-r05",
+          "fault": "F2",
+          "rep": 5,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 3.120193,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "3",
+          "local_reference": "last_hb_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_hb_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 83040.67145703125,
+          "detection_mcu_us": 175051,
+          "failsafe_us": 84040.5845546875,
+          "failsafe_mcu_us": 100293,
+          "recovery_us": 9201235.784
+        },
+        {
+          "run": "F3-r01",
+          "fault": "F3",
+          "rep": 1,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 3.242072,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "10",
+          "local_reference": "last_inf_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_inf_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 83011.88758886719,
+          "detection_mcu_us": 175057,
+          "failsafe_us": 382985.81956347654,
+          "failsafe_mcu_us": 475057,
+          "recovery_us": 9199667.347
+        },
+        {
+          "run": "F3-r02",
+          "fault": "F3",
+          "rep": 2,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 3.855063,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "10",
+          "local_reference": "last_inf_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_inf_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 85040.16549707031,
+          "detection_mcu_us": 174937,
+          "failsafe_us": 385014.0305908203,
+          "failsafe_mcu_us": 474937,
+          "recovery_us": 9200005.874
+        },
+        {
+          "run": "F3-r03",
+          "fault": "F3",
+          "rep": 3,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 5.074869,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "10",
+          "local_reference": "last_inf_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_inf_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 85707.4910546875,
+          "detection_mcu_us": 174113,
+          "failsafe_us": 385681.3966542969,
+          "failsafe_mcu_us": 474113,
+          "recovery_us": 9198889.363
+        },
+        {
+          "run": "F3-r04",
+          "fault": "F3",
+          "rep": 4,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 1.873763,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "10",
+          "local_reference": "last_inf_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_inf_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 86252.89641894531,
+          "detection_mcu_us": 175078,
+          "failsafe_us": 386226.86136816407,
+          "failsafe_mcu_us": 475078,
+          "recovery_us": 9198899.019
+        },
+        {
+          "run": "F3-r05",
+          "fault": "F3",
+          "rep": 5,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 4.864962,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "10",
+          "local_reference": "last_inf_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_inf_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 85370.246,
+          "detection_mcu_us": 174348,
+          "failsafe_us": 385344.1108671875,
+          "failsafe_mcu_us": 474348,
+          "recovery_us": 9219473.675
+        },
+        {
+          "run": "F4-r01",
+          "fault": "F4",
+          "rep": 1,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 4.586753,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "3",
+          "failsafe_reason": "3",
+          "local_reference": "last_hb_mcu_us",
+          "detection_reference": "last_hb_mcu_us",
+          "failsafe_reference": "last_hb_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 87231.82296191406,
+          "detection_mcu_us": 100423,
+          "failsafe_us": 87231.82296191406,
+          "failsafe_mcu_us": 100423,
+          "recovery_us": 9221481.497
+        },
+        {
+          "run": "F4-r02",
+          "fault": "F4",
+          "rep": 2,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 5.31075,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "3",
+          "failsafe_reason": "3",
+          "local_reference": "last_hb_mcu_us",
+          "detection_reference": "last_hb_mcu_us",
+          "failsafe_reference": "last_hb_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 86624.83003222656,
+          "detection_mcu_us": 100551,
+          "failsafe_us": 86624.83003222656,
+          "failsafe_mcu_us": 100551,
+          "recovery_us": 9219643.653
+        },
+        {
+          "run": "F4-r03",
+          "fault": "F4",
+          "rep": 3,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 5.675625,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "3",
+          "failsafe_reason": "3",
+          "local_reference": "last_hb_mcu_us",
+          "detection_reference": "last_hb_mcu_us",
+          "failsafe_reference": "last_hb_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 87477.55859765624,
+          "detection_mcu_us": 100426,
+          "failsafe_us": 87477.55859765624,
+          "failsafe_mcu_us": 100426,
+          "recovery_us": 9199170.735
+        },
+        {
+          "run": "F4-r04",
+          "fault": "F4",
+          "rep": 4,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 2.478965,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "3",
+          "failsafe_reason": "3",
+          "local_reference": "last_hb_mcu_us",
+          "detection_reference": "last_hb_mcu_us",
+          "failsafe_reference": "last_hb_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 86061.18185742188,
+          "detection_mcu_us": 100412,
+          "failsafe_us": 86061.18185742188,
+          "failsafe_mcu_us": 100412,
+          "recovery_us": 9199592.372
+        },
+        {
+          "run": "F4-r05",
+          "fault": "F4",
+          "rep": 5,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 5.652322,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "3",
+          "failsafe_reason": "3",
+          "local_reference": "last_hb_mcu_us",
+          "detection_reference": "last_hb_mcu_us",
+          "failsafe_reference": "last_hb_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 87377.46227148437,
+          "detection_mcu_us": 100556,
+          "failsafe_us": 87377.46227148437,
+          "failsafe_mcu_us": 100556,
+          "recovery_us": 9218398.658
+        },
+        {
+          "run": "F5-r01",
+          "fault": "F5",
+          "rep": 1,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 2.583315,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "10",
+          "local_reference": "last_inf_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_inf_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 82672.90761035157,
+          "detection_mcu_us": 174312,
+          "failsafe_us": 382646.82918652345,
+          "failsafe_mcu_us": 474312,
+          "recovery_us": 9199444.869
+        },
+        {
+          "run": "F5-r02",
+          "fault": "F5",
+          "rep": 2,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 4.251497,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "10",
+          "local_reference": "last_inf_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_inf_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 84847.70996582031,
+          "detection_mcu_us": 174908,
+          "failsafe_us": 384821.59998046875,
+          "failsafe_mcu_us": 474908,
+          "recovery_us": 9198546.247
+        },
+        {
+          "run": "F5-r03",
+          "fault": "F5",
+          "rep": 3,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 4.074439,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "10",
+          "local_reference": "last_inf_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_inf_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 83475.92850878906,
+          "detection_mcu_us": 174459,
+          "failsafe_us": 383449.8166015625,
+          "failsafe_mcu_us": 474459,
+          "recovery_us": 9198328.625
+        },
+        {
+          "run": "F5-r04",
+          "fault": "F5",
+          "rep": 4,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 4.789123,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "10",
+          "local_reference": "last_inf_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_inf_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 84517.09807617188,
+          "detection_mcu_us": 174654,
+          "failsafe_us": 384491.0069921875,
+          "failsafe_mcu_us": 474654,
+          "recovery_us": 9199285.244
+        },
+        {
+          "run": "F5-r05",
+          "fault": "F5",
+          "rep": 5,
+          "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+          "validity": "VALID",
+          "reasons": "",
+          "false_transitions": 0,
+          "clock_rms_max_us": 1.726546,
+          "detection_status": "observed",
+          "failsafe_status": "observed",
+          "detection_reason": "9",
+          "failsafe_reason": "10",
+          "local_reference": "last_inf_mcu_us",
+          "detection_reference": "last_inf_mcu_us",
+          "failsafe_reference": "last_inf_mcu_us",
+          "recovery_status": "observed",
+          "detection_us": 84205.00201171875,
+          "detection_mcu_us": 174231,
+          "failsafe_us": 384178.9010996094,
+          "failsafe_mcu_us": 474231,
+          "recovery_us": 9199207.178
+        }
+      ]
+    },
+    "LA": {
+      "status": "ok",
+      "source": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/LA",
+      "valid": 15,
+      "total": 15,
+      "records": [
+        {
+          "capture": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/LA/F1/F1-r01",
+          "batch": "F1",
+          "t_marker_rise_s": 0.6000000000000001,
+          "t_last_uart_activity_s": 0.582157,
+          "t_last_uart_byte_s": 0.5821603506944444,
+          "t_hold_s": null,
+          "t_safe_s": 0.682652875,
+          "marker_safe_us": 82652.87499999996,
+          "uart_hold_us": null,
+          "uart_safe_us": 100492.52430555566,
+          "status": "observed",
+          "evidence": "UNVERIFIED ON HARDWARE",
+          "comparison": "MCU last accepted heartbeat vs analyzer last physical UART byte; references differ",
+          "mcu_hold_us": null,
+          "delta_hold_us": null,
+          "mcu_safe_us": 100422,
+          "delta_safe_us": 70.52430555566389,
+          "marker_software_bracket_us": 12.278,
+          "last_frame_type": 1,
+          "matching": true,
+          "analysis_status": "ok"
+        },
+        {
+          "capture": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/LA/F1/F1-r02",
+          "batch": "F1",
+          "t_marker_rise_s": 0.6000000000000001,
+          "t_last_uart_activity_s": 0.582377875,
+          "t_last_uart_byte_s": 0.5823799756944444,
+          "t_hold_s": null,
+          "t_safe_s": 0.6828778750000001,
+          "marker_safe_us": 82877.87499999999,
+          "uart_hold_us": null,
+          "uart_safe_us": 100497.89930555563,
+          "status": "observed",
+          "evidence": "UNVERIFIED ON HARDWARE",
+          "comparison": "MCU last accepted heartbeat vs analyzer last physical UART byte; references differ",
+          "mcu_hold_us": null,
+          "delta_hold_us": null,
+          "mcu_safe_us": 100428,
+          "delta_safe_us": 69.89930555563478,
+          "marker_software_bracket_us": 13.76,
+          "last_frame_type": 1,
+          "matching": true,
+          "analysis_status": "ok"
+        },
+        {
+          "capture": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/LA/F1/F1-r03",
+          "batch": "F1",
+          "t_marker_rise_s": 0.6000000000000001,
+          "t_last_uart_activity_s": 0.58548025,
+          "t_last_uart_byte_s": 0.5854823506944444,
+          "t_hold_s": null,
+          "t_safe_s": 0.686281,
+          "marker_safe_us": 86280.99999999994,
+          "uart_hold_us": null,
+          "uart_safe_us": 100798.6493055556,
+          "status": "observed",
+          "evidence": "UNVERIFIED ON HARDWARE",
+          "comparison": "MCU last accepted heartbeat vs analyzer last physical UART byte; references differ",
+          "mcu_hold_us": null,
+          "delta_hold_us": null,
+          "mcu_safe_us": 100740,
+          "delta_safe_us": 58.64930555560568,
+          "marker_software_bracket_us": 11.074,
+          "last_frame_type": 1,
+          "matching": true,
+          "analysis_status": "ok"
+        },
+        {
+          "capture": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/LA/F1/F1-r04",
+          "batch": "F1",
+          "t_marker_rise_s": 0.6000000000000001,
+          "t_last_uart_activity_s": 0.5902125,
+          "t_last_uart_byte_s": 0.5902136006944444,
+          "t_hold_s": null,
+          "t_safe_s": 0.690683625,
+          "marker_safe_us": 90683.62499999993,
+          "uart_hold_us": null,
+          "uart_safe_us": 100470.02430555562,
+          "status": "observed",
+          "evidence": "UNVERIFIED ON HARDWARE",
+          "comparison": "MCU last accepted heartbeat vs analyzer last physical UART byte; references differ",
+          "mcu_hold_us": null,
+          "delta_hold_us": null,
+          "mcu_safe_us": 100400,
+          "delta_safe_us": 70.02430555562023,
+          "marker_software_bracket_us": 12.444,
+          "last_frame_type": 1,
+          "matching": true,
+          "analysis_status": "ok"
+        },
+        {
+          "capture": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/LA/F1/F1-r05",
+          "batch": "F1",
+          "t_marker_rise_s": 0.6000000000000001,
+          "t_last_uart_activity_s": 0.584427875,
+          "t_last_uart_byte_s": 0.5844289756944444,
+          "t_hold_s": null,
+          "t_safe_s": 0.684894,
+          "marker_safe_us": 84893.99999999991,
+          "uart_hold_us": null,
+          "uart_safe_us": 100465.02430555559,
+          "status": "observed",
+          "evidence": "UNVERIFIED ON HARDWARE",
+          "comparison": "MCU last accepted heartbeat vs analyzer last physical UART byte; references differ",
+          "mcu_hold_us": null,
+          "delta_hold_us": null,
+          "mcu_safe_us": 100395,
+          "delta_safe_us": 70.02430555559113,
+          "marker_software_bracket_us": 11.537,
+          "last_frame_type": 1,
+          "matching": true,
+          "analysis_status": "ok"
+        },
+        {
+          "capture": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/LA/F2/F2-r01",
+          "batch": "F2",
+          "t_marker_rise_s": 0.6000000000000001,
+          "t_last_uart_activity_s": 0.5928298750000001,
+          "t_last_uart_byte_s": 0.5928308506944444,
+          "t_hold_s": 0.6933248750000001,
+          "t_safe_s": 0.6933250000000001,
+          "marker_safe_us": 93324.99999999999,
+          "uart_hold_us": 100494.02430555565,
+          "uart_safe_us": 100494.14930555566,
+          "status": "observed",
+          "evidence": "UNVERIFIED ON HARDWARE",
+          "comparison": "MCU last accepted heartbeat vs analyzer last physical UART byte; references differ",
+          "mcu_hold_us": null,
+          "delta_hold_us": null,
+          "mcu_safe_us": 100424,
+          "delta_safe_us": 70.14930555566389,
+          "marker_software_bracket_us": 12.593,
+          "last_frame_type": 1,
+          "matching": true,
+          "analysis_status": "ok"
+        },
+        {
+          "capture": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/LA/F2/F2-r02",
+          "batch": "F2",
+          "t_marker_rise_s": 0.6000000000000001,
+          "t_last_uart_activity_s": 0.593287125,
+          "t_last_uart_byte_s": 0.5932882256944444,
+          "t_hold_s": null,
+          "t_safe_s": 0.693777375,
+          "marker_safe_us": 93777.37499999994,
+          "uart_hold_us": null,
+          "uart_safe_us": 100489.14930555563,
+          "status": "observed",
+          "evidence": "UNVERIFIED ON HARDWARE",
+          "comparison": "MCU last accepted heartbeat vs analyzer last physical UART byte; references differ",
+          "mcu_hold_us": null,
+          "delta_hold_us": null,
+          "mcu_safe_us": 100419,
+          "delta_safe_us": 70.14930555563478,
+          "marker_software_bracket_us": 12.13,
+          "last_frame_type": 1,
+          "matching": true,
+          "analysis_status": "ok"
+        },
+        {
+          "capture": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/LA/F2/F2-r03",
+          "batch": "F2",
+          "t_marker_rise_s": 0.6000000000000001,
+          "t_last_uart_activity_s": 0.5928602500000001,
+          "t_last_uart_byte_s": 0.5928624756944444,
+          "t_hold_s": null,
+          "t_safe_s": 0.6933606250000001,
+          "marker_safe_us": 93360.62499999997,
+          "uart_hold_us": null,
+          "uart_safe_us": 100498.14930555568,
+          "status": "observed",
+          "evidence": "UNVERIFIED ON HARDWARE",
+          "comparison": "MCU last accepted heartbeat vs analyzer last physical UART byte; references differ",
+          "mcu_hold_us": null,
+          "delta_hold_us": null,
+          "mcu_safe_us": 100428,
+          "delta_safe_us": 70.14930555567844,
+          "marker_software_bracket_us": 11.908,
+          "last_frame_type": 1,
+          "matching": true,
+          "analysis_status": "ok"
+        },
+        {
+          "capture": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/LA/F2/F2-r04",
+          "batch": "F2",
+          "t_marker_rise_s": 0.6000000000000001,
+          "t_last_uart_activity_s": 0.59255725,
+          "t_last_uart_byte_s": 0.5925583506944444,
+          "t_hold_s": null,
+          "t_safe_s": 0.693051375,
+          "marker_safe_us": 93051.37499999994,
+          "uart_hold_us": null,
+          "uart_safe_us": 100493.02430555562,
+          "status": "observed",
+          "evidence": "UNVERIFIED ON HARDWARE",
+          "comparison": "MCU last accepted heartbeat vs analyzer last physical UART byte; references differ",
+          "mcu_hold_us": null,
+          "delta_hold_us": null,
+          "mcu_safe_us": 100423,
+          "delta_safe_us": 70.02430555562023,
+          "marker_software_bracket_us": 11.278,
+          "last_frame_type": 1,
+          "matching": true,
+          "analysis_status": "ok"
+        },
+        {
+          "capture": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/LA/F2/F2-r05",
+          "batch": "F2",
+          "t_marker_rise_s": 0.6000000000000001,
+          "t_last_uart_activity_s": 0.5827225,
+          "t_last_uart_byte_s": 0.5827246006944444,
+          "t_hold_s": null,
+          "t_safe_s": 0.683196625,
+          "marker_safe_us": 83196.62499999991,
+          "uart_hold_us": null,
+          "uart_safe_us": 100472.02430555558,
+          "status": "observed",
+          "evidence": "UNVERIFIED ON HARDWARE",
+          "comparison": "MCU last accepted heartbeat vs analyzer last physical UART byte; references differ",
+          "mcu_hold_us": null,
+          "delta_hold_us": null,
+          "mcu_safe_us": 100402,
+          "delta_safe_us": 70.02430555557657,
+          "marker_software_bracket_us": 11.074,
+          "last_frame_type": 1,
+          "matching": true,
+          "analysis_status": "ok"
+        },
+        {
+          "capture": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/LA/F4/F4-r01",
+          "batch": "F4",
+          "t_marker_rise_s": 0.6000000000000001,
+          "t_last_uart_activity_s": 0.592458875,
+          "t_last_uart_byte_s": 0.5924622256944444,
+          "t_hold_s": 0.6905415,
+          "t_safe_s": 0.6935378750000001,
+          "marker_safe_us": 93537.87499999999,
+          "uart_hold_us": 98079.27430555563,
+          "uart_safe_us": 101075.64930555568,
+          "status": "observed",
+          "evidence": "UNVERIFIED ON HARDWARE",
+          "comparison": "MCU last accepted heartbeat vs analyzer last physical UART byte; references differ",
+          "mcu_hold_us": 97973,
+          "delta_hold_us": 106.27430555563478,
+          "mcu_safe_us": 100973,
+          "delta_safe_us": 102.64930555567844,
+          "marker_software_bracket_us": 13.426,
+          "last_frame_type": 1,
+          "matching": true,
+          "analysis_status": "ok"
+        },
+        {
+          "capture": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/LA/F4/F4-r02",
+          "batch": "F4",
+          "t_marker_rise_s": 0.6000000000000001,
+          "t_last_uart_activity_s": 0.5923723750000001,
+          "t_last_uart_byte_s": 0.5923756006944444,
+          "t_hold_s": 0.690688375,
+          "t_safe_s": 0.6926847500000001,
+          "marker_safe_us": 92684.74999999999,
+          "uart_hold_us": 98312.77430555563,
+          "uart_safe_us": 100309.14930555568,
+          "status": "observed",
+          "evidence": "UNVERIFIED ON HARDWARE",
+          "comparison": "MCU last accepted heartbeat vs analyzer last physical UART byte; references differ",
+          "mcu_hold_us": 98239,
+          "delta_hold_us": 73.77430555563478,
+          "mcu_safe_us": 100239,
+          "delta_safe_us": 70.14930555567844,
+          "marker_software_bracket_us": 13.481,
+          "last_frame_type": 1,
+          "matching": true,
+          "analysis_status": "ok"
+        },
+        {
+          "capture": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/LA/F4/F4-r03",
+          "batch": "F4",
+          "t_marker_rise_s": 0.6000000000000001,
+          "t_last_uart_activity_s": 0.5894646250000001,
+          "t_last_uart_byte_s": 0.5894657256944444,
+          "t_hold_s": 0.688947125,
+          "t_safe_s": 0.6899435,
+          "marker_safe_us": 89943.49999999996,
+          "uart_hold_us": 99481.39930555555,
+          "uart_safe_us": 100477.7743055556,
+          "status": "observed",
+          "evidence": "UNVERIFIED ON HARDWARE",
+          "comparison": "MCU last accepted heartbeat vs analyzer last physical UART byte; references differ",
+          "mcu_hold_us": 99408,
+          "delta_hold_us": 73.39930555554747,
+          "mcu_safe_us": 100408,
+          "delta_safe_us": 69.77430555560568,
+          "marker_software_bracket_us": 13.13,
+          "last_frame_type": 1,
+          "matching": true,
+          "analysis_status": "ok"
+        },
+        {
+          "capture": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/LA/F4/F4-r04",
+          "batch": "F4",
+          "t_marker_rise_s": 0.6000000000000001,
+          "t_last_uart_activity_s": 0.598564375,
+          "t_last_uart_byte_s": 0.5985654756944444,
+          "t_hold_s": 0.69704275,
+          "t_safe_s": 0.6990391250000001,
+          "marker_safe_us": 99039.125,
+          "uart_hold_us": 98477.27430555563,
+          "uart_safe_us": 100473.6493055557,
+          "status": "observed",
+          "evidence": "UNVERIFIED ON HARDWARE",
+          "comparison": "MCU last accepted heartbeat vs analyzer last physical UART byte; references differ",
+          "mcu_hold_us": 98404,
+          "delta_hold_us": 73.27430555563478,
+          "mcu_safe_us": 100404,
+          "delta_safe_us": 69.64930555569299,
+          "marker_software_bracket_us": 13.852,
+          "last_frame_type": 1,
+          "matching": true,
+          "analysis_status": "ok"
+        },
+        {
+          "capture": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/LA/F4/F4-r05",
+          "batch": "F4",
+          "t_marker_rise_s": 0.6000000000000001,
+          "t_last_uart_activity_s": 0.592317375,
+          "t_last_uart_byte_s": 0.5923228506944445,
+          "t_hold_s": 0.6908035,
+          "t_safe_s": 0.6927998750000001,
+          "marker_safe_us": 92799.87499999997,
+          "uart_hold_us": 98480.64930555556,
+          "uart_safe_us": 100477.0243055556,
+          "status": "observed",
+          "evidence": "UNVERIFIED ON HARDWARE",
+          "comparison": "MCU last accepted heartbeat vs analyzer last physical UART byte; references differ",
+          "mcu_hold_us": 98407,
+          "delta_hold_us": 73.64930555556202,
+          "mcu_safe_us": 100407,
+          "delta_safe_us": 70.02430555560568,
+          "marker_software_bracket_us": 12.223,
+          "last_frame_type": 1,
+          "matching": true,
+          "analysis_status": "ok"
+        }
+      ]
+    },
+    "PS1": {
+      "status": "ok",
+      "source": "/Users/quockaiser/.worktrees/OS-wt-map/results/2026-10-20_rerun/PS1/link60_fixed",
+      "valid": 1,
+      "total": 1,
+      "records": [
+        {
+          "evidence": "real UART; UNVERIFIED ON HARDWARE",
+          "validity": "OK",
+          "excluded": false,
+          "counts": {
+            "bridge_sent": 602,
+            "mcu_status": 616,
+            "echo_received": 62,
+            "echo_accepted": 62
+          },
+          "latency_us": {
+            "done_to_send_us": {
+              "n": 602,
+              "p50": 21.833,
+              "p95": 30.834,
+              "p99": 42.278,
+              "max": 595.723
+            }
+          },
+          "aoi_scope": "MCU_STATUS does not identify inference reception; no cross-domain AoI inferred"
+        }
+      ]
+    }
+  },
+  "experiments": {
+    "cyclic-P0": {
+      "original_date": "2026-10-11",
+      "status": "ok",
+      "original": {
+        "P0_B0_idle / p50_us": {
+          "value": 53.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_B0_idle / p99_us": {
+          "value": 57.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_B0_idle / max_us": {
+          "value": 2659.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_B1_stream_c2 / p50_us": {
+          "value": 56.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_B1_stream_c2 / p99_us": {
+          "value": 300.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_B1_stream_c2 / max_us": {
+          "value": 3565.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_B2_memrate_c23 / p50_us": {
+          "value": 55.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_B2_memrate_c23 / p99_us": {
+          "value": 613.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_B2_memrate_c23 / max_us": {
+          "value": 5170.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_C1_cache2M_c2 / p50_us": {
+          "value": 54.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_C1_cache2M_c2 / p99_us": {
+          "value": 203.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_C1_cache2M_c2 / max_us": {
+          "value": 4780.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_CPU_c23 / p50_us": {
+          "value": 54.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_CPU_c23 / p99_us": {
+          "value": 68.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_CPU_c23 / max_us": {
+          "value": 2636.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        }
+      },
+      "rerun": {
+        "P0_B0_idle / p50_us": {
+          "value": 56.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_B0_idle / p99_us": {
+          "value": 95.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_B0_idle / max_us": {
+          "value": 2338.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_B1_stream_c2 / p50_us": {
+          "value": 56.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_B1_stream_c2 / p99_us": {
+          "value": 675.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_B1_stream_c2 / max_us": {
+          "value": 5442.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_B2_memrate_c23 / p50_us": {
+          "value": 55.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_B2_memrate_c23 / p99_us": {
+          "value": 1020.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_B2_memrate_c23 / max_us": {
+          "value": 4109.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_C1_cache2M_c2 / p50_us": {
+          "value": 54.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_C1_cache2M_c2 / p99_us": {
+          "value": 403.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_C1_cache2M_c2 / max_us": {
+          "value": 2830.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_CPU_c23 / p50_us": {
+          "value": 53.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_CPU_c23 / p99_us": {
+          "value": 183.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0_CPU_c23 / max_us": {
+          "value": 2679.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        }
+      }
+    },
+    "cyclic-P1": {
+      "original_date": "2026-10-11",
+      "status": "ok",
+      "original": {
+        "P1_B0_idle / p50_us": {
+          "value": 3.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_B0_idle / p99_us": {
+          "value": 9.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_B0_idle / max_us": {
+          "value": 92.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_B1_stream_c2 / p50_us": {
+          "value": 5.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_B1_stream_c2 / p99_us": {
+          "value": 39.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_B1_stream_c2 / max_us": {
+          "value": 211.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_B2_memrate_c23 / p50_us": {
+          "value": 5.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_B2_memrate_c23 / p99_us": {
+          "value": 239.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_B2_memrate_c23 / max_us": {
+          "value": 1094.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_C1_cache2M_c2 / p50_us": {
+          "value": 3.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_C1_cache2M_c2 / p99_us": {
+          "value": 35.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_C1_cache2M_c2 / max_us": {
+          "value": 233.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_CPU_c23 / p50_us": {
+          "value": 3.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_CPU_c23 / p99_us": {
+          "value": 11.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_CPU_c23 / max_us": {
+          "value": 73.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        }
+      },
+      "rerun": {
+        "P1_B0_idle / p50_us": {
+          "value": 5.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_B0_idle / p99_us": {
+          "value": 14.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_B0_idle / max_us": {
+          "value": 52.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_B1_stream_c2 / p50_us": {
+          "value": 6.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_B1_stream_c2 / p99_us": {
+          "value": 42.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_B1_stream_c2 / max_us": {
+          "value": 137.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_B2_memrate_c23 / p50_us": {
+          "value": 5.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_B2_memrate_c23 / p99_us": {
+          "value": 196.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_B2_memrate_c23 / max_us": {
+          "value": 980.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_C1_cache2M_c2 / p50_us": {
+          "value": 3.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_C1_cache2M_c2 / p99_us": {
+          "value": 37.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_C1_cache2M_c2 / max_us": {
+          "value": 97.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_CPU_c23 / p50_us": {
+          "value": 3.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_CPU_c23 / p99_us": {
+          "value": 13.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1_CPU_c23 / max_us": {
+          "value": 88.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        }
+      }
+    },
+    "E1": {
+      "original_date": "2026-10-11",
+      "status": "not run",
+      "original": {
+        "P0 / B0_idle / fifo / latest / service_p50_ms": {
+          "value": 44.247093,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / service_p99_ms": {
+          "value": 48.283203,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / delivery_p50_ms": {
+          "value": 44.368908000000005,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / delivery_p99_ms": {
+          "value": 48.473129,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / delivery_max_ms": {
+          "value": 56.470612,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / aoi_time_average_ms": {
+          "value": 94.53077317608755,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / aoi_peak_ms": {
+          "value": 154.218296,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / bridge_overwritten": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / source_generated": {
+          "value": 602.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / rx_received": {
+          "value": 602.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / drops": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / overflows": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / cpu_percent": {
+          "value": 43.991775209721325,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / rss_mib": {
+          "value": 93.5,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B1_stream_c2 / fifo / latest / service_p50_ms": {
+          "value": 76.463241,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B1_stream_c2 / fifo / latest / service_p99_ms": {
+          "value": 88.50386999999999,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B1_stream_c2 / fifo / latest / delivery_p50_ms": {
+          "value": 76.992351,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B1_stream_c2 / fifo / latest / delivery_p99_ms": {
+          "value": 89.016444,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B1_stream_c2 / fifo / latest / delivery_max_ms": {
+          "value": 203.403703,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B1_stream_c2 / fifo / latest / aoi_time_average_ms": {
+          "value": 128.60543618514606,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B1_stream_c2 / fifo / latest / aoi_peak_ms": {
+          "value": 250.425185,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B1_stream_c2 / fifo / latest / bridge_overwritten": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B1_stream_c2 / fifo / latest / source_generated": {
+          "value": 604.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B1_stream_c2 / fifo / latest / rx_received": {
+          "value": 604.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B1_stream_c2 / fifo / latest / drops": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B1_stream_c2 / fifo / latest / overflows": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B1_stream_c2 / fifo / latest / cpu_percent": {
+          "value": 77.9606111808032,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B1_stream_c2 / fifo / latest / rss_mib": {
+          "value": 93.5078125,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / service_p50_ms": {
+          "value": 6625.795699,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / service_p99_ms": {
+          "value": 13976.471973,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / delivery_p50_ms": {
+          "value": 6626.468718,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / delivery_p99_ms": {
+          "value": 13977.175916999999,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / delivery_max_ms": {
+          "value": 15120.385732,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / aoi_time_average_ms": {
+          "value": 6709.702661882572,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / aoi_peak_ms": {
+          "value": 14998.582788,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / bridge_overwritten": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / source_generated": {
+          "value": 605.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / rx_received": {
+          "value": 475.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / drops": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / overflows": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / cpu_percent": {
+          "value": 99.94781617300842,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / rss_mib": {
+          "value": 93.51171875,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / service_p50_ms": {
+          "value": 67.576926,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / service_p99_ms": {
+          "value": 97.302537,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / delivery_p50_ms": {
+          "value": 68.000463,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / delivery_p99_ms": {
+          "value": 98.82786999999999,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / delivery_max_ms": {
+          "value": 121.840592,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / aoi_time_average_ms": {
+          "value": 118.97734761289745,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / aoi_peak_ms": {
+          "value": 207.976556,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / bridge_overwritten": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / source_generated": {
+          "value": 603.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / rx_received": {
+          "value": 603.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / drops": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / overflows": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / cpu_percent": {
+          "value": 67.97396338901945,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / rss_mib": {
+          "value": 93.49609375,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / CPU_c23 / fifo / latest / service_p50_ms": {
+          "value": 45.19851799999999,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / CPU_c23 / fifo / latest / service_p99_ms": {
+          "value": 48.129389,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / CPU_c23 / fifo / latest / delivery_p50_ms": {
+          "value": 45.406277,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / CPU_c23 / fifo / latest / delivery_p99_ms": {
+          "value": 48.298407,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / CPU_c23 / fifo / latest / delivery_max_ms": {
+          "value": 80.98196300000001,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / CPU_c23 / fifo / latest / aoi_time_average_ms": {
+          "value": 95.41634954424474,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / CPU_c23 / fifo / latest / aoi_peak_ms": {
+          "value": 180.983037,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / CPU_c23 / fifo / latest / bridge_overwritten": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / CPU_c23 / fifo / latest / source_generated": {
+          "value": 601.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / CPU_c23 / fifo / latest / rx_received": {
+          "value": 601.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / CPU_c23 / fifo / latest / drops": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / CPU_c23 / fifo / latest / overflows": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / CPU_c23 / fifo / latest / cpu_percent": {
+          "value": 45.99094824553146,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / CPU_c23 / fifo / latest / rss_mib": {
+          "value": 93.51953125,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        }
+      },
+      "rerun": {}
+    },
+    "E2": {
+      "original_date": "2026-10-11",
+      "status": "not run",
+      "original": {
+        "P0 / B0_idle / fifo / latest / service_p50_ms": {
+          "value": 43.895462,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / service_p99_ms": {
+          "value": 49.154019,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / delivery_p50_ms": {
+          "value": 44.021629999999995,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / delivery_p99_ms": {
+          "value": 49.293815,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / delivery_max_ms": {
+          "value": 58.508389,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / aoi_time_average_ms": {
+          "value": 94.212078958712,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / aoi_peak_ms": {
+          "value": 158.512777,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / bridge_overwritten": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / source_generated": {
+          "value": 602.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / rx_received": {
+          "value": 602.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / drops": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / overflows": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / cpu_percent": {
+          "value": 43.99171979052172,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B0_idle / fifo / latest / rss_mib": {
+          "value": 93.51953125,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / service_p50_ms": {
+          "value": 6506.016366000001,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / service_p99_ms": {
+          "value": 13259.651362999999,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / delivery_p50_ms": {
+          "value": 6506.396459,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / delivery_p99_ms": {
+          "value": 13260.26177,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / delivery_max_ms": {
+          "value": 13405.869047,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / aoi_time_average_ms": {
+          "value": 6597.9127818681,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / aoi_peak_ms": {
+          "value": 13246.804603,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / bridge_overwritten": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / source_generated": {
+          "value": 605.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / rx_received": {
+          "value": 482.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / drops": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / overflows": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / cpu_percent": {
+          "value": 101.61546625254314,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / B2_memrate_c23 / fifo / latest / rss_mib": {
+          "value": 93.53515625,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / service_p50_ms": {
+          "value": 66.355037,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / service_p99_ms": {
+          "value": 73.104852,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / delivery_p50_ms": {
+          "value": 66.81163000000001,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / delivery_p99_ms": {
+          "value": 73.572037,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / delivery_max_ms": {
+          "value": 109.608982,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / aoi_time_average_ms": {
+          "value": 117.14403771879114,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / aoi_peak_ms": {
+          "value": 206.2195,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / bridge_overwritten": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / source_generated": {
+          "value": 604.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / rx_received": {
+          "value": 604.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / drops": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / overflows": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / cpu_percent": {
+          "value": 67.95448435650519,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P0 / C1_cache2M_c2 / fifo / latest / rss_mib": {
+          "value": 93.53125,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / service_p50_ms": {
+          "value": 43.942852,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / service_p99_ms": {
+          "value": 48.809889000000005,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / delivery_p50_ms": {
+          "value": 44.069333,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / delivery_p99_ms": {
+          "value": 48.97653699999999,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / delivery_max_ms": {
+          "value": 56.409278,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / aoi_time_average_ms": {
+          "value": 94.2616796137233,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / aoi_peak_ms": {
+          "value": 154.728222,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / bridge_overwritten": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / source_generated": {
+          "value": 602.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / rx_received": {
+          "value": 602.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / drops": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / overflows": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / cpu_percent": {
+          "value": 43.991807757589676,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / rss_mib": {
+          "value": 95.68359375,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / service_p50_ms": {
+          "value": 5999.680311,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / service_p99_ms": {
+          "value": 12889.719974,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / delivery_p50_ms": {
+          "value": 6001.825144,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / delivery_p99_ms": {
+          "value": 12890.196678,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / delivery_max_ms": {
+          "value": 14072.771658,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / aoi_time_average_ms": {
+          "value": 6275.517309011394,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / aoi_peak_ms": {
+          "value": 13899.730158,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / bridge_overwritten": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / source_generated": {
+          "value": 604.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / rx_received": {
+          "value": 484.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / drops": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / overflows": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / cpu_percent": {
+          "value": 99.9497475673889,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / rss_mib": {
+          "value": 95.68359375,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / C1_cache2M_c2 / fifo / latest / service_p50_ms": {
+          "value": 69.79577800000001,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / C1_cache2M_c2 / fifo / latest / service_p99_ms": {
+          "value": 96.58424000000001,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / C1_cache2M_c2 / fifo / latest / delivery_p50_ms": {
+          "value": 70.186092,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / C1_cache2M_c2 / fifo / latest / delivery_p99_ms": {
+          "value": 97.155185,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / C1_cache2M_c2 / fifo / latest / delivery_max_ms": {
+          "value": 136.083371,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / C1_cache2M_c2 / fifo / latest / aoi_time_average_ms": {
+          "value": 120.36144773541572,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / C1_cache2M_c2 / fifo / latest / aoi_peak_ms": {
+          "value": 216.663037,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / C1_cache2M_c2 / fifo / latest / bridge_overwritten": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / C1_cache2M_c2 / fifo / latest / source_generated": {
+          "value": 603.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / C1_cache2M_c2 / fifo / latest / rx_received": {
+          "value": 603.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / C1_cache2M_c2 / fifo / latest / drops": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / C1_cache2M_c2 / fifo / latest / overflows": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / C1_cache2M_c2 / fifo / latest / cpu_percent": {
+          "value": 69.97859047098655,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / C1_cache2M_c2 / fifo / latest / rss_mib": {
+          "value": 95.67578125,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        }
+      },
+      "rerun": {}
+    },
+    "E3": {
+      "original_date": "2026-10-11",
+      "status": "not run",
+      "original": {
+        "P1 / B0_idle / fifo / fifo / service_p50_ms": {
+          "value": 44.454926,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / fifo / service_p99_ms": {
+          "value": 49.896370000000005,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / fifo / delivery_p50_ms": {
+          "value": 44.575444000000005,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / fifo / delivery_p99_ms": {
+          "value": 50.097241000000004,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / fifo / delivery_max_ms": {
+          "value": 58.023185,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / fifo / aoi_time_average_ms": {
+          "value": 94.68801697973093,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / fifo / aoi_peak_ms": {
+          "value": 158.011333,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / fifo / bridge_overwritten": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / fifo / source_generated": {
+          "value": 602.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / fifo / rx_received": {
+          "value": 602.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / fifo / drops": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / fifo / overflows": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / fifo / cpu_percent": {
+          "value": 43.99181752193157,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / fifo / rss_mib": {
+          "value": 95.68359375,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / service_p50_ms": {
+          "value": 44.373926,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / service_p99_ms": {
+          "value": 47.084703000000005,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / delivery_p50_ms": {
+          "value": 44.495666,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / delivery_p99_ms": {
+          "value": 47.256426,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / delivery_max_ms": {
+          "value": 57.586314,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / aoi_time_average_ms": {
+          "value": 94.59421864387096,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / aoi_peak_ms": {
+          "value": 155.995092,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / bridge_overwritten": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / source_generated": {
+          "value": 602.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / rx_received": {
+          "value": 602.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / drops": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / overflows": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / cpu_percent": {
+          "value": 43.99179315498808,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / rss_mib": {
+          "value": 95.68359375,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / fifo / service_p50_ms": {
+          "value": 6421.949755,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / fifo / service_p99_ms": {
+          "value": 13387.394807,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / fifo / delivery_p50_ms": {
+          "value": 6422.854755,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / fifo / delivery_p99_ms": {
+          "value": 13387.95377,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / fifo / delivery_max_ms": {
+          "value": 13777.44651,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / fifo / aoi_time_average_ms": {
+          "value": 6660.081859934962,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / fifo / aoi_peak_ms": {
+          "value": 13659.098417,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / fifo / bridge_overwritten": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / fifo / source_generated": {
+          "value": 605.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / fifo / rx_received": {
+          "value": 480.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / fifo / drops": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / fifo / overflows": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / fifo / cpu_percent": {
+          "value": 99.94676176583941,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / fifo / rss_mib": {
+          "value": 95.6796875,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / service_p50_ms": {
+          "value": 6782.094663,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / service_p99_ms": {
+          "value": 14132.907232000001,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / delivery_p50_ms": {
+          "value": 6782.730441,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / delivery_p99_ms": {
+          "value": 14133.435565,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / delivery_max_ms": {
+          "value": 14300.52764,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / aoi_time_average_ms": {
+          "value": 6957.880632600497,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / aoi_peak_ms": {
+          "value": 14172.339732,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / bridge_overwritten": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / source_generated": {
+          "value": 605.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / rx_received": {
+          "value": 472.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / drops": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / overflows": {
+          "value": 0.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / cpu_percent": {
+          "value": 99.94665257471424,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / rss_mib": {
+          "value": 95.671875,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        }
+      },
+      "rerun": {}
+    },
+    "E3B": {
+      "original_date": "2026-10-12",
+      "status": "not run",
+      "original": {
+        "P1 / B0_idle / fifo / latest / service_p50_ms": {
+          "value": 46.97287,
+          "valid": 2,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / service_p99_ms": {
+          "value": 60.2678245,
+          "valid": 2,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / delivery_p50_ms": {
+          "value": 47.0820555,
+          "valid": 2,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / delivery_p99_ms": {
+          "value": 60.555000500000006,
+          "valid": 2,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / delivery_max_ms": {
+          "value": 88.528259,
+          "valid": 2,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / aoi_time_average_ms": {
+          "value": 97.63368660644244,
+          "valid": 2,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / aoi_peak_ms": {
+          "value": 188.531537,
+          "valid": 2,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / bridge_overwritten": {
+          "value": 0.0,
+          "valid": 2,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / source_generated": {
+          "value": 601.0,
+          "valid": 2,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / rx_received": {
+          "value": 601.0,
+          "valid": 2,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / drops": {
+          "value": 0.0,
+          "valid": 2,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / overflows": {
+          "value": 0.0,
+          "valid": 2,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / cpu_percent": {
+          "value": 47.990875111139246,
+          "valid": 2,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / fifo / latest / rss_mib": {
+          "value": 96.58203125,
+          "valid": 2,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / latest / latest / service_p50_ms": {
+          "value": 47.415908,
+          "valid": 1,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / latest / latest / service_p99_ms": {
+          "value": 61.553241,
+          "valid": 1,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / latest / latest / delivery_p50_ms": {
+          "value": 47.531760000000006,
+          "valid": 1,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / latest / latest / delivery_p99_ms": {
+          "value": 61.745667000000005,
+          "valid": 1,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / latest / latest / delivery_max_ms": {
+          "value": 88.96463,
+          "valid": 1,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / latest / latest / aoi_time_average_ms": {
+          "value": 98.06805046371201,
+          "valid": 1,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / latest / latest / aoi_peak_ms": {
+          "value": 188.974686,
+          "valid": 1,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / latest / latest / bridge_overwritten": {
+          "value": 0.0,
+          "valid": 1,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / latest / latest / source_generated": {
+          "value": 602.0,
+          "valid": 1,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / latest / latest / rx_received": {
+          "value": 602.0,
+          "valid": 1,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / latest / latest / drops": {
+          "value": 0.0,
+          "valid": 1,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / latest / latest / overflows": {
+          "value": 0.0,
+          "valid": 1,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / latest / latest / cpu_percent": {
+          "value": 47.99103767369205,
+          "valid": 1,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B0_idle / latest / latest / rss_mib": {
+          "value": 96.5859375,
+          "valid": 1,
+          "total": 3,
+          "status": "ok"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / service_p50_ms": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / service_p99_ms": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / delivery_p50_ms": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / delivery_p99_ms": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / delivery_max_ms": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / aoi_time_average_ms": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / aoi_peak_ms": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / bridge_overwritten": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / source_generated": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / rx_received": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / drops": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / overflows": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / cpu_percent": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / fifo / latest / rss_mib": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / latest / latest / service_p50_ms": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / latest / latest / service_p99_ms": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / latest / latest / delivery_p50_ms": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / latest / latest / delivery_p99_ms": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / latest / latest / delivery_max_ms": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / latest / latest / aoi_time_average_ms": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / latest / latest / aoi_peak_ms": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / latest / latest / bridge_overwritten": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / latest / latest / source_generated": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / latest / latest / rx_received": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / latest / latest / drops": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / latest / latest / overflows": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / latest / latest / cpu_percent": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        },
+        "P1 / B2_memrate_c23 / latest / latest / rss_mib": {
+          "value": null,
+          "valid": 0,
+          "total": 3,
+          "status": "failed: no valid runs"
+        }
+      },
+      "rerun": {}
+    },
+    "E4": {
+      "original_date": "2026-10-12",
+      "status": "ok",
+      "original": {
+        "F1 / first_local_p50_ms": {
+          "value": 175.317,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_local_p95_ms": {
+          "value": 175.535,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_local_max_ms": {
+          "value": 175.535,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_local_min_ms": {
+          "value": 175.041,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_local_range_max_ms": {
+          "value": 175.535,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_local_p50_ms": {
+          "value": 100.456,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_local_p95_ms": {
+          "value": 100.641,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_local_max_ms": {
+          "value": 100.641,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_local_min_ms": {
+          "value": 100.128,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_local_range_max_ms": {
+          "value": 100.641,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_mapped_p50_ms": {
+          "value": 83.34181930908203,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_mapped_p95_ms": {
+          "value": 83.56055877783203,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_mapped_max_ms": {
+          "value": 83.56055877783203,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_mapped_min_ms": {
+          "value": 83.20879882470703,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_mapped_range_max_ms": {
+          "value": 83.56055877783203,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_mapped_p50_ms": {
+          "value": 85.35659714453125,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_mapped_p95_ms": {
+          "value": 86.20853753613282,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_mapped_max_ms": {
+          "value": 86.20853753613282,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_mapped_min_ms": {
+          "value": 85.25566061865234,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_mapped_range_max_ms": {
+          "value": 86.20853753613282,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_local_p50_ms": {
+          "value": 175.206,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_local_p95_ms": {
+          "value": 175.709,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_local_max_ms": {
+          "value": 175.709,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_local_min_ms": {
+          "value": 175.086,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_local_range_max_ms": {
+          "value": 175.709,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_local_p50_ms": {
+          "value": 100.577,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_local_p95_ms": {
+          "value": 100.596,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_local_max_ms": {
+          "value": 100.596,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_local_min_ms": {
+          "value": 100.465,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_local_range_max_ms": {
+          "value": 100.596,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_mapped_p50_ms": {
+          "value": 83.150937125,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_mapped_p95_ms": {
+          "value": 83.71485948681641,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_mapped_max_ms": {
+          "value": 83.71485948681641,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_mapped_min_ms": {
+          "value": 83.0141063359375,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_mapped_range_max_ms": {
+          "value": 83.71485948681641,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_mapped_p50_ms": {
+          "value": 85.71468433691408,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_mapped_p95_ms": {
+          "value": 86.11256775976564,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_mapped_max_ms": {
+          "value": 86.11256775976564,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_mapped_min_ms": {
+          "value": 85.150762546875,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_mapped_range_max_ms": {
+          "value": 86.11256775976564,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_local_p50_ms": {
+          "value": 175.754,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_local_p95_ms": {
+          "value": 175.815,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_local_max_ms": {
+          "value": 175.815,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_local_min_ms": {
+          "value": 175.24,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_local_range_max_ms": {
+          "value": 175.815,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_local_p50_ms": {
+          "value": 475.754,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_local_p95_ms": {
+          "value": 475.815,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_local_max_ms": {
+          "value": 475.815,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_local_min_ms": {
+          "value": 475.24,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_local_range_max_ms": {
+          "value": 475.815,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_mapped_p50_ms": {
+          "value": 83.6463853203125,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_mapped_p95_ms": {
+          "value": 85.91409720117187,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_mapped_max_ms": {
+          "value": 85.91409720117187,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_mapped_min_ms": {
+          "value": 83.15447557910156,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_mapped_range_max_ms": {
+          "value": 85.91409720117187,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_mapped_p50_ms": {
+          "value": 383.62002671875,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_mapped_p95_ms": {
+          "value": 385.8878389819336,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_mapped_max_ms": {
+          "value": 385.8878389819336,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_mapped_min_ms": {
+          "value": 383.1281758837891,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_mapped_range_max_ms": {
+          "value": 385.8878389819336,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / first_local_p50_ms": {
+          "value": 100.639,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / first_local_p95_ms": {
+          "value": 175.229,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / first_local_max_ms": {
+          "value": 175.229,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / first_local_min_ms": {
+          "value": 100.525,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / first_local_range_max_ms": {
+          "value": 175.229,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / failsafe_local_p50_ms": {
+          "value": 100.556,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / failsafe_local_p95_ms": {
+          "value": 100.931,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / failsafe_local_max_ms": {
+          "value": 100.931,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / failsafe_local_min_ms": {
+          "value": 100.405,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / failsafe_local_range_max_ms": {
+          "value": 100.931,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / first_mapped_p50_ms": {
+          "value": 85.62529509600067,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / first_mapped_p95_ms": {
+          "value": 87.871299375,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / first_mapped_max_ms": {
+          "value": 87.871299375,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / first_mapped_min_ms": {
+          "value": 56.34412994499969,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / first_mapped_range_max_ms": {
+          "value": 87.871299375,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / failsafe_mapped_p50_ms": {
+          "value": 87.27734386376953,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / failsafe_mapped_p95_ms": {
+          "value": 97.34358263999938,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / failsafe_mapped_max_ms": {
+          "value": 97.34358263999938,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / failsafe_mapped_min_ms": {
+          "value": 84.83859443299866,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F4 / failsafe_mapped_range_max_ms": {
+          "value": 97.34358263999938,
+          "valid": 7,
+          "total": 14,
+          "status": "ok",
+          "samples": 7
+        },
+        "F5 / first_local_p50_ms": {
+          "value": 175.596,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_local_p95_ms": {
+          "value": 175.917,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_local_max_ms": {
+          "value": 175.917,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_local_min_ms": {
+          "value": 174.95,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_local_range_max_ms": {
+          "value": 175.917,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_local_p50_ms": {
+          "value": 475.596,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_local_p95_ms": {
+          "value": 475.917,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_local_max_ms": {
+          "value": 475.917,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_local_min_ms": {
+          "value": 474.95,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_local_range_max_ms": {
+          "value": 475.917,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_mapped_p50_ms": {
+          "value": 83.60842304003906,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_mapped_p95_ms": {
+          "value": 85.56294880297851,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_mapped_max_ms": {
+          "value": 85.56294880297851,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_mapped_min_ms": {
+          "value": 82.82490678601074,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_mapped_range_max_ms": {
+          "value": 85.56294880297851,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_mapped_p50_ms": {
+          "value": 383.60338364001467,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_mapped_p95_ms": {
+          "value": 385.55785804797364,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_mapped_max_ms": {
+          "value": 385.55785804797364,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_mapped_min_ms": {
+          "value": 382.81866787194826,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_mapped_range_max_ms": {
+          "value": 385.55785804797364,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        }
+      },
+      "rerun": {
+        "F1 / first_local_p50_ms": {
+          "value": 174.931,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_local_p95_ms": {
+          "value": 175.066,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_local_max_ms": {
+          "value": 175.066,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_local_min_ms": {
+          "value": 174.409,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_local_range_max_ms": {
+          "value": 175.066,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_local_p50_ms": {
+          "value": 100.427,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_local_p95_ms": {
+          "value": 100.433,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_local_max_ms": {
+          "value": 100.433,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_local_min_ms": {
+          "value": 100.285,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_local_range_max_ms": {
+          "value": 100.433,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_mapped_p50_ms": {
+          "value": 84.76912634960938,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_mapped_p95_ms": {
+          "value": 85.1427079189453,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_mapped_max_ms": {
+          "value": 85.1427079189453,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_mapped_min_ms": {
+          "value": 84.10277737304688,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / first_mapped_range_max_ms": {
+          "value": 85.1427079189453,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_mapped_p50_ms": {
+          "value": 85.99987414746094,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_mapped_p95_ms": {
+          "value": 86.76895218652344,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_mapped_max_ms": {
+          "value": 86.76895218652344,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_mapped_min_ms": {
+          "value": 85.10269031152343,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / failsafe_mapped_range_max_ms": {
+          "value": 86.76895218652344,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_local_p50_ms": {
+          "value": 174.911,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_local_p95_ms": {
+          "value": 175.051,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_local_max_ms": {
+          "value": 175.051,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_local_min_ms": {
+          "value": 174.45,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_local_range_max_ms": {
+          "value": 175.051,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_local_p50_ms": {
+          "value": 100.293,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_local_p95_ms": {
+          "value": 100.419,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_local_max_ms": {
+          "value": 100.419,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_local_min_ms": {
+          "value": 100.275,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_local_range_max_ms": {
+          "value": 100.419,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_mapped_p50_ms": {
+          "value": 83.04067145703125,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_mapped_p95_ms": {
+          "value": 85.66854123828125,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_mapped_max_ms": {
+          "value": 85.66854123828125,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_mapped_min_ms": {
+          "value": 82.8910742060547,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / first_mapped_range_max_ms": {
+          "value": 85.66854123828125,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_mapped_p50_ms": {
+          "value": 84.89090037109375,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_mapped_p95_ms": {
+          "value": 86.66845424511719,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_mapped_max_ms": {
+          "value": 86.66845424511719,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_mapped_min_ms": {
+          "value": 83.98387102148438,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / failsafe_mapped_range_max_ms": {
+          "value": 86.66845424511719,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_local_p50_ms": {
+          "value": 174.937,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_local_p95_ms": {
+          "value": 175.078,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_local_max_ms": {
+          "value": 175.078,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_local_min_ms": {
+          "value": 174.113,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_local_range_max_ms": {
+          "value": 175.078,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_local_p50_ms": {
+          "value": 474.937,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_local_p95_ms": {
+          "value": 475.078,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_local_max_ms": {
+          "value": 475.078,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_local_min_ms": {
+          "value": 474.113,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_local_range_max_ms": {
+          "value": 475.078,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_mapped_p50_ms": {
+          "value": 85.370246,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_mapped_p95_ms": {
+          "value": 86.25289641894531,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_mapped_max_ms": {
+          "value": 86.25289641894531,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_mapped_min_ms": {
+          "value": 83.0118875888672,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / first_mapped_range_max_ms": {
+          "value": 86.25289641894531,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_mapped_p50_ms": {
+          "value": 385.3441108671875,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_mapped_p95_ms": {
+          "value": 386.22686136816407,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_mapped_max_ms": {
+          "value": 386.22686136816407,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_mapped_min_ms": {
+          "value": 382.9858195634765,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F3 / failsafe_mapped_range_max_ms": {
+          "value": 386.22686136816407,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / first_local_p50_ms": {
+          "value": 100.426,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / first_local_p95_ms": {
+          "value": 100.556,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / first_local_max_ms": {
+          "value": 100.556,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / first_local_min_ms": {
+          "value": 100.412,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / first_local_range_max_ms": {
+          "value": 100.556,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / failsafe_local_p50_ms": {
+          "value": 100.426,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / failsafe_local_p95_ms": {
+          "value": 100.556,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / failsafe_local_max_ms": {
+          "value": 100.556,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / failsafe_local_min_ms": {
+          "value": 100.412,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / failsafe_local_range_max_ms": {
+          "value": 100.556,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / first_mapped_p50_ms": {
+          "value": 87.23182296191406,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / first_mapped_p95_ms": {
+          "value": 87.47755859765624,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / first_mapped_max_ms": {
+          "value": 87.47755859765624,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / first_mapped_min_ms": {
+          "value": 86.06118185742187,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / first_mapped_range_max_ms": {
+          "value": 87.47755859765624,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / failsafe_mapped_p50_ms": {
+          "value": 87.23182296191406,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / failsafe_mapped_p95_ms": {
+          "value": 87.47755859765624,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / failsafe_mapped_max_ms": {
+          "value": 87.47755859765624,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / failsafe_mapped_min_ms": {
+          "value": 86.06118185742187,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / failsafe_mapped_range_max_ms": {
+          "value": 87.47755859765624,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_local_p50_ms": {
+          "value": 174.459,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_local_p95_ms": {
+          "value": 174.908,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_local_max_ms": {
+          "value": 174.908,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_local_min_ms": {
+          "value": 174.231,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_local_range_max_ms": {
+          "value": 174.908,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_local_p50_ms": {
+          "value": 474.459,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_local_p95_ms": {
+          "value": 474.908,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_local_max_ms": {
+          "value": 474.908,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_local_min_ms": {
+          "value": 474.231,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_local_range_max_ms": {
+          "value": 474.908,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_mapped_p50_ms": {
+          "value": 84.20500201171875,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_mapped_p95_ms": {
+          "value": 84.84770996582031,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_mapped_max_ms": {
+          "value": 84.84770996582031,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_mapped_min_ms": {
+          "value": 82.67290761035157,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / first_mapped_range_max_ms": {
+          "value": 84.84770996582031,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_mapped_p50_ms": {
+          "value": 384.1789010996094,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_mapped_p95_ms": {
+          "value": 384.82159998046876,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_mapped_max_ms": {
+          "value": 384.82159998046876,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_mapped_min_ms": {
+          "value": 382.64682918652346,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        },
+        "F5 / failsafe_mapped_range_max_ms": {
+          "value": 384.82159998046876,
+          "valid": 5,
+          "total": 5,
+          "status": "ok",
+          "samples": 5
+        }
+      }
+    },
+    "LA": {
+      "original_date": "2026-10-12",
+      "status": "ok",
+      "original": {
+        "final HEARTBEAT / captures": {
+          "value": 10,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "qualification": "Frame matching is not collection validity; retained LA is FLAGGED"
+        },
+        "matched_delta_us / min": {
+          "value": 47.52430555566389,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 10
+        },
+        "matched_delta_us / max": {
+          "value": 67.64930555563478,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 10
+        },
+        "marker_safe_us / min": {
+          "value": 82851.62499999999,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 15
+        },
+        "marker_safe_us / max": {
+          "value": 98675.74999999996,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 15
+        },
+        "F1 / marker_safe_min_ms": {
+          "value": 86.93825,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 4
+        },
+        "F1 / marker_safe_max_ms": {
+          "value": 95.54099999999998,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 4
+        },
+        "F2 / marker_safe_min_ms": {
+          "value": 86.947,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 6
+        },
+        "F2 / marker_safe_max_ms": {
+          "value": 98.67574999999995,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 6
+        },
+        "F4 / marker_safe_min_ms": {
+          "value": 82.85162499999998,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / marker_safe_max_ms": {
+          "value": 91.302,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 5
+        }
+      },
+      "rerun": {
+        "final HEARTBEAT / captures": {
+          "value": 15,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "qualification": "Frame matching is not collection validity; retained LA is FLAGGED"
+        },
+        "matched_delta_us / min": {
+          "value": 58.64930555560568,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 15
+        },
+        "matched_delta_us / max": {
+          "value": 102.64930555567844,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 15
+        },
+        "marker_safe_us / min": {
+          "value": 82652.87499999996,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 15
+        },
+        "marker_safe_us / max": {
+          "value": 99039.125,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 15
+        },
+        "F1 / marker_safe_min_ms": {
+          "value": 82.65287499999995,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 5
+        },
+        "F1 / marker_safe_max_ms": {
+          "value": 90.68362499999992,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / marker_safe_min_ms": {
+          "value": 83.19662499999991,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 5
+        },
+        "F2 / marker_safe_max_ms": {
+          "value": 93.77737499999994,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / marker_safe_min_ms": {
+          "value": 89.94349999999996,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 5
+        },
+        "F4 / marker_safe_max_ms": {
+          "value": 99.039125,
+          "valid": 15,
+          "total": 15,
+          "status": "ok",
+          "samples": 5
+        }
+      }
+    },
+    "PS1": {
+      "original_date": "not acquired",
+      "status": "ok",
+      "original": {},
+      "rerun": {
+        "bridge_sent": {
+          "value": 602,
+          "valid": 1,
+          "total": 1,
+          "status": "ok"
+        },
+        "mcu_status": {
+          "value": 616,
+          "valid": 1,
+          "total": 1,
+          "status": "ok"
+        },
+        "echo_received": {
+          "value": 62,
+          "valid": 1,
+          "total": 1,
+          "status": "ok"
+        },
+        "echo_accepted": {
+          "value": 62,
+          "valid": 1,
+          "total": 1,
+          "status": "ok"
+        },
+        "done_to_send_us / p50": {
+          "value": 21.833,
+          "valid": 1,
+          "total": 1,
+          "status": "ok",
+          "samples": 602
+        },
+        "done_to_send_us / p99": {
+          "value": 42.278,
+          "valid": 1,
+          "total": 1,
+          "status": "ok",
+          "samples": 602
+        },
+        "done_to_send_us / max": {
+          "value": 595.723,
+          "valid": 1,
+          "total": 1,
+          "status": "ok",
+          "samples": 602
+        }
+      }
+    },
+    "Standalone inference": {
+      "original_date": "2026-10-11",
+      "status": "not run: not repeated by this layout",
+      "original": {
+        "idle / 1 / p50_ms": {
+          "value": 44.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "idle / 1 / p99_ms": {
+          "value": 48.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "idle / 1 / max_ms": {
+          "value": 57.0,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "idle / 2 / p50_ms": {
+          "value": 31.1,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "idle / 2 / p99_ms": {
+          "value": 42.9,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "idle / 2 / max_ms": {
+          "value": 51.8,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "idle / 3 / p50_ms": {
+          "value": 29.4,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "idle / 3 / p99_ms": {
+          "value": 38.5,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "idle / 3 / max_ms": {
+          "value": 52.8,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "idle / 4 / p50_ms": {
+          "value": 31.4,
+          "valid": 1,
+          "total": 3,
+          "status": "ok"
+        },
+        "idle / 4 / p99_ms": {
+          "value": 70.7,
+          "valid": 1,
+          "total": 3,
+          "status": "ok"
+        },
+        "idle / 4 / max_ms": {
+          "value": 94.1,
+          "valid": 1,
+          "total": 3,
+          "status": "ok"
+        },
+        "cpu stress c2,3 / 1 / p50_ms": {
+          "value": 45.1,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "cpu stress c2,3 / 1 / p99_ms": {
+          "value": 53.7,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "cpu stress c2,3 / 1 / max_ms": {
+          "value": 65.5,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "cpu stress c2,3 / 2 / p50_ms": {
+          "value": 33.2,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "cpu stress c2,3 / 2 / p99_ms": {
+          "value": 46.1,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "cpu stress c2,3 / 2 / max_ms": {
+          "value": 105.5,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "cpu stress c2,3 / 3 / p50_ms": {
+          "value": 45.5,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "cpu stress c2,3 / 3 / p99_ms": {
+          "value": 77.6,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "cpu stress c2,3 / 3 / max_ms": {
+          "value": 91.1,
+          "valid": 3,
+          "total": 3,
+          "status": "ok"
+        },
+        "cpu stress c2,3 / 4 / p50_ms": {
+          "value": 60.3,
+          "valid": 2,
+          "total": 3,
+          "status": "ok"
+        },
+        "cpu stress c2,3 / 4 / p99_ms": {
+          "value": 100.5,
+          "valid": 2,
+          "total": 3,
+          "status": "ok"
+        },
+        "cpu stress c2,3 / 4 / max_ms": {
+          "value": 150.3,
+          "valid": 2,
+          "total": 3,
+          "status": "ok"
+        }
+      },
+      "rerun": {}
+    },
+    "Physical E3": {
+      "original_date": "2026-10-12",
+      "status": "not run: not repeated by this layout",
+      "original": {
+        "Accepted runs": {
+          "value": 0,
+          "valid": 0,
+          "total": 18,
+          "status": "ok"
+        }
+      },
+      "rerun": {}
+    }
+  },
+  "plots": {
+    "status": "ok",
+    "files": [
+      "images/cyclic.pdf",
+      "images/E4.pdf",
+      "images/LA.pdf",
+      "images/LA_F1_timing.pdf",
+      "images/LA_F2_timing.pdf",
+      "images/LA_F4_timing.pdf"
+    ]
+  }
+}

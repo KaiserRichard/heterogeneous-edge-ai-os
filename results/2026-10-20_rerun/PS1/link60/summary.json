@@ -1,0 +1,21 @@
+{
+  "evidence": "real UART; UNVERIFIED ON HARDWARE",
+  "validity": "OK",
+  "excluded": false,
+  "counts": {
+    "bridge_sent": 601,
+    "mcu_status": 0,
+    "echo_received": 0,
+    "echo_accepted": 0
+  },
+  "latency_us": {
+    "done_to_send_us": {
+      "n": 601,
+      "p50": 21.759,
+      "p95": 31.907,
+      "p99": 40.185,
+      "max": 669.352
+    }
+  },
+  "aoi_scope": "MCU_STATUS does not identify inference reception; no cross-domain AoI inferred"
+}

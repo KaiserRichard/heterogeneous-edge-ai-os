@@ -1,0 +1,31 @@
+[2026-10-20T14:57:32+07:00] P1 finished
+[2026-10-20T14:58:34+07:00] PS1 rc=0
+{
+  "evidence": "real UART; UNVERIFIED ON HARDWARE",
+  "validity": "OK",
+  "excluded": false,
+  "counts": {
+    "bridge_sent": 602,
+    "mcu_status": 616,
+    "echo_received": 62,
+    "echo_accepted": 62
+  },
+  "latency_us": {
+    "done_to_send_us": {
+      "n": 602,
+      "p50": 21.833,
+      "p95": 30.834,
+      "p99": 42.278,
+      "max": 595.723
+    }
+  },
+  "aoi_scope": "MCU_STATUS does not identify inference reception; no cross-domain AoI inferred"
+}
+mcu_status rows=616
+sudo: a terminal is required to read the password; either use the -S option to read from standard input or configure an askpass helper
+sudo: a password is required
+[2026-10-20T15:12:37+07:00] E4 rc=0
+E4 summary rc=0
+[2026-10-20T15:13:12+07:00] LA F2 rc=0
+[2026-10-20T15:13:47+07:00] LA F1 rc=0
+[2026-10-20T15:14:22+07:00] LA F4 rc=0

@@ -1,0 +1,11 @@
++ cd /home/richard/os-rerun
++ COOLER='Pi 5 active cooler'
++ bash tools/timing/cyclictest_campaign.sh P0 results/2026-10-20_rerun/P1/cyclictest_p0 3 60
++ echo P0 rc=0
+P0 rc=0
++ COOLER='Pi 5 active cooler'
++ bash tools/timing/cyclictest_campaign.sh P1 results/2026-10-20_rerun/P1/cyclictest_p1 3 60
++ echo P1 rc=0
+P1 rc=0
++ echo ALLDONE
+ALLDONE

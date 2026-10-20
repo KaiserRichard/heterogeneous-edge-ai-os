@@ -1,0 +1,31 @@
+% MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)
+\begin{tabular}{llrrrrrlr}
+\multicolumn{9}{l}{MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)} \\
+Fault & Metric & $n$ valid & $n$ samples & P50 ($\mu$s) & P95 ($\mu$s) & Max ($\mu$s) & Threshold & $\Delta$P50 ($\mu$s) \\
+\hline
+F1 & detection\_us & 5 & 5 & 84769.126 & 85142.708 & 85142.708 & not directly comparable (unknown/N.A.) & -- \\
+F1 & detection\_mcu\_us & 5 & 5 & 174931.000 & 175066.000 & 175066.000 & result\_hold\_us - age\_at\_send\_us - transit\_bound\_us (unknown/N.A.) & -- \\
+F1 & failsafe\_us & 5 & 5 & 85999.874 & 86768.952 & 86768.952 & not directly comparable (unknown/N.A.) & -- \\
+F1 & failsafe\_mcu\_us & 5 & 5 & 100427.000 & 100433.000 & 100433.000 & heartbeat\_timeout\_us (unknown/N.A.) & -- \\
+F1 & recovery\_us & 5 & 5 & 215221.995 & 216149.783 & 216149.783 & not directly comparable (unknown/N.A.) & -- \\
+F2 & detection\_us & 5 & 5 & 83040.671 & 85668.541 & 85668.541 & not directly comparable (unknown/N.A.) & -- \\
+F2 & detection\_mcu\_us & 5 & 5 & 174911.000 & 175051.000 & 175051.000 & result\_hold\_us - age\_at\_send\_us - transit\_bound\_us (unknown/N.A.) & -- \\
+F2 & failsafe\_us & 5 & 5 & 84890.900 & 86668.454 & 86668.454 & not directly comparable (unknown/N.A.) & -- \\
+F2 & failsafe\_mcu\_us & 5 & 5 & 100293.000 & 100419.000 & 100419.000 & heartbeat\_timeout\_us (unknown/N.A.) & -- \\
+F2 & recovery\_us & 5 & 5 & 9201235.784 & 9221024.364 & 9221024.364 & not directly comparable (unknown/N.A.) & -- \\
+F3 & detection\_us & 5 & 5 & 85370.246 & 86252.896 & 86252.896 & not directly comparable (unknown/N.A.) & -- \\
+F3 & detection\_mcu\_us & 5 & 5 & 174937.000 & 175078.000 & 175078.000 & result\_hold\_us - age\_at\_send\_us - transit\_bound\_us (unknown/N.A.) & -- \\
+F3 & failsafe\_us & 5 & 5 & 385344.111 & 386226.861 & 386226.861 & not directly comparable (unknown/N.A.) & -- \\
+F3 & failsafe\_mcu\_us & 5 & 5 & 474937.000 & 475078.000 & 475078.000 & result\_failsafe\_us - age\_at\_send\_us - transit\_bound\_us (unknown/N.A.) & -- \\
+F3 & recovery\_us & 5 & 5 & 9199667.347 & 9219473.675 & 9219473.675 & not directly comparable (unknown/N.A.) & -- \\
+F4 & detection\_us & 5 & 5 & 87231.823 & 87477.559 & 87477.559 & not directly comparable (unknown/N.A.) & -- \\
+F4 & detection\_mcu\_us & 5 & 5 & 100426.000 & 100556.000 & 100556.000 & heartbeat\_timeout\_us (unknown/N.A.) & -- \\
+F4 & failsafe\_us & 5 & 5 & 87231.823 & 87477.559 & 87477.559 & not directly comparable (unknown/N.A.) & -- \\
+F4 & failsafe\_mcu\_us & 5 & 5 & 100426.000 & 100556.000 & 100556.000 & heartbeat\_timeout\_us (unknown/N.A.) & -- \\
+F4 & recovery\_us & 5 & 5 & 9218398.658 & 9221481.497 & 9221481.497 & not directly comparable (unknown/N.A.) & -- \\
+F5 & detection\_us & 5 & 5 & 84205.002 & 84847.710 & 84847.710 & not directly comparable (unknown/N.A.) & -- \\
+F5 & detection\_mcu\_us & 5 & 5 & 174459.000 & 174908.000 & 174908.000 & result\_hold\_us - age\_at\_send\_us - transit\_bound\_us (unknown/N.A.) & -- \\
+F5 & failsafe\_us & 5 & 5 & 384178.901 & 384821.600 & 384821.600 & not directly comparable (unknown/N.A.) & -- \\
+F5 & failsafe\_mcu\_us & 5 & 5 & 474459.000 & 474908.000 & 474908.000 & result\_failsafe\_us - age\_at\_send\_us - transit\_bound\_us (unknown/N.A.) & -- \\
+F5 & recovery\_us & 5 & 5 & 9199207.178 & 9199444.869 & 9199444.869 & not directly comparable (unknown/N.A.) & -- \\
+\end{tabular}

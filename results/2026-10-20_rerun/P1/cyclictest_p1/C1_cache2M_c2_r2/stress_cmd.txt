@@ -1,0 +1,1 @@
+taskset -c 2 stress-ng --cache 1 --cache-level 3 --cache-size 2M --cache-no-affinity --timeout 70s --metrics-brief 

@@ -1,0 +1,25 @@
+{
+  "outdir": "/home/richard/os-rerun/results/la-20261020-151237-66840-1",
+  "reps": 5,
+  "single": "F2",
+  "marker_gpio": 27,
+  "wait_go": "/home/richard/os-rerun/results/la-20261020-151237-66840-1.go",
+  "serial": "/dev/ttyAMA0",
+  "baud": 921600,
+  "bridge_core": 2,
+  "controller_core": 0,
+  "ready_timeout": 15,
+  "rms_bound_us": 200,
+  "thresholds": null,
+  "state_events_option": "",
+  "rearm_command": "true",
+  "estimate_only": false,
+  "configured_thresholds_us": {
+    "heartbeat_timeout_us": null,
+    "result_hold_us": null,
+    "result_failsafe_us": null,
+    "rearm_healthy_us": null,
+    "transit_bound_us": null
+  },
+  "threshold_source": "UNKNOWN: no literal threshold macros in stm32/include; pass --thresholds"
+}

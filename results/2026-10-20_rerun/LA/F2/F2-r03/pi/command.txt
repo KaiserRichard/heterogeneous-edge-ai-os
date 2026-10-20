@@ -1,0 +1,1 @@
+/home/richard/os-rerun/tools/experiments/e4_campaign.sh /home/richard/os-rerun/results/la-20261020-151251-66840-3 --single F2 --marker-gpio 27 --serial /dev/ttyAMA0 --rearm-command true --wait-go /home/richard/os-rerun/results/la-20261020-151251-66840-3.go

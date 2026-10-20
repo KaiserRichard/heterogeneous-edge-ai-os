@@ -1,0 +1,1 @@
+taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --timeout 70s --metrics-brief 

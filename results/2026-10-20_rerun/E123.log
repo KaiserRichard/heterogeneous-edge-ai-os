@@ -1,0 +1,68 @@
+make: Entering directory '/home/richard/os-rerun/linux'
+make: Nothing to be done for 'all'.
+make: Leaving directory '/home/richard/os-rerun/linux'
+Running E1 ('P0', 'C1_cache2M_c2', 'latest', 2)
+E1_P0_C1_cache2M_c2_latest_r2: OK
+Running E1 ('P0', 'C1_cache2M_c2', 'latest', 3)
+E1_P0_C1_cache2M_c2_latest_r3: OK
+Running E1 ('P0', 'B1_stream_c2', 'latest', 2)
+E1_P0_B1_stream_c2_latest_r2: OK
+Running E1 ('P0', 'CPU_c23', 'latest', 2)
+E1_P0_CPU_c23_latest_r2: OK
+Running E1 ('P0', 'B2_memrate_c23', 'latest', 3)
+E1_P0_B2_memrate_c23_latest_r3: OK
+Running E1 ('P0', 'B1_stream_c2', 'latest', 3)
+E1_P0_B1_stream_c2_latest_r3: OK
+Running E1 ('P0', 'B0_idle', 'latest', 2)
+E1_P0_B0_idle_latest_r2: OK
+Running E1 ('P0', 'B1_stream_c2', 'latest', 1)
+E1_P0_B1_stream_c2_latest_r1: OK
+Running E1 ('P0', 'B2_memrate_c23', 'latest', 2)
+E1_P0_B2_memrate_c23_latest_r2: OK
+Running E1 ('P0', 'C1_cache2M_c2', 'latest', 1)
+E1_P0_C1_cache2M_c2_latest_r1: OK
+Running E1 ('P0', 'B2_memrate_c23', 'latest', 1)
+E1_P0_B2_memrate_c23_latest_r1: OK
+Running E1 ('P0', 'CPU_c23', 'latest', 3)
+E1_P0_CPU_c23_latest_r3: OK
+Running E1 ('P0', 'B0_idle', 'latest', 1)
+E1_P0_B0_idle_latest_r1: OK
+Running E1 ('P0', 'CPU_c23', 'latest', 1)
+E1_P0_CPU_c23_latest_r1: OK
+Running E1 ('P0', 'B0_idle', 'latest', 3)
+E1_P0_B0_idle_latest_r3: OK
+Running E2 ('P0', 'B2_memrate_c23', 'latest', 3)
+E2_P0_B2_memrate_c23_latest_r3: OK
+Running E2 ('P0', 'B0_idle', 'latest', 3)
+E2_P0_B0_idle_latest_r3: OK
+Running E2 ('P1', 'B2_memrate_c23', 'latest', 1)
+E2_P1_B2_memrate_c23_latest_r1: OK
+Running E2 ('P1', 'B0_idle', 'latest', 2)
+E2_P1_B0_idle_latest_r2: OK
+Running E2 ('P1', 'B1_stream_c2', 'latest', 1)
+E2_P1_B1_stream_c2_latest_r1: OK
+Running E2 ('P0', 'B2_memrate_c23', 'latest', 2)
+E2_P0_B2_memrate_c23_latest_r2: OK
+Running E2 ('P1', 'B2_memrate_c23', 'latest', 3)
+E2_P1_B2_memrate_c23_latest_r3: OK
+Running E2 ('P0', 'B0_idle', 'latest', 2)
+E2_P0_B0_idle_latest_r2: OK
+Running E2 ('P1', 'B2_memrate_c23', 'latest', 2)
+E2_P1_B2_memrate_c23_latest_r2: OK
+Running E2 ('P1', 'B0_idle', 'latest', 3)
+E2_P1_B0_idle_latest_r3: OK
+Running E2 ('P0', 'B2_memrate_c23', 'latest', 1)
+E2_P0_B2_memrate_c23_latest_r1: OK
+Running E2 ('P1', 'B1_stream_c2', 'latest', 2)
+E2_P1_B1_stream_c2_latest_r2: OK
+Running E2 ('P0', 'B1_stream_c2', 'latest', 1)
+E2_P0_B1_stream_c2_latest_r1: OK
+Running E2 ('P0', 'B1_stream_c2', 'latest', 3)
+E2_P0_B1_stream_c2_latest_r3: OK
+Running E2 ('P1', 'B1_stream_c2', 'latest', 3)
+E2_P1_B1_stream_c2_latest_r3: OK
+Running E2 ('P0', 'B1_stream_c2', 'latest', 2)
+E2_P0_B1_stream_c2_latest_r2: OK
+Running E2 ('P0', 'B0_idle', 'latest', 1)
+E2_P0_B0_idle_latest_r1: OK
+Running E2 ('P1', 'B0_idle', 'latest', 1)

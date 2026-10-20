@@ -1,0 +1,31 @@
+Run command: /home/richard/os-rerun/tools/experiments/e4_campaign.sh results/2026-10-20_rerun/E4/e4-real 5
+Wall-time estimate: >= 13.3 min measured windows; allow about 42.5 min with startup/rearm/timeouts plus initial build. F5 uses acknowledged SIGUSR1 inference suppression.
+make: Entering directory '/home/richard/os-rerun/linux'
+make: Nothing to be done for 'all'.
+make: Leaving directory '/home/richard/os-rerun/linux'
+Running F1-r01
+Running F2-r01
+Running F3-r01
+Running F4-r01
+Running F5-r01
+Running F1-r02
+Running F2-r02
+Running F3-r02
+Running F4-r02
+Running F5-r02
+Running F1-r03
+Running F2-r03
+Running F3-r03
+Running F4-r03
+Running F5-r03
+Running F1-r04
+Running F2-r04
+Running F3-r04
+Running F4-r04
+Running F5-r04
+Running F1-r05
+Running F2-r05
+Running F3-r05
+Running F4-r05
+Running F5-r05
+MEASURED (MCU timestamps + Pi timestamps, no logic analyzer): 25/25 valid runs; /home/richard/os-rerun/results/2026-10-20_rerun/E4/e4-real/e4_{runs,faults}.csv, e4_faults.tex

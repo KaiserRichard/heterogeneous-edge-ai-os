@@ -1,0 +1,5 @@
+Run command: /home/richard/os-rerun/tools/experiments/e4_campaign.sh /home/richard/os-rerun/results/la-20261020-151340-67571-5 --single F1 --marker-gpio 27 --serial /dev/ttyAMA0 --rearm-command true --wait-go /home/richard/os-rerun/results/la-20261020-151340-67571-5.go
+Wall-time estimate: >= 0.1 min measured windows; allow about 2.2 min with startup/rearm/timeouts plus initial build. F5 uses acknowledged SIGUSR1 inference suppression.
+make: Entering directory '/home/richard/os-rerun/linux'
+make: Nothing to be done for 'all'.
+make: Leaving directory '/home/richard/os-rerun/linux'

@@ -1,0 +1,16 @@
+condition,run,status,reason,samples,overflows,min_us,avg_us,avg_source,p50_us,p95_us,p99_us,p99_9_us,max_us,kernel,governor,max_temp_c,throttled
+P0_B0_idle,B0_idle_r1,VALID,,59903,0,9,61.08550489958767,histogram,56,60,142,1126,1505,6.8.0-1065-raspi,ondemand,52.9,0x0
+P0_B0_idle,B0_idle_r2,VALID,,59906,0,12,60.798467599238805,histogram,56,60,88,1108,1525,6.8.0-1065-raspi,ondemand,52.35,0x0
+P0_B0_idle,B0_idle_r3,VALID,,59902,0,9,60.723765483623254,histogram,56,60,95,1128,2338,6.8.0-1065-raspi,ondemand,53.45,0x0
+P0_B1_stream_c2,B1_stream_c2_r1,VALID,,59641,0,14,73.83757817608692,histogram,56,77,677,1798,5442,6.8.0-1065-raspi,ondemand,60.6,0x0
+P0_B1_stream_c2,B1_stream_c2_r2,VALID,,59684,0,13,73.14710810267408,histogram,57,73,675,1893,2978,6.8.0-1065-raspi,ondemand,60.05,0x0
+P0_B1_stream_c2,B1_stream_c2_r3,VALID,,59716,0,12,71.02967378926921,histogram,56,73,618,1602,2488,6.8.0-1065-raspi,ondemand,61.15,0x0
+P0_B2_memrate_c23,B2_memrate_c23_r1,VALID,,59303,0,9,98.65089455845404,histogram,55,249,1027,2214,4109,6.8.0-1065-raspi,ondemand,61.7,0x0
+P0_B2_memrate_c23,B2_memrate_c23_r2,VALID,,59397,0,12,96.0925130898867,histogram,56,187,950,1973,3976,6.8.0-1065-raspi,ondemand,62.8,0x0
+P0_B2_memrate_c23,B2_memrate_c23_r3,VALID,,59231,0,8,91.1808005942834,histogram,55,120,1020,2168,3192,6.8.0-1065-raspi,ondemand,60.05,0x0
+P0_C1_cache2M_c2,C1_cache2M_c2_r1,VALID,,59797,0,8,65.34856263692159,histogram,54,72,438,1585,2603,6.8.0-1065-raspi,ondemand,61.7,0x0
+P0_C1_cache2M_c2,C1_cache2M_c2_r2,VALID,,59813,0,8,65.5168441643121,histogram,54,77,403,1451,2830,6.8.0-1065-raspi,ondemand,61.15,0x0
+P0_C1_cache2M_c2,C1_cache2M_c2_r3,VALID,,59827,0,8,64.09662861249937,histogram,54,72,403,1355,2253,6.8.0-1065-raspi,ondemand,62.25,0x0
+P0_CPU_c23,CPU_c23_r1,VALID,,59947,0,8,58.18676497572856,histogram,53,56,183,936,2322,6.8.0-1065-raspi,ondemand,60.6,0x0
+P0_CPU_c23,CPU_c23_r2,VALID,,59959,0,7,57.77758134725396,histogram,53,56,175,888,2545,6.8.0-1065-raspi,ondemand,60.05,0x0
+P0_CPU_c23,CPU_c23_r3,VALID,,59935,0,6,59.161858680236925,histogram,53,56,228,1016,2679,6.8.0-1065-raspi,ondemand,60.6,0x0

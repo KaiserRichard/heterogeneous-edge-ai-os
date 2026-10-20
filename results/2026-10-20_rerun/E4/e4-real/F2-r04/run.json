@@ -1,0 +1,12 @@
+{
+  "fault": "F2",
+  "rep": 4,
+  "status": "COMPLETE",
+  "evidence": "MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",
+  "steady_start_pi_ns": 5102412176921,
+  "onset_pi_ns": 5122412885909,
+  "fault_end_pi_ns": 5123412943705,
+  "observation_end_pi_ns": 5132413365737,
+  "recovery_start_pi_ns": 5132416755959,
+  "recovery_observation_end_pi_ns": 5135100395976
+}

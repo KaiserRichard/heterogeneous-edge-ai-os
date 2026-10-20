@@ -1,0 +1,39 @@
+{
+  "fault": "F2",
+  "rep": 1,
+  "status": "COMPLETE",
+  "evidence": "UNVERIFIED ON HARDWARE",
+  "steady_start_pi_ns": 5419549955306,
+  "onset_pi_ns": 5422826073749,
+  "fault_end_pi_ns": 5423826153396,
+  "observation_end_pi_ns": 5424826148377,
+  "recovery_start_pi_ns": 5424829605655,
+  "marker_edges": [
+    {
+      "value": 0,
+      "before_pi_ns": 5419032764307,
+      "after_pi_ns": 5419032768510,
+      "software_bracket_ns": 4203
+    },
+    {
+      "value": 1,
+      "before_pi_ns": 5422826056193,
+      "after_pi_ns": 5422826068101,
+      "software_bracket_ns": 11908
+    },
+    {
+      "value": 0,
+      "before_pi_ns": 5423826195433,
+      "after_pi_ns": 5423826207433,
+      "software_bracket_ns": 12000
+    },
+    {
+      "value": 0,
+      "before_pi_ns": 5424829808488,
+      "after_pi_ns": 5424829817173,
+      "software_bracket_ns": 8685
+    }
+  ],
+  "marker_chip": "/dev/gpiochip4",
+  "marker_offset": 27
+}

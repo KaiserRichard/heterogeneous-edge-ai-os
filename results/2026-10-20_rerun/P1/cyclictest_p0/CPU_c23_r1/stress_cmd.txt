@@ -1,0 +1,1 @@
+taskset -c 2\,3 stress-ng --cpu 2 --timeout 70s --metrics-brief 
