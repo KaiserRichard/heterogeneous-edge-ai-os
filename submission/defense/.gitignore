@@ -1,0 +1,11 @@
+.mpl-cache/
+qa/swift-cache/
+__pycache__/
+*.aux
+*.fdb_latexmk
+*.fls
+*.nav
+*.out
+*.snm
+*.xdv
+*.vrb

@@ -1,0 +1,11 @@
+{
+  "main.pdf": "590e5ba12f5d689e03c08ea0b692266194227556e70013b8cf8d3c3a63e12a0b",
+  "main.tex": "e0942163de9afcae43de60e6d9d0165aec47239c622d47d6854e2fefa4ff7b21",
+  "preamble.tex": "4cd1fe1ad6903085454d67450e04bc1e8e1f63fdb7a1b56c7a1f3e2fba759db0",
+  "build_evidence.py": "898db0107e2e326561c4f3e4ba9048340ee7ead33e29bf4f0b729b0b5b1e0129",
+  "check_deck.py": "d6ff2178954df729d5161495c338bb9571335dd6233fa64be589e0ade06d188f",
+  "SPEAKER_NOTES.md": "ca0e1695cfc1c35524429eeebda667cf1d2c4d1dead93b138a0e5e0f868d31da",
+  "CLAIMS.md": "0b0d13e935b67d2aba5a3bbd7d357b4690dd3499afcc4c1160bc9df80286e8c3",
+  "REVIEW_LOG.md": "24d334e0eef56844b79f6df0b3a58c34e811e69cdf98837c0482f4c6aa3bbbc4",
+  "README.md": "a19f618608176cd4e4ad9fc995785e5a5e0c37c3ecb731b7cfa8e020289a0425"
+}

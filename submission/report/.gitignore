@@ -1,0 +1,8 @@
+.swift-cache/
+*.aux
+*.fdb_latexmk
+*.fls
+*.out
+*.toc
+*.xdv
+__pycache__/

@@ -1,0 +1,1 @@
+PASS: clean log; 30 pages; 11 uniquely numbered/referenced figures; 21 scripts = 1,020 s; 164 source hashes unchanged; E4 27/34, analyzer 10/15. Visual review: see REVIEW_LOG.md.
