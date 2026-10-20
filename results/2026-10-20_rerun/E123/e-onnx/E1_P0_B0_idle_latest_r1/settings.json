@@ -1,0 +1,3842 @@
+[
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  },
+  {
+    "source": {
+      "pid": 82192,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    },
+    "infer": {
+      "pid": 82181,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        0
+      ],
+      "locked_kib": 0,
+      "allowed_list": "0"
+    },
+    "bridge": {
+      "pid": 82190,
+      "policy": 0,
+      "priority": 0,
+      "affinity": [
+        1
+      ],
+      "locked_kib": 0,
+      "allowed_list": "1"
+    }
+  }
+]

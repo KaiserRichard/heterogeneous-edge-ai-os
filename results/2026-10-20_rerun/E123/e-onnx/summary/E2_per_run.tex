@@ -1,0 +1,44 @@
+% MEASURED; software timestamps; pty link; no physical UART, no MCU
+\par\noindent MEASURED; software timestamps; pty link; no physical UART, no MCU\par
+\begin{tabular}{llllllll}
+\toprule
+Profile & Service latency & Delivery latency & CPU & RAM & Drops & Overflows & Exact load \\
+\midrule
+\multicolumn{8}{l}{E2\_P0\_B0\_idle\_latest\_r1; OK} \\
+P0 & 45.54/46.6/60.81 ms & 45.66/46.81/60.96 ms & 45.99 \% & 94.6 MiB & 0 & 0 & idle \\
+\multicolumn{8}{l}{E2\_P0\_B0\_idle\_latest\_r2; OK} \\
+P0 & 45.05/46.06/55.41 ms & 45.19/47.6/55.55 ms & 45.89 \% & 94.59 MiB & 0 & 0 & idle \\
+\multicolumn{8}{l}{E2\_P0\_B0\_idle\_latest\_r3; OK} \\
+P0 & 45.07/46.19/56.58 ms & 45.22/46.41/56.75 ms & 45.9 \% & 94.58 MiB & 0 & 0 & idle \\
+\multicolumn{8}{l}{E2\_P0\_B1\_stream\_c2\_latest\_r1; OK} \\
+P0 & 75.89/86.46/116.7 ms & 76.41/86.81/117.5 ms & 77.8 \% & 94.58 MiB & 0 & 0 & taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --metrics-brief \\
+\multicolumn{8}{l}{E2\_P0\_B1\_stream\_c2\_latest\_r2; OK} \\
+P0 & 73.94/80.49/128.9 ms & 74.48/81.35/129.7 ms & 75.84 \% & 94.57 MiB & 0 & 0 & taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --metrics-brief \\
+\multicolumn{8}{l}{E2\_P0\_B1\_stream\_c2\_latest\_r3; OK} \\
+P0 & 74.31/83.5/120.4 ms & 74.85/84.95/121.3 ms & 76.03 \% & 94.59 MiB & 0 & 0 & taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --metrics-brief \\
+\multicolumn{8}{l}{E2\_P0\_B2\_memrate\_c23\_latest\_r1; OK} \\
+P0 & 6116/1.317e+04/1.328e+04 ms & 6116/1.317e+04/1.328e+04 ms & 101 \% & 94.6 MiB & 0 & 0 & taskset -c 2 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief ; taskset -c 3 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief \\
+\multicolumn{8}{l}{E2\_P0\_B2\_memrate\_c23\_latest\_r2; OK} \\
+P0 & 5010/1.037e+04/1.052e+04 ms & 5010/1.037e+04/1.052e+04 ms & 101 \% & 94.59 MiB & 0 & 0 & taskset -c 2 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief ; taskset -c 3 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief \\
+\multicolumn{8}{l}{E2\_P0\_B2\_memrate\_c23\_latest\_r3; OK} \\
+P0 & 6532/1.374e+04/1.386e+04 ms & 6533/1.374e+04/1.387e+04 ms & 100.8 \% & 94.56 MiB & 0 & 0 & taskset -c 2 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief ; taskset -c 3 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief \\
+\multicolumn{8}{l}{E2\_P1\_B0\_idle\_latest\_r1; OK} \\
+P1 & 45.47/52.55/75.73 ms & 45.6/52.74/75.9 ms & 45.97 \% & 96.73 MiB & 0 & 0 & idle \\
+\multicolumn{8}{l}{E2\_P1\_B0\_idle\_latest\_r2; OK} \\
+P1 & 45.13/46.42/55.97 ms & 45.27/46.59/56.12 ms & 45.9 \% & 96.72 MiB & 0 & 0 & idle \\
+\multicolumn{8}{l}{E2\_P1\_B0\_idle\_latest\_r3; OK} \\
+P1 & 45.14/47.01/57.21 ms & 45.28/47.2/57.37 ms & 45.9 \% & 96.73 MiB & 0 & 0 & idle \\
+\multicolumn{8}{l}{E2\_P1\_B1\_stream\_c2\_latest\_r1; OK} \\
+P1 & 71.04/82.85/165.7 ms & 71.52/83.29/166 ms & 72.9 \% & 96.97 MiB & 0 & 0 & taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --metrics-brief \\
+\multicolumn{8}{l}{E2\_P1\_B1\_stream\_c2\_latest\_r2; OK} \\
+P1 & 73.32/82.09/120.1 ms & 73.81/82.57/120.9 ms & 75.8 \% & 96.73 MiB & 0 & 0 & taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --metrics-brief \\
+\multicolumn{8}{l}{E2\_P1\_B1\_stream\_c2\_latest\_r3; OK} \\
+P1 & 75.46/85.34/118.9 ms & 75.91/86.65/119.7 ms & 77.79 \% & 96.72 MiB & 0 & 0 & taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --metrics-brief \\
+\multicolumn{8}{l}{E2\_P1\_B2\_memrate\_c23\_latest\_r1; OK} \\
+P1 & 3329/7244/7329 ms & 3330/7244/7330 ms & 101.2 \% & 96.73 MiB & 0 & 0 & taskset -c 2 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief ; taskset -c 3 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief \\
+\multicolumn{8}{l}{E2\_P1\_B2\_memrate\_c23\_latest\_r2; OK} \\
+P1 & 4034/8356/8424 ms & 4034/8357/8425 ms & 101.2 \% & 96.71 MiB & 0 & 0 & taskset -c 2 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief ; taskset -c 3 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief \\
+\multicolumn{8}{l}{E2\_P1\_B2\_memrate\_c23\_latest\_r3; OK} \\
+P1 & 4315/9087/9178 ms & 4316/9087/9179 ms & 101.5 \% & 97.05 MiB & 0 & 0 & taskset -c 2 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief ; taskset -c 3 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief \\
+\bottomrule
+\end{tabular}

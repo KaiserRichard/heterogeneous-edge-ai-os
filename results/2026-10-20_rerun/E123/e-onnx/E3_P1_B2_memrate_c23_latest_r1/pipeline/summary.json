@@ -1,0 +1,55 @@
+{
+  "evidence": "MEASURED from software timestamps; no physical UART or MCU timing",
+  "validity": "OK",
+  "excluded": false,
+  "counts": {
+    "source_generated": 604,
+    "source_ipc_dropped": 0,
+    "infer_completed": 562,
+    "infer_skipped_stale": 0,
+    "infer_ipc_dropped": 0,
+    "bridge_sent": 562,
+    "rx_received": 562,
+    "joined": 562,
+    "bridge_to_rx_missing": 0,
+    "rx_without_bridge_log": 0,
+    "end_to_end_missing": 42,
+    "bridge_overwritten": 0,
+    "bridge_queue_dropped": 0,
+    "bridge_discarded_on_stop": 0,
+    "bridge_malformed": 0,
+    "rx_crc_errors": 0
+  },
+  "latency_us": {
+    "input_to_done_us": {
+      "n": 562,
+      "p50": 2584734.128,
+      "p95": 4945452.923,
+      "p99": 5187657.608,
+      "max": 5229016.497
+    },
+    "done_to_send_us": {
+      "n": 562,
+      "p50": 234.074,
+      "p95": 1262.0,
+      "p99": 1374.87,
+      "max": 1425.944
+    },
+    "send_to_rx_us": {
+      "n": 562,
+      "p50": 387.555,
+      "p95": 779.667,
+      "p99": 1923.371,
+      "max": 5318.944
+    },
+    "aoi_at_reception_us": {
+      "n": 562,
+      "p50": 2585513.943,
+      "p95": 4945821.256,
+      "p99": 5188452.034,
+      "max": 5230630.238
+    }
+  },
+  "percentiles": "nearest rank; inference uses all infer completions (bridge sends if infer CSV absent); dispatch uses bridge sends; transit/AoI use joined frames",
+  "aoi_scope": "age at reception of each delivered frame; not time-average/peak held-value AoI"
+}

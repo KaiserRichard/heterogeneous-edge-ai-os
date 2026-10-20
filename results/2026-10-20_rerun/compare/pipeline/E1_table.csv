@@ -1,0 +1,6 @@
+CPU,Condition,Delivery latency,Drops,Exact load,Overflows,RAM,Service latency
+44.09 %,B0_idle,44.88/45.8/65.07 ms,0,idle,0,94.6 MiB,44.72/45.61/64.88 ms
+75.95 %,B1_stream_c2,74.73/83.4/120.5 ms,0,taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --metrics-brief,0,94.59 MiB,74.23/82.87/118.8 ms
+101.2 %,B2_memrate_c23,4963/1.075e+04/1.144e+04 ms,0,taskset -c 2 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief ; taskset -c 3 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief,0,94.6 MiB,4938/1.075e+04/1.144e+04 ms
+62.03 %,C1_cache2M_c2,61.53/69.45/117.1 ms,0,taskset -c 2 stress-ng --cache 1 --cache-level 3 --cache-size 2M --cache-no-affinity --metrics-brief,0,95.08 MiB,61.28/69.1/116.8 ms
+42.08 %,CPU_c23,42.73/44.48/79.89 ms,0,taskset -c 2 stress-ng --cpu 1 --metrics-brief ; taskset -c 3 stress-ng --cpu 1 --metrics-brief,0,94.6 MiB,42.5/44.22/57.97 ms

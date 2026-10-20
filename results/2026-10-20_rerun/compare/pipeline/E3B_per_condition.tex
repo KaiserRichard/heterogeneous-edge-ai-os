@@ -1,0 +1,16 @@
+% MEASURED; software timestamps; pty link; no physical UART, no MCU
+\par\noindent MEASURED; software timestamps; pty link; no physical UART, no MCU\par
+\begin{tabular}{lllllllll}
+\toprule
+Input policy & Bridge policy & Time-average AoI & Peak AoI & Reception AoI P50 & Reception AoI P99 & Skipped count & Deadline misses & Delivered count \\
+\midrule
+\multicolumn{9}{l}{P1 / B0\_idle; valid reps 3/3} \\
+fifo & latest & 96.29 ms (initialized) & 154.3 ms & 46.07 ms & 48.56 ms & 0 & 0/0 of 601 & 601 \\
+\multicolumn{9}{l}{P1 / B0\_idle; valid reps 3/3} \\
+latest & latest & 96.35 ms (initialized) & 154.8 ms & 46.22 ms & 48.67 ms & 0 & 0/0 of 601 & 601 \\
+\multicolumn{9}{l}{P1 / B2\_memrate\_c23; valid reps 3/3} \\
+fifo & latest & 2334 ms (initialized) & 9029 ms & 2338 ms & 4698 ms & 0 & 568/568 of 568 & 568 \\
+\multicolumn{9}{l}{P1 / B2\_memrate\_c23; valid reps 3/3} \\
+latest & latest & 229.4 ms (initialized) & 367.8 ms & 168.9 ms & 225 ms & 96 & 510/347 of 510 & 510 \\
+\bottomrule
+\end{tabular}

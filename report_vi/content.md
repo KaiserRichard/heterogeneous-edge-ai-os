@@ -304,10 +304,10 @@ Lần PS1 đầu không nhận byte nào từ STM32 vì jumper STM32-TX sang Pi 
 Bảng đo lại F. Vị trí cập nhật E1–E3B, đơn vị ms; gốc E1–E3 ngày 11/10, E3B ngày 12/10/2026.
 | Phép đo / điều kiện | Gốc | Đo lại | Hợp lệ gốc | Hợp lệ đo lại |
 |---|---|---|---|---|
-| E1 memrate P99 | 13977.2 | pending | 3/3 | 0/0 |
+| E1 memrate P99 | 13977.2 | 10752.7 | 3/3 | 3/3 |
 | E2 P1 cache P99 | 97.1552 | pending | 3/3 | 0/0 |
-| E3 memrate latest AoI | 6957.88 | pending | 3/3 | 0/0 |
-| E3B input latest P99 | failed: no valid runs | pending | 0/3 | 0/0 |
+| E3 memrate latest AoI | 6957.88 | 2645.45 | 3/3 | 3/3 |
+| E3B input latest P99 | failed: no valid runs | 225 | 0/3 | 3/3 |
 
 Các ô pending đang chờ dữ liệu E1–E3B và chưa được xem là kết quả đo trong đợt bổ sung này. Khi bổ sung chiến dịch, bảng được tạo lại từ tệp đối chiếu, giữ nguyên tải, profile, chính sách đầu vào và bridge tương ứng. E3 trình bày AoI trung bình đã khởi tạo; E1, E2 và E3B trình bày P99 chuyển giao, nên các hàng có ý nghĩa khác nhau. Các lượt E3B gốc có tải không hợp lệ không được dùng làm đối chứng sạch cho lợi ích của input-latest. Thí nghiệm inference độc lập và so sánh chính sách E3 trên UART vật lý chưa được lặp lại trong bố cục này.
 <!-- RERUN END -->
