@@ -1,6 +1,6 @@
 # Defense speaker notes
 
-21 main slides; target **1,020 seconds = 17:00**. Backup pages are for questions and have no allocated talk time. Read the scripts naturally; use the remaining time on each slide to point to the figure or table and pause. Page numbers match main.pdf. Team identities follow the approved study deck; the older PROJECT.md description of a two-person project is historical, not used to invent a new roster.
+26 main slides; target **1,200 seconds = 20:00**, including a three-minute dated update after page 17. Original scripts and allocations are retained. Original snapshot limitations describe 13 October, while pages 18–22 state the new evidence. Backup pages are for questions and have no allocated talk time. Read the scripts naturally; use the remaining time on each slide to point to the figure or table and pause. Page numbers match main.pdf. Team identities follow the approved study deck; the older PROJECT.md description of a two-person project is historical, not used to invent a new roster.
 
 | Page | Slide | Target seconds | Cumulative |
 |---|---|---:|---|
@@ -21,10 +21,15 @@
 | 15 | E3 queue placement | 65 | 13:05 |
 | 16 | E4 transition reasons | 65 | 14:10 |
 | 17 | Analyzer cross-check | 50 | 15:00 |
-| 18 | Limitations | 45 | 15:45 |
-| 19 | Conclusion and contributions | 40 | 16:25 |
-| 20 | Future work | 30 | 16:55 |
-| 21 | References | 5 | 17:00 |
+| 18 | Re-run setup and evidence | 35 | 15:35 |
+| 19 | Re-run cyclictest | 35 | 16:10 |
+| 20 | Re-run E4 | 40 | 16:50 |
+| 21 | Re-run analyzer | 35 | 17:25 |
+| 22 | Re-run PS1 and pipeline slot | 35 | 18:00 |
+| 23 | Limitations | 45 | 18:45 |
+| 24 | Conclusion and contributions | 40 | 19:25 |
+| 25 | Future work | 30 | 19:55 |
+| 26 | References | 5 | 20:00 |
 
 ## 1 — Title (20 s)
 
@@ -94,18 +99,38 @@ Figure 10 uses a local reference selected by the state-event reason. Reason 3 is
 
 Figure 11 plots delta equal to L minus M. L runs from the last physical UART byte end to both GPIOs low; M runs from accepted heartbeat receipt to the FAILSAFE event timestamp. Positive means L is longer. Ten final frames decode as HEARTBEAT; their residuals are positive 47.5 to 67.6 microseconds. Frame matching makes references comparable, but the endpoints remain distinct. The residual includes reception and output delays, timestamp placement and clock effects. It does not isolate decision-to-output delay or echo accuracy. Five other captures end with inference or echo and give negative residuals of 0.484 to 4.937 milliseconds. Full IDs are in the capture key. Marker-to-safe is 82.9 to 98.7 milliseconds. Sampling is eight megahertz; absolute calibration remains unknown. Matching frames do not qualify the flagged collection or establish actuator safety.
 
-## 18 — Limitations (45 s)
+## 18 — Re-run setup and evidence (35 s)
+
+This is a separate update dated 20 October. The original slides remain the 13 October snapshot. The Pi is still a four-gigabyte Pi 5 running Ubuntu 24.04, now with kernel 6.8.0-1065-raspi. S1 records a verified st-flash write from the Pi; the slide identifies the binary hash. The analyzer and ST-LINK are on the Pi USB, with capture pinned to CPU 3 at eight megahertz. That adds acquisition activity on the system under test. New timer runs last sixty seconds rather than the original one hundred and twenty seconds.
+
+## 19 — Re-run cyclictest (35 s)
+
+Read the generated original and rerun P99 columns with the acceptance counts. These are median per-run percentiles from three independent repetitions per condition. Original acceptance uses v1, whereas the new runs use v2. FIFO still has a larger tail under memory contention than idle. Changed kernel and shorter observation windows prevent assigning the difference to scheduling alone. Neither a smaller observed maximum nor a percentile establishes a worst-case bound.
+
+## 20 — Re-run E4 (40 s)
+
+The full new campaign accepts twenty-five of twenty-five runs. The table compares MCU-local FAILSAFE medians using the correct last heartbeat or last inference reference. F4 now enters FAILSAFE first with heartbeat reason three. Original F4 includes two accepted full-campaign runs and five accepted extra short-window runs, with mixed first-transition reasons. Original F5 is also a short-window scope. The report separately gives observed maxima and mapped onset medians. Clock mapping, recovery and exposure must be considered separately; accepted transitions do not certify a safety bound.
+
+## 21 — Re-run analyzer (35 s)
+
+All fifteen new captures finish with a matching HEARTBEAT, compared with ten of fifteen originally. Read the generated delta range: the analyzer interval minus the MCU event interval. These references differ from the marker-to-safe interval in the report. Eight-megahertz sampling gives a nominal 125-nanosecond sample period, not absolute clock calibration. Matching frames checks the reference, not all collection conditions. Since capture now runs on the Pi, we cannot attribute the residual shift to firmware alone.
+
+## 22 — Re-run PS1 and pipeline slot (35 s)
+
+The first PS1 received no STM32 bytes because the return jumper was on the wrong Pi pin. After correcting it to physical pin ten, the rerun records 602 bridge sends, 616 MCU status messages and 62 accepted echoes. Done-to-send P99 is 42.278 microseconds; it measures a Pi-side interval, not physical AoI. The raw summary retains its unverified-on-hardware label. E1, E2, E3 and E3B are pending in the current comparison: read their refreshed cells when results arrive, and report valid counts before interpreting numbers. PS1 does not replace a physical E3 policy experiment.
+
+## 23 — Limitations (45 s)
 
 The five-volt, three-ampere supply produced live under-voltage exclusions. All 18 original real-UART E3 runs are flagged; the later 18-run rerun also retains power exclusions. Clean physical AoI remains missing. V2 replay also reveals missing monitoring proof in older software acquisitions. Our small repeat counts and observed maxima cannot prove worst-case response. The final firmware review fixes were compiled, but the changed image was not reflashed and validated on this rig. Analyzer captures add a narrow GPIO timing observation to the older report; they do not validate all transit, oscillator or rearm assumptions. These limits define what we can defend today.
 
-## 19 — Conclusion and contributions (40 s)
+## 24 — Conclusion and contributions (40 s)
 
 The experiment connects four OS lessons. Scheduling affects timer tails while shared contention remains. The measured zero replacements and slow completion intervals support an inferred upstream backlog. The input-latest pattern is flagged; its clean causal benefit remains unknown. Same-domain durations and explicit clock mapping keep freshness measurements meaningful. An independent supervisor distinguishes missing liveness from stale results. The artifact includes a shared protocol, instrumented processes, raw runs, exclusions and reproducible analysis. These are course-project contributions, not a claim of new model architecture, certified safety or formal worst-case guarantees.
 
-## 20 — Future work (30 s)
+## 25 — Future work (30 s)
 
 The immediate task is restoring adequate power and repeating input-policy and physical E3 experiments with v2 evidence. Then flash the reviewed firmware, verify the new image, match analyzer reference events, and calibrate the transit and rearm margins. Longer fault and recovery exposures are needed. Quota and packaged-kernel comparisons are optional later experiments with matched conditions.
 
-## 21 — References (5 s)
+## 26 — References (5 s)
 
 The primary documentation and exact evidence paths are listed here and in the artifact. Thank you; the backup slides support questions.

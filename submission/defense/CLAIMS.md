@@ -48,3 +48,21 @@ taskset -c 2,3 stress-ng --memrate 2 --memrate-bytes 64M --timeout 130s --metric
 ```
 
 Retained per-run `E1_*_r1/condition.json` files in the PTY campaign record `exact_load`. Pipeline construction: `tools/experiments/e_campaign.py::stress_commands`. It starts separate single-worker commands on each listed CPU for CPU and Memrate (`taskset -c 2` and `taskset -c 3`, `--cpu 1` or `--memrate 1`); Stream and Cache flags are as above. Commands append `--metrics-brief`; the campaign owns their lifetime and terminates them after the pipeline finishes, rather than using the timer campaign’s 130 s timeout. Supporting definitions: `tools/timing/README.md` and `docs/research/R5.md`. These settings distinguish remote-core shared-resource pressure from contention on the measured core.
+
+## Additive re-run — 20 October 2026 (PDF pages 18–22)
+
+The original snapshot remains unchanged. All new numeric cells are selected
+verbatim from `results/2026-10-20_rerun/compare/rerun_compare_vi.md`; independent
+run counts and per-run qualification are in adjacent `rerun_summary.json`.
+`tools/rerun/build_documents.py` generates the five-frame include and report
+section, preserving failed cells and displaying absent pipeline cells as pending.
+`qa/rerun_2026-10-20_sources.json` separately hashes the consumed comparison outputs
+and selected raw metadata; historical `qa/source_hashes.json` remains unchanged.
+
+| New page | Claim / evidence and limits |
+|---|---|
+| 18 | Rig: raw `P1/cyclictest_p0/platform.txt` and per-run `meta_before.json`; local acquisition: `LA/*/la_host.json` and `chain.sh`. S1 hash matches `S1/firmware.bin`; `S1/flash.log` records verified write. Pi-side flashing and jumper correction are acquisition observations supplied by the operator. `tools/la/la_e4_local.sh` is referenced by the retained chain but absent in this checkout. Original 120 s vs new 60 s timer windows: original and new `cyclictest_cmd.txt`, corresponding campaign summaries. |
+| 19 | MEASURED timer P99, median per-run, all five loads × two profiles. Original v1 and current v2 acceptance are distinct; changed kernel/duration prevent causal attribution. |
+| 20 | MEASURED MCU-local FAILSAFE P50, reason-aware. Raw `E4/e4-real/F*/run.json` and state events, regenerated `compare/e4/e4_runs.csv`, `compare/E4_local.tex` and `E4_mapped.tex`. Old F4 combines 2/5 full + 5/9 short attempts; new 5/5 full. New accepted records show recovery 25/25, no censored FAILSAFE and zero false transitions in observed windows; no population false-trip or worst-case bound follows. |
+| 21 | MEASURED reference residual, not absolute calibration: `compare/la/classified.json`, capture key and retained `LA/F*/F*-r*/capture.vcd`. 15/15 matching final HEARTBEAT frames, vs 10/15 original FLAGGED captures. Matching is distinct from collection validity; the Pi-local USB/CPU acquisition topology changed. Marker-safe uses a different reference and is tabulated separately in the report. |
+| 22 | MEASURED link smoke: `PS1/link60_fixed/{summary.json,config.json}`. 602 sends, 616 status, 62 received/accepted echoes, Pi-local done-to-send P50/P99/max 21.833/42.278/595.723 µs. First `PS1/link60/summary.json` has zero status/echo reception; wrong-pin diagnosis and correction to physical pin 10 are operator bring-up observations. Preserve raw `UNVERIFIED ON HARDWARE` label. PS1 does not identify MCU inference receipt or establish cross-domain AoI. E1–E3B are pending, not zero; future accepted cells refresh on rebuild. Standalone inference and physical E3 policy comparisons are not repeated. |

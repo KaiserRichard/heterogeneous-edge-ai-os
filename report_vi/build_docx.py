@@ -74,6 +74,9 @@ def schema_order(xml):
     return dom.documentElement.toxml() if not xml.startswith('<?xml') else dom.toxml()
 
 def build():
+    # Keep additive rerun tables synchronized with the retained comparison.
+    import runpy
+    runpy.run_path(str(ROOT.parent / "tools/rerun/build_documents.py"))["refresh"]()
     lines = (ROOT / 'content.md').read_text().splitlines()
     body, media, rels = [], {}, []
     i = 0

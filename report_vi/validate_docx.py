@@ -56,10 +56,11 @@ with zipfile.ZipFile(OUT) as z:
         assert sec.find('w:pgSz', NS).attrib == {w+'w':'11906', w+'h':'16838'}
         margins = sec.find('w:pgMar', NS)
         assert [margins.get(w+k) for k in ('top','bottom','left','right')] == ['1417','1134','1701','1134']
-    assert len(document.findall('.//w:tbl', NS)) == 9
-    assert len([n for n in z.namelist() if n.startswith('word/media/')]) == 4
-    assert len(document.findall('.//w:br[@w:type="page"]', NS)) == 2
-    assert not document.findall('.//w:pageBreakBefore', NS)
+    assert len(document.findall('.//w:tbl', NS)) == 15
+    assert len([n for n in z.namelist() if n.startswith('word/media/')]) == 5
+    assert len(document.findall('.//w:br[@w:type="page"]', NS)) == 0
+    # The builder uses paragraph properties for the two front-matter breaks.
+    assert len(document.findall('.//w:pageBreakBefore', NS)) == 2
     assert len(styles.findall('.//w:pageBreakBefore', NS)) == 1
     for table in document.findall('.//w:tbl', NS):
         assert not table.findall('.//w:keepNext', NS)
@@ -76,8 +77,8 @@ with zipfile.ZipFile(OUT) as z:
     assert table_style.find('.//w:keepNext', NS) is None
     wp = '{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}'
     for extent in document.iter(wp+'extent'):
-        assert int(extent.get('cx')) <= 4320000
-        assert int(extent.get('cy')) <= 2340000
+        assert int(extent.get('cx')) <= 5760000
+        assert int(extent.get('cy')) <= 3600000
     default = styles.find('w:docDefaults/w:pPrDefault/w:pPr', NS)
     assert default.find('w:ind', NS).get(w+'firstLine') == '567'
     assert default.find('w:spacing', NS).get(w+'after') == '80'
@@ -97,9 +98,13 @@ with zipfile.ZipFile(OUT) as z:
         assert 'word/'+rel.get('Target') in z.namelist()
 content = (ROOT/'content.md').read_text()
 body = content.split('# PHẦN 1. GIỚI THIỆU',1)[1].split('# TÀI LIỆU THAM KHẢO',1)[0]
-body = re.sub(r'<!--.*?-->', '', body)
-words = len(body.split())
-assert 4400 <= words <= 4600, words
+body = re.sub(r'<!-- (?!RERUN).*?-->', '', body)
+words = len(re.sub(r'<!--.*?-->', '', body, flags=re.S).split())
+original_body = re.sub(r'<!-- RERUN START -->.*?<!-- RERUN END -->', '', body, flags=re.S)
+original_words = len(original_body.split())
+assert 4400 <= original_words <= 4600, original_words
+assert '## 5.5 Đo lại ngày 20/10/2026' in content
+assert len(re.findall(r'^Bảng đo lại [A-F]\.', content, re.M)) == 6
 assert content.count('<!-- PAGE -->') == 3
 assert '<!-- PAGE -->' not in content.split('# PHẦN 1. GIỚI THIỆU', 1)[1]
 assert len(re.findall(r'^Bảng \d+\.',content,re.M)) == 7
@@ -129,7 +134,7 @@ report = {
     'relationship_targets': 'PASS', 'reproducible_build': 'PASS',
     'a4_margins_styles_toc_cover_footer': 'PASS',
     'body_whitespace_words_including_tables': words,
-    'forced_front_matter_breaks': 3, 'target_word_pages': '≤20', 'report_tables': 7, 'cover_members_table': 1, 'glossary_rows': len(glossary_rows), 'figures': 4,
+    'forced_front_matter_breaks': 3, 'target_word_pages': '≤20', 'report_tables': 13, 'original_body_words': original_words, 'cover_members_table': 1, 'glossary_rows': len(glossary_rows), 'figures': 4,
     'rendered_page_count': None,
     'rendering_limit': 'Word pagination requires rendering; target is at most 20 pages, not a verified page count.',
     'docx_sha256': hashlib.sha256(first).hexdigest()

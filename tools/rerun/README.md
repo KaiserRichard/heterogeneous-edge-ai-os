@@ -85,3 +85,37 @@ borrows an original physical E3 pipeline purely to test smoke-summary handling.
 It is never treated as accepted PS1 or as an E3 policy rerun. The second fixture
 omits parts and places a corrupt E4 run beside an intact sibling. No hardware
 verification is claimed.
+
+## Refresh the defense and Vietnamese report
+
+The additive document adapter selects published comparison cells rather than
+copying numbers by hand. It writes five frames in
+`submission/defense/rerun_2026-10-20.tex`, section 5.5 between explicit markers in
+`report_vi/content.md`, and a SHA-256 manifest of the consumed comparison files
+and selected raw provenance in `submission/defense/qa/rerun_2026-10-20_sources.json`.
+Original slides, report paragraphs, and historical analysis outputs are preserved.
+E1–E3B show `pending` until their comparison cells exist; failures keep their
+failure wording. A pipeline row's n/N is independent repetitions, not packet count.
+
+Both document builders read `RERUN_COMPARE_DIR`, defaulting to the retained
+`results/2026-10-20_rerun/compare/`. For later campaigns, replay into a **new empty
+output outside results**, then use that directory for both rebuilds:
+
+```sh
+python3 tools/rerun/build_rerun.py results/2026-10-20_rerun --outdir /tmp/os-rerun-next
+export RERUN_COMPARE_DIR=/tmp/os-rerun-next
+submission/defense/build.sh
+python3 report_vi/build_docx.py
+python3 report_vi/validate_docx.py
+python3 report_vi/style_check.py
+```
+
+Do not run acquisition scripts. `build_rerun.py` itself never edits documents;
+`build_documents.py --compare DIR` can also refresh their sources independently.
+After building the deck, render previews and run `check_deck.py` as described in
+its README. The snapshot-specific talk scripts should be reviewed when new
+campaigns arrive. The local acquisition script `tools/la/la_e4_local.sh` is named
+in the retained chain but is absent from this checkout; capture placement and
+CPU affinity are corroborated by `LA/*/la_host.json`. The jumper correction is a
+bring-up observation supplied with this integration; the first and corrected
+PS1 summaries corroborate absent versus restored MCU/echo reception.

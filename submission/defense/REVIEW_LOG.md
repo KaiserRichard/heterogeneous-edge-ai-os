@@ -106,3 +106,31 @@ The independent review superseded the earlier self-review: three MAJOR interpret
 - Only submission/defense was written. No hardware run, firmware build/flash, delegation, external communication or Git branch/index/commit mutation. Power exclusions, v1/v2 missing evidence, provisional thresholds, differing fault scopes and compiled-but-not-reflashed firmware fixes remain visible.
 
 **Round 3 verdict: PASS (build, evidence checks and self-review). All REVIEW_1 MAJOR and MINOR artifact defects resolved; no rejected items.** REVIEW_1.md is preserved as the independent historical review; this remediation is not a new independent approval or hardware qualification.
+
+## 20 October 2026 — additive re-run integration
+
+Added five generated slides immediately after the original analyzer slide (PDF
+pages 18–22). Visually inspected all five rendered pages: tables, firmware hash,
+reference equations, pending slots, scopes and takeaways fit the existing canvas.
+The original eleven figure labels and seven plot files remain unchanged. The
+expanded notes allocate 1,200 s across 26 main slides; backup pages remain untimed.
+
+Validation: XeLaTeX/latexmk produced `main.pdf`, 35 pages, with no overfull,
+underfull, missing-character or undefined-reference diagnostics. The existing
+Swift renderer produced 35 preview PNGs. `check_deck.py` passes with the expanded
+page/timing checks, unchanged historical 164-source manifest and separate rerun
+source hashes. Historical E4 27/34 and analyzer 10/15 checks still apply solely
+to the original evidence, not to the new 25/25 and 15/15 collections.
+
+The DOCX ZIP/XML, styles, relationships, cached TOC and deterministic rebuild
+checks pass, as does the Vietnamese prose-style check. No Word pagination was
+performed; the older 20-page target remains unverified after adding section 5.5.
+Pre-existing DOCX validator assumptions were aligned with the retained builder:
+five media files including the logo, front-matter paragraph page breaks, and
+16 × 10 cm maximum figure bounds. Original word-budget checks remain scoped to
+the preserved original text; six new tables bring the content-table count to 13.
+
+A temporary comparison fixture verified that a future E1 value and n/N populate
+both documents; the real pending inputs were restored afterward. Removing the
+additive blocks recovers original `main.tex` and `content.md` byte-for-byte.
+No acquisition, hardware, SSH, push or commit was performed.

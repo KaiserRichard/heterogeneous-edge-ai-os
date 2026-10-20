@@ -228,6 +228,90 @@ Nhóm đặt ngưỡng heartbeat 100 ms, HOLD tuổi nguồn 200 ms và FAILSAFE
 
 Logic analyzer đối chiếu log qua GPIO. Khoảng quan sát là 86.938–95.541 ms ở F1, 86.947–98.676 ms ở F2 và 82.852–91.302 ms ở F4; F2 có cả lượt bắt tín hiệu kiểm tra. Trong các lần bắt, 10/15 lần khớp mốc heartbeat trong 0.07 ms, còn 5 lần khác có một frame tới sau heartbeat nên byte cuối trên dây không phải heartbeat cuối được MCU chấp nhận. 
 
+<!-- RERUN START -->
+## 5.5 Đo lại ngày 20/10/2026
+
+Đợt đo bổ sung dùng Raspberry Pi 5 RAM 4 GB, Ubuntu 24.04 với kernel 6.8.0-1065-raspi và Nucleo-F446RE. Firmware được nạp từ Pi bằng st-flash; log S1 xác nhận ghi và kiểm tra lại thành công. Mã SHA-256 của tệp nhị phân là bf9a7d956560439704f030237d4b800edf5b131973d2706700be62c3576ff28b. Các bảng dưới trình bày kết quả đo với số lượt hợp lệ theo kiểm tra gốc và kiểm tra bổ sung tương ứng. Dữ liệu gốc được giữ riêng. Các quan sát ngày 11/10 và 12/10 tiếp tục được diễn giải theo phạm vi thu thập ban đầu, kể cả những hạn chế về nguồn và theo dõi đã nêu ở các mục trước, thay vì gộp mẫu với đợt mới.
+
+Bảng đo lại A. P99 cyclictest, đơn vị µs; trung vị phân vị giữa các lượt, gốc ngày 11/10/2026.
+| Phép đo / điều kiện | Gốc | Đo lại | Hợp lệ gốc | Hợp lệ đo lại |
+|---|---|---|---|---|
+| P0 idle | 57 | 95 | 3/3 | 3/3 |
+| P0 CPU | 68 | 183 | 3/3 | 3/3 |
+| P0 stream | 300 | 675 | 3/3 | 3/3 |
+| P0 cache | 203 | 403 | 3/3 | 3/3 |
+| P0 memrate | 613 | 1020 | 3/3 | 3/3 |
+| P1 idle | 9 | 14 | 3/3 | 3/3 |
+| P1 CPU | 11 | 13 | 3/3 | 3/3 |
+| P1 stream | 39 | 42 | 3/3 | 3/3 |
+| P1 cache | 35 | 37 | 3/3 | 3/3 |
+| P1 memrate | 239 | 196 | 3/3 | 3/3 |
+
+Cyclictest P0 dùng SCHED_OTHER, còn P1 dùng FIFO priority 50 với ba lần lặp cho mỗi điều kiện tải. Mỗi lượt mới kéo dài 60 s, bằng một nửa cửa sổ 120 s của đợt gốc trong mục 5.2. P1 vẫn chịu ảnh hưởng tải nhớ; khác biệt kernel và thời lượng chưa cho phép quy chênh lệch cho riêng scheduler. Kiểm tra gốc dùng quy tắc ban đầu, còn đợt mới yêu cầu độ phủ theo dõi và xác nhận tải. Giá trị quan sát không phải cận trên thời gian đáp ứng.
+
+Bảng đo lại B. FAILSAFE MCU-local, đơn vị ms; gốc ngày 12/10/2026, P50 và cực đại quan sát.
+| Phép đo / điều kiện | Gốc | Đo lại | Hợp lệ gốc | Hợp lệ đo lại |
+|---|---|---|---|---|
+| F1 P50 | 100.456 | 100.427 | 5/5 | 5/5 |
+| F2 P50 | 100.577 | 100.293 | 5/5 | 5/5 |
+| F3 P50 | 475.754 | 474.937 | 5/5 | 5/5 |
+| F4 P50 | 100.556 | 100.426 | 7/14 | 5/5 |
+| F5 P50 | 475.596 | 474.459 | 5/5 | 5/5 |
+| F1 max | 100.641 | 100.433 | 5/5 | 5/5 |
+| F2 max | 100.596 | 100.419 | 5/5 | 5/5 |
+| F3 max | 475.815 | 475.078 | 5/5 | 5/5 |
+| F4 max | 100.931 | 100.556 | 7/14 | 5/5 |
+| F5 max | 475.917 | 474.908 | 5/5 | 5/5 |
+
+Bảng đo lại C. P50 từ lúc tiêm lỗi tới FAILSAFE qua ánh xạ đồng hồ, đơn vị ms; gốc ngày 12/10/2026.
+| Phép đo / điều kiện | Gốc | Đo lại | Hợp lệ gốc | Hợp lệ đo lại |
+|---|---|---|---|---|
+| F1 mapped P50 | 85.3566 | 85.9999 | 5/5 | 5/5 |
+| F2 mapped P50 | 85.7147 | 84.8909 | 5/5 | 5/5 |
+| F3 mapped P50 | 383.62 | 385.344 | 5/5 | 5/5 |
+| F4 mapped P50 | 87.2773 | 87.2318 | 7/14 | 5/5 |
+| F5 mapped P50 | 383.603 | 384.179 | 5/5 | 5/5 |
+
+F1, F2 và F4 đo FAILSAFE từ heartbeat cuối với mã nguyên nhân 3; F3 và F5 lấy inference cuối với mã 10. Đợt E4 mới có 25/25 lượt được chấp nhận trong chiến dịch đầy đủ, còn tập gốc ghép thêm cửa sổ ngắn F4/F5. Riêng F4 gốc gồm 2/5 lượt đầy đủ và 5/9 lượt bổ sung; chuyển đầu tiên trộn mã 3 với mã 9. Đợt mới có chuyển đầu tiên F4 theo mã 3, vì vậy không gộp các mốc tham chiếu để diễn giải. Thời gian ánh xạ từ lúc tiêm lỗi được tách khỏi thời gian MCU-local vì còn phụ thuộc phép khớp đồng hồ, trong khi MCU-local sử dụng mốc nhận heartbeat hoặc inference trên cùng bộ đếm của STM32. Có 25/25 lượt hợp lệ quan sát phục hồi, 0 lượt thiếu mốc FAILSAFE và 0 chuyển sai trong cửa sổ đã đo. Đây chưa phải giới hạn xác suất chuyển sai.
+
+Bảng đo lại D. Đối chiếu logic analyzer, gốc ngày 12/10/2026; số lượt ở đây là capture phân tích được, chưa xác nhận toàn bộ điều kiện thu thập.
+| Phép đo / điều kiện | Gốc | Đo lại | Hợp lệ gốc | Hợp lệ đo lại |
+|---|---|---|---|---|
+| Final HEARTBEAT | 10 | 15 | 15/15 | 15/15 |
+| Delta min (µs) | 47.5243 | 58.6493 | 15/15 | 15/15 |
+| Delta max (µs) | 67.6493 | 102.649 | 15/15 | 15/15 |
+| F1 marker min (ms) | 86.9382 | 82.6529 | 15/15 | 15/15 |
+| F1 marker max (ms) | 95.541 | 90.6836 | 15/15 | 15/15 |
+| F2 marker min (ms) | 86.947 | 83.1966 | 15/15 | 15/15 |
+| F2 marker max (ms) | 98.6757 | 93.7774 | 15/15 | 15/15 |
+| F4 marker min (ms) | 82.8516 | 89.9435 | 15/15 | 15/15 |
+| F4 marker max (ms) | 91.302 | 99.0391 | 15/15 | 15/15 |
+
+Logic analyzer dùng fx2lafw và ST-LINK cùng nối USB trên Pi; capture chạy ngay trên hệ thống được đo, ghim CPU 3. Tần số lấy mẫu là 8 MHz. Chu kỳ danh định 125 ns chưa được hiệu chuẩn tuyệt đối; delta lấy khoảng từ cuối byte UART tới khi cả hai GPIO xuống thấp trừ khoảng từ heartbeat được nhận tới sự kiện FAILSAFE. Chỉ các capture kết thúc bằng heartbeat phù hợp được dùng cho delta; mốc marker được giữ riêng trong bảng. Hoạt động USB và CPU của bộ thu là khác biệt phương pháp, chưa thể quy độ dịch delta cho firmware.
+
+Bảng đo lại E. PS1 trên UART vật lý sau sửa dây; không có đối chứng PS1 gốc.
+| Phép đo / điều kiện | Gốc | Đo lại | Hợp lệ gốc | Hợp lệ đo lại |
+|---|---|---|---|---|
+| Bridge sent | — | 602 | 0/0 | 1/1 |
+| MCU status | — | 616 | 0/0 | 1/1 |
+| Echo accepted | — | 62 | 0/0 | 1/1 |
+| Done-to-send P50 (µs) | — | 21.833 | 0/0 | 1/1 |
+| Done-to-send P99 (µs) | — | 42.278 | 0/0 | 1/1 |
+| Done-to-send max (µs) | — | 595.723 | 0/0 | 1/1 |
+
+Lần PS1 đầu không nhận byte nào từ STM32 vì jumper STM32-TX sang Pi được cắm nhầm chân; sau khi chuyển về chân vật lý 10 của Pi, nhóm chạy lại cửa sổ liên kết và giữ kết quả sau sửa dây. Echo nhận và chấp nhận đều là 62; các phân vị trong bảng đo từ hoàn tất inference tới gửi, không phải AoI xuyên miền. Tóm tắt thô vẫn giữ nhãn chưa kiểm chứng trên phần cứng; chấp nhận phân tích liên kết chưa chứng minh mọi thuộc tính firmware. S1 và PS1 bổ sung bằng chứng nạp và liên lạc, chưa xác nhận biên mất DMA, stack hoặc cận trễ truyền.
+
+Bảng đo lại F. Vị trí cập nhật E1–E3B, đơn vị ms; gốc E1–E3 ngày 11/10, E3B ngày 12/10/2026.
+| Phép đo / điều kiện | Gốc | Đo lại | Hợp lệ gốc | Hợp lệ đo lại |
+|---|---|---|---|---|
+| E1 memrate P99 | 13977.2 | pending | 3/3 | 0/0 |
+| E2 P1 cache P99 | 97.1552 | pending | 3/3 | 0/0 |
+| E3 memrate latest AoI | 6957.88 | pending | 3/3 | 0/0 |
+| E3B input latest P99 | failed: no valid runs | pending | 0/3 | 0/0 |
+
+Các ô pending đang chờ dữ liệu E1–E3B và chưa được xem là kết quả đo trong đợt bổ sung này. Khi bổ sung chiến dịch, bảng được tạo lại từ tệp đối chiếu, giữ nguyên tải, profile, chính sách đầu vào và bridge tương ứng. E3 trình bày AoI trung bình đã khởi tạo; E1, E2 và E3B trình bày P99 chuyển giao, nên các hàng có ý nghĩa khác nhau. Các lượt E3B gốc có tải không hợp lệ không được dùng làm đối chứng sạch cho lợi ích của input-latest. Thí nghiệm inference độc lập và so sánh chính sách E3 trên UART vật lý chưa được lặp lại trong bố cục này.
+<!-- RERUN END -->
+
 # PHẦN 6. THẢO LUẬN VÀ HẠN CHẾ
 
 ## 6.1 Câu trả lời trong phạm vi bằng chứng

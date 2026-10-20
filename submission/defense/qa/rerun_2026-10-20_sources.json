@@ -1,0 +1,9 @@
+{
+  "results/2026-10-20_rerun/compare/rerun_summary.json": "697b3bbe0a93d6e82f43e4f0702fe2068c74b344117fed8ebdc224d5ee733fab",
+  "results/2026-10-20_rerun/compare/rerun_compare_vi.md": "9d3b412e1ccd6183a1e95fec699c8e70a3fe6c172539ae2aed0dfe90336c9913",
+  "results/2026-10-20_rerun/S1/firmware.sha256": "458bb78955caa94590357f7ee8c674d30bf280a7cefd93309b7ae5765daa64f8",
+  "results/2026-10-20_rerun/S1/flash.log": "e0705c8b018a79115405a2767665940d46158bcbf92e35c5ee5ec222598f78c2",
+  "results/2026-10-20_rerun/PS1/link60_fixed/summary.json": "010c4fb76e5428ce1607cffe724918588f1b1446364585ae358a2e2f6f602c12",
+  "results/2026-10-20_rerun/PS1/link60_fixed/config.json": "3921d6fedc85aaf4249ef2f66c6a773d417c5f37de35a164b1adfbecbda42867",
+  "results/2026-10-20_rerun/LA/F1/la_host.json": "72e190d67713012b8ef28809a8d4edf329ffc68937f1912646209b68d9df3113"
+}
