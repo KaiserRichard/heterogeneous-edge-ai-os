@@ -134,3 +134,28 @@ A temporary comparison fixture verified that a future E1 value and n/N populate
 both documents; the real pending inputs were restored afterward. Removing the
 additive blocks recovers original `main.tex` and `content.md` byte-for-byte.
 No acquisition, hardware, SSH, push or commit was performed.
+
+### Full pipeline evidence refresh — 20 October 2026
+
+Reviewed all five additive re-run frames and report section 5.5 against the
+retained comparison (E1–E3B: 57/57 accepted). E2 now compares matching memrate
+conditions and includes the new stream condition without inventing an original
+counterpart. The E1 ranking changed from memrate/cache to memrate/stream;
+cache was not repeated in E2. Unmatched-condition status is preserved rather
+than converted to pending. Pipeline availability and paired interpretations
+are generated from the comparison, including explicit missing-evidence text.
+
+The pipeline frame distinguishes PS1 physical UART from PTY experiments and
+retains MEASURED evidence wording. E1 shows contention reaching delivery;
+E2 tuning leaves substantial backlog; E3 bridge policy leaves upstream backlog;
+E3B now has separate valid loaded input-policy evidence, without treating the
+invalid original loaded runs as a clean comparison. The setup, timer, E4 and
+analyzer statements remain consistent with the retained full evidence.
+
+Ran build.sh and forced latexmk -g, check_deck.py, build_docx.py,
+validate_docx.py and style_check.py successfully. Regression tests cover both
+complete and missing pipeline parts. Rendered the deck with the repository
+Swift renderer and visually inspected re-run pages 18–22: no clipping,
+overlap or content extending into the footer. DOCX structural and deterministic
+build validation passes; Word pagination was not rendered. Original snapshot
+slides and source data are preserved. No hardware, SSH, commit or push.

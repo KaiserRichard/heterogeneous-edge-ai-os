@@ -4,12 +4,12 @@
   "all_xml_and_relationships_parse": "PASS",
   "part_page_breaks_figure_limits_table_pagination": "PASS",
   "property_child_schema_order": "PASS",
-  "property_nodes_checked": 1313,
+  "property_nodes_checked": 1333,
   "static_toc_matches_headings": "PASS",
   "relationship_targets": "PASS",
   "reproducible_build": "PASS",
   "a4_margins_styles_toc_cover_footer": "PASS",
-  "body_whitespace_words_including_tables": 6102,
+  "body_whitespace_words_including_tables": 6257,
   "forced_front_matter_breaks": 3,
   "target_word_pages": "≤20",
   "report_tables": 13,
@@ -19,5 +19,5 @@
   "figures": 4,
   "rendered_page_count": null,
   "rendering_limit": "Word pagination requires rendering; target is at most 20 pages, not a verified page count.",
-  "docx_sha256": "2e219905edc4eaf53ac7ea39ca0760e92a56cc9a33de51ac4fa83ae3e41db350"
+  "docx_sha256": "9e68de334a8cee849080332dd43a9acbfb098edd25e143989f6cb14bf5ac8e25"
 }

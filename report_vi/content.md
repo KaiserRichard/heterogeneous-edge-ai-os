@@ -301,15 +301,22 @@ Bảng đo lại E. PS1 trên UART vật lý sau sửa dây; không có đối c
 
 Lần PS1 đầu không nhận byte nào từ STM32 vì jumper STM32-TX sang Pi được cắm nhầm chân; sau khi chuyển về chân vật lý 10 của Pi, nhóm chạy lại cửa sổ liên kết và giữ kết quả sau sửa dây. Echo nhận và chấp nhận đều là 62; các phân vị trong bảng đo từ hoàn tất inference tới gửi, không phải AoI xuyên miền. Tóm tắt thô vẫn giữ nhãn chưa kiểm chứng trên phần cứng; chấp nhận phân tích liên kết chưa chứng minh mọi thuộc tính firmware. S1 và PS1 bổ sung bằng chứng nạp và liên lạc, chưa xác nhận biên mất DMA, stack hoặc cận trễ truyền.
 
-Bảng đo lại F. Vị trí cập nhật E1–E3B, đơn vị ms; gốc E1–E3 ngày 11/10, E3B ngày 12/10/2026.
+Bảng đo lại F. Kết quả đo E1–E3B trên PTY, đơn vị ms; gốc E1–E3 ngày 11/10, E3B ngày 12/10/2026.
 | Phép đo / điều kiện | Gốc | Đo lại | Hợp lệ gốc | Hợp lệ đo lại |
 |---|---|---|---|---|
 | E1 memrate P99 | 13977.2 | 10752.7 | 3/3 | 3/3 |
-| E2 P1 cache P99 | 97.1552 | pending | 3/3 | 0/0 |
+| E2 P1 memrate P99 | 12890.2 | 8357.15 | 3/3 | 3/3 |
+| E2 P1 stream P99 | — | 83.2902 | 0/0 | 3/3 |
 | E3 memrate latest AoI | 6957.88 | 2645.45 | 3/3 | 3/3 |
 | E3B input latest P99 | failed: no valid runs | 225 | 0/3 | 3/3 |
 
-Các ô pending đang chờ dữ liệu E1–E3B và chưa được xem là kết quả đo trong đợt bổ sung này. Khi bổ sung chiến dịch, bảng được tạo lại từ tệp đối chiếu, giữ nguyên tải, profile, chính sách đầu vào và bridge tương ứng. E3 trình bày AoI trung bình đã khởi tạo; E1, E2 và E3B trình bày P99 chuyển giao, nên các hàng có ý nghĩa khác nhau. Các lượt E3B gốc có tải không hợp lệ không được dùng làm đối chứng sạch cho lợi ích của input-latest. Thí nghiệm inference độc lập và so sánh chính sách E3 trên UART vật lý chưa được lặp lại trong bố cục này.
+Bằng chứng pipeline hiện có: E1, E2, E3, E3B. Xếp hạng E1 thay đổi: memrate + cache thành memrate + stream; cache không được chạy trong E2 lần này. Stream không có đối chứng E2 gốc; memrate được đối chiếu cùng điều kiện. Bảng được tạo từ tệp đối chiếu theo tải, profile, chính sách đầu vào và bridge tương ứng. E3 trình bày AoI trung bình đã khởi tạo; E1, E2 và E3B trình bày P99 chuyển giao, nên các hàng có ý nghĩa khác nhau. Các lượt E3B gốc có tải không hợp lệ không được dùng làm đối chứng sạch cho lợi ích của input-latest. Thí nghiệm inference độc lập và so sánh chính sách E3 trên UART vật lý chưa được lặp lại trong bố cục này.
+E1: P99 tải memrate so với nhàn rỗi; tranh chấp làm chậm chuyển giao: 10752.7 > 45.7999 ms (bằng chứng đo).
+E2: P99 memrate P0 so với P1; tinh chỉnh vẫn để lại tồn đọng: 13169.4 > 8357.15 ms (bằng chứng đo).
+E3: AoI bridge FIFO so với latest; tồn đọng phía trước vẫn còn: 3680.48 > 2645.45 ms (bằng chứng đo).
+E3B: P99 input FIFO so với latest; thay mẫu để giữ độ mới: 4698.46 > 225 ms (bằng chứng đo).
+
+Các diễn giải trên dùng bằng chứng PTY đo lại, không xác nhận AoI trên UART vật lý hoặc cận trễ. E3B mới có đối chứng input FIFO/latest hợp lệ riêng; không suy lợi ích từ các lượt tải gốc không hợp lệ.
 <!-- RERUN END -->
 
 # PHẦN 6. THẢO LUẬN VÀ HẠN CHẾ

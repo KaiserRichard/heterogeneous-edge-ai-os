@@ -63,9 +63,9 @@ USB/CPU activity to the system under test.
 \takeaway{The changed acquisition topology prevents attributing the residual shift.}
 \end{frame}
 
-\begin{frame}[t]{Re-run 2026-10-20: PS1 and pipeline slot}
-\evidence{MEASURED -- PS1 real-UART link smoke test, 1/1 accepted}
-{\small\begin{tabular}{@{}lllll@{}}\toprule
+\begin{frame}[t]{Re-run 2026-10-20: PS1 and pipeline}
+\evidence{MEASURED -- PS1 real UART; pipeline PTY evidence}
+\begin{columns}[T]\begin{column}{0.49\textwidth}{\scriptsize\begin{tabular}{@{}lllll@{}}\toprule
 Metric & Original & Re-run & Old n/N & New n/N \\\midrule
 Bridge sent & — & 602 & 0/0 & 1/1 \\
 MCU status & — & 616 & 0/0 & 1/1 \\
@@ -73,8 +73,7 @@ Echo accepted & — & 62 & 0/0 & 1/1 \\
 Done-to-send P50 (\(\mu\)s) & — & 21.833 & 0/0 & 1/1 \\
 Done-to-send P99 (\(\mu\)s) & — & 42.278 & 0/0 & 1/1 \\
 Done-to-send max (\(\mu\)s) & — & 595.723 & 0/0 & 1/1 \\
-\bottomrule\end{tabular}}
-\par\smallskip{\scriptsize E1 memrate P99: 10752.7 ms [3/3]\par E2 P1 cache P99: pending [0/0]\par E3 memrate latest AoI: 2645.45 ms [3/3]\par E3B input latest P99: 225 ms [3/3]}
-\scope{Bring-up: first PS1 received 0 bytes; STM32 TX jumper was on the wrong Pi pin. Corrected to Pi pin 10; link60\_fixed rerun. PS1 has no original counterpart and supplies no physical E3 AoI. Raw summary retains UNVERIFIED ON HARDWARE wording.}
-\takeaway{S1/PS1 update flash/link evidence; E1--E3B remain pending until available.}
+\bottomrule\end{tabular}}\end{column}\begin{column}{0.49\textwidth}{\scriptsize E1 memrate P99: 10752.7 ms [3/3]\par E2 P1 memrate P99: 12890.2 $\to$ 8357.15 ms [3/3]\par E2 P1 stream P99: 83.2902 ms [3/3]\par E3 memrate latest AoI: 2645.45 ms [3/3]\par E3B input latest P99: 225 ms [3/3]\par\smallskip E1 ranking changed: memrate + cache became memrate + stream; cache was not run in E2.}\end{column}\end{columns}\par\smallskip{\scriptsize E1: memrate vs idle P99; contention reaches delivery: 10752.7 > 45.7999 ms.\par E2: memrate P0 vs P1 P99; tuning leaves backlog: 13169.4 > 8357.15 ms.\par E3: bridge FIFO vs latest AoI; upstream backlog remains: 3680.48 > 2645.45 ms.\par E3B: input FIFO vs latest P99; freshness via replacement: 4698.46 > 225 ms.}
+\scope{PS1 corrected STM32 TX to Pi pin 10; no original counterpart or physical E3 AoI. Pipeline values are per-condition medians, not bounds. Original loaded E3B had no valid runs; new evidence is separate.}
+\takeaway{Retained pipeline evidence: E1, E2, E3, E3B.}
 \end{frame}

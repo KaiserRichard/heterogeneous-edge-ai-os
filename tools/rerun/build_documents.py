@@ -13,7 +13,7 @@ START, END = '<!-- RERUN START -->', '<!-- RERUN END -->'
 def refresh(compare=None):
     compare = Path(compare or os.environ.get('RERUN_COMPARE_DIR') or ROOT / 'results/2026-10-20_rerun/compare')
     summary = json.loads((compare / 'rerun_summary.json').read_text())
-    # Use the published comparison cells verbatim, with a reader-facing pending label.
+    # Preserve absent-condition reasons; an unmatched load is not a pending campaign.
     sections = {}
     name = None
     for line in (compare / 'rerun_compare_vi.md').read_text().splitlines():
@@ -26,14 +26,12 @@ def refresh(compare=None):
                 sections[name][cells[0]] = cells[1:]
 
     def row(exp, key, label):
-        cells = sections[exp].get(key)
+        cells = sections.get(exp, {}).get(key)
         if cells is None:
-            status = summary['experiments'][exp]['status']
+            status = summary['experiments'].get(exp, {}).get('status', 'unavailable')
             return [label, '—', 'pending' if status.startswith('not run') else
                     (status if status.startswith('failed') else 'unavailable'), '0/0', '0/0']
         old, new, ov, nv = cells
-        if new.startswith('not run'):
-            new = 'pending'
         if old.startswith('not run'):
             old = '—'
         return [label, old, new, ov, nv]
@@ -59,11 +57,69 @@ def refresh(compare=None):
     pipeline = []
     for exp, load, inp, bridge, metric, label in [
         ('E1','B2_memrate_c23','fifo','latest','delivery_p99_ms','E1 memrate P99'),
-        ('E2','C1_cache2M_c2','fifo','latest','delivery_p99_ms','E2 P1 cache P99'),
+        ('E2','B2_memrate_c23','fifo','latest','delivery_p99_ms','E2 P1 memrate P99'),
+        ('E2','B1_stream_c2','fifo','latest','delivery_p99_ms','E2 P1 stream P99'),
         ('E3','B2_memrate_c23','fifo','latest','aoi_time_average_ms','E3 memrate latest AoI'),
         ('E3B','B2_memrate_c23','latest','latest','delivery_p99_ms','E3B input latest P99')]:
         profile = 'P0' if exp == 'E1' else 'P1'
         pipeline.append(row(exp, f'{profile} / {load} / {inp} / {bridge} / {metric}', label))
+
+    def value(exp, key):
+        cells = sections.get(exp, {}).get(key)
+        try:
+            return float(cells[1]) if cells else None
+        except ValueError:
+            return None
+
+    def comparison(exp, a, b, en, vi):
+        x, y = value(exp, a), value(exp, b)
+        if x is None or y is None:
+            return (f'{exp}: interpretation unavailable; paired evidence missing.',
+                    f'{exp}: chưa đủ bằng chứng ghép cặp để diễn giải.')
+        relation = '>' if x > y else ('<' if x < y else '=')
+        return (f'{exp}: {en}: {x:g} {relation} {y:g} ms.',
+                f'{exp}: {vi}: {x:g} {relation} {y:g} ms (bằng chứng đo).')
+
+    interpretations = [
+        comparison('E1', 'P0 / B2_memrate_c23 / fifo / latest / delivery_p99_ms',
+                   'P0 / B0_idle / fifo / latest / delivery_p99_ms',
+                   'memrate vs idle P99; contention reaches delivery',
+                   'P99 tải memrate so với nhàn rỗi; tranh chấp làm chậm chuyển giao'),
+        comparison('E2', 'P0 / B2_memrate_c23 / fifo / latest / delivery_p99_ms',
+                   'P1 / B2_memrate_c23 / fifo / latest / delivery_p99_ms',
+                   'memrate P0 vs P1 P99; tuning leaves backlog',
+                   'P99 memrate P0 so với P1; tinh chỉnh vẫn để lại tồn đọng'),
+        comparison('E3', 'P1 / B2_memrate_c23 / fifo / fifo / aoi_time_average_ms',
+                   'P1 / B2_memrate_c23 / fifo / latest / aoi_time_average_ms',
+                   'bridge FIFO vs latest AoI; upstream backlog remains',
+                   'AoI bridge FIFO so với latest; tồn đọng phía trước vẫn còn'),
+        comparison('E3B', 'P1 / B2_memrate_c23 / fifo / latest / delivery_p99_ms',
+                   'P1 / B2_memrate_c23 / latest / latest / delivery_p99_ms',
+                   'input FIFO vs latest P99; freshness via replacement',
+                   'P99 input FIFO so với latest; thay mẫu để giữ độ mới')]
+    present = [exp for exp in ('E1', 'E2', 'E3', 'E3B')
+               if any(value(exp, key) is not None for key in sections.get(exp, {}))]
+    missing = [exp for exp in ('E1', 'E2', 'E3', 'E3B') if exp not in present]
+    availability_en = ('Retained pipeline evidence: ' + ', '.join(present) + '.' if present
+                       else 'No retained pipeline values available.')
+    availability_vi = ('Bằng chứng pipeline hiện có: ' + ', '.join(present) + '.' if present
+                       else 'Chưa có giá trị pipeline để trình bày.')
+    if missing:
+        availability_en += ' Missing parts: ' + ', '.join(missing) + '.'
+        availability_vi += ' Phần còn thiếu: ' + ', '.join(missing) + '.'
+    cache_key = 'P1 / C1_cache2M_c2 / fifo / latest / delivery_p99_ms'
+    ranking_changed = (value('E2', 'P1 / B1_stream_c2 / fifo / latest / delivery_p99_ms') is not None
+                       and value('E2', cache_key) is None
+                       and cache_key in sections.get('E2', {}))
+    ranking_en = ('E1 ranking changed: memrate + cache became memrate + stream; cache was not run in E2.'
+                  if ranking_changed else 'E2 compares matching loads where available; absent cells retain their status.')
+    ranking_vi = ('Xếp hạng E1 thay đổi: memrate + cache thành memrate + stream; cache không được chạy trong E2 lần này. Stream không có đối chứng E2 gốc; memrate được đối chiếu cùng điều kiện.'
+                  if ranking_changed else 'E2 đối chiếu cùng điều kiện khi có dữ liệu; ô thiếu giữ trạng thái nguồn.')
+
+    e3b_note = ('E3B mới có đối chứng input FIFO/latest hợp lệ riêng; không suy lợi ích từ các lượt tải gốc không hợp lệ.'
+                if value('E3B', 'P1 / B2_memrate_c23 / fifo / latest / delivery_p99_ms') is not None
+                and value('E3B', 'P1 / B2_memrate_c23 / latest / latest / delivery_p99_ms') is not None
+                else 'E3B chưa đủ cặp dữ liệu tải hợp lệ để diễn giải lợi ích input-latest.')
 
     def md(rows):
         return '\n'.join(['| Phép đo / điều kiện | Gốc | Đo lại | Hợp lệ gốc | Hợp lệ đo lại |',
@@ -111,13 +167,22 @@ Re-run F4 first transition: reason 3; old F4 mixes reasons 3/9.''',
 USB/CPU activity to the system under test.''',
           'Original 2026-10-12: FLAGGED collection, 10/15 matching; re-run 15/15 matching final HEARTBEAT frames. Matching does not establish collection validity. Marker-to-safe ranges are separately tabulated in the report.',
           'The changed acquisition topology prevents attributing the residual shift.')
-    frame('PS1 and pipeline slot', r'\evidence{MEASURED -- PS1 real-UART link smoke test, 1/1 accepted}' + '\n' + tex(smoke) + '\n' + r'\par\smallskip{\scriptsize ' +
-          r'\par '.join(esc(r[0]) + ': ' + esc(r[2]) + (' ms' if r[2] != 'pending' else '') + ' [' + r[4] + ']' for r in pipeline) + r'}',
-          'Bring-up: first PS1 received 0 bytes; STM32 TX jumper was on the wrong Pi pin. Corrected to Pi pin 10; link60\_fixed rerun. PS1 has no original counterpart and supplies no physical E3 AoI. Raw summary retains UNVERIFIED ON HARDWARE wording.',
-          'S1/PS1 update flash/link evidence; E1--E3B remain pending until available.')
-    # Remove status-specific takeaway once the pending campaign is present.
-    if all(r[2] != 'pending' for r in pipeline):
-        frames[-1] = frames[-1].replace('E1--E3B remain pending until available.', 'pipeline cells now reflect the retained comparison.')
+    frame('PS1 and pipeline', r'\evidence{MEASURED -- PS1 real UART; pipeline PTY evidence}' + '\n' +
+          r'\begin{columns}[T]\begin{column}{0.49\textwidth}' + tex(smoke).replace(r'{\small', r'{\scriptsize') +
+          r'\end{column}\begin{column}{0.49\textwidth}{\scriptsize ' +
+          r'\par '.join(esc(r[0]) + ': ' +
+                        (esc(r[1]) + r' $\to$ ' if exp == 'E2' and r[1] != '—' else '') + esc(r[2]) +
+                        (' ms' if value(exp, key) is not None else '') + ' [' + r[4] + ']'
+                        for r, (exp, key) in zip(pipeline, [
+                            ('E1', 'P0 / B2_memrate_c23 / fifo / latest / delivery_p99_ms'),
+                            ('E2', 'P1 / B2_memrate_c23 / fifo / latest / delivery_p99_ms'),
+                            ('E2', 'P1 / B1_stream_c2 / fifo / latest / delivery_p99_ms'),
+                            ('E3', 'P1 / B2_memrate_c23 / fifo / latest / aoi_time_average_ms'),
+                            ('E3B', 'P1 / B2_memrate_c23 / latest / latest / delivery_p99_ms')])) +
+          r'\par\smallskip ' + esc(ranking_en) + r'}\end{column}\end{columns}\par\smallskip{\scriptsize ' +
+          r'\par '.join(esc(en) for en, vi in interpretations) + '}',
+          'PS1 corrected STM32 TX to Pi pin 10; no original counterpart or physical E3 AoI. Pipeline values are per-condition medians, not bounds. Original loaded E3B had no valid runs; new evidence is separate.',
+          availability_en)
     (ROOT / 'submission/defense/rerun_2026-10-20.tex').write_text('% Generated by tools/rerun/build_documents.py; do not hand-edit.\n' + '\n\n'.join(frames) + '\n')
 
     e4_records = summary['parts'].get('E4', {}).get('records', [])
@@ -153,16 +218,16 @@ Bảng đo lại E. PS1 trên UART vật lý sau sửa dây; không có đối c
 
 Lần PS1 đầu không nhận byte nào từ STM32 vì jumper STM32-TX sang Pi được cắm nhầm chân; sau khi chuyển về chân vật lý 10 của Pi, nhóm chạy lại cửa sổ liên kết và giữ kết quả sau sửa dây. Echo nhận và chấp nhận đều là 62; các phân vị trong bảng đo từ hoàn tất inference tới gửi, không phải AoI xuyên miền. Tóm tắt thô vẫn giữ nhãn chưa kiểm chứng trên phần cứng; chấp nhận phân tích liên kết chưa chứng minh mọi thuộc tính firmware. S1 và PS1 bổ sung bằng chứng nạp và liên lạc, chưa xác nhận biên mất DMA, stack hoặc cận trễ truyền.
 
-Bảng đo lại F. Vị trí cập nhật E1–E3B, đơn vị ms; gốc E1–E3 ngày 11/10, E3B ngày 12/10/2026.
+Bảng đo lại F. Kết quả đo E1–E3B trên PTY, đơn vị ms; gốc E1–E3 ngày 11/10, E3B ngày 12/10/2026.
 {md(pipeline)}
 
-Các ô pending đang chờ dữ liệu E1–E3B và chưa được xem là kết quả đo trong đợt bổ sung này. Khi bổ sung chiến dịch, bảng được tạo lại từ tệp đối chiếu, giữ nguyên tải, profile, chính sách đầu vào và bridge tương ứng. E3 trình bày AoI trung bình đã khởi tạo; E1, E2 và E3B trình bày P99 chuyển giao, nên các hàng có ý nghĩa khác nhau. Các lượt E3B gốc có tải không hợp lệ không được dùng làm đối chứng sạch cho lợi ích của input-latest. Thí nghiệm inference độc lập và so sánh chính sách E3 trên UART vật lý chưa được lặp lại trong bố cục này.
+{availability_vi} {ranking_vi} Bảng được tạo từ tệp đối chiếu theo tải, profile, chính sách đầu vào và bridge tương ứng. E3 trình bày AoI trung bình đã khởi tạo; E1, E2 và E3B trình bày P99 chuyển giao, nên các hàng có ý nghĩa khác nhau. Các lượt E3B gốc có tải không hợp lệ không được dùng làm đối chứng sạch cho lợi ích của input-latest. Thí nghiệm inference độc lập và so sánh chính sách E3 trên UART vật lý chưa được lặp lại trong bố cục này.
+{chr(10).join(vi for en, vi in interpretations)}
+
+Các diễn giải trên dùng bằng chứng PTY đo lại, không xác nhận AoI trên UART vật lý hoặc cận trễ. {e3b_note}
 {END}
 
 '''
-    if all(r[2] != 'pending' for r in pipeline):
-        text = text.replace('Các ô pending đang chờ dữ liệu E1–E3B và chưa được xem là kết quả đo trong đợt bổ sung này.',
-                            'Các ô E1–E3B đã được cập nhật từ kết quả phân tích; số lượt hợp lệ được trình bày riêng cho từng điều kiện.')
     target = ROOT / 'report_vi/content.md'
     content = target.read_text()
     if START in content:
