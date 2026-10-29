@@ -91,7 +91,7 @@ Một run chỉ hợp lệ khi `vcgencmd get_throttled` bằng `0x0` trước v�
 | OS-T7 (mở rộng) | FW3 chạy task MPU6050 200 Hz khi UART rảnh, nhận frame hợp lệ liên tục và nhận burst frame lỗi. | Jitter chu kỳ theo MCU timer P99 < 100 μs, không lỡ mẫu, thời gian phản ứng OS-T6 không đổi. |
 | OS-T8 (mở rộng) | FW4 gửi state supervisor khi đổi và mỗi 100 ms qua CAN1; CAN2 trên cùng board nhận; lặp lại lỗi OS-T6. Bridge Pi–MCU vẫn dùng UART. | Nhận mọi lần đổi state; P99 từ đổi state đến CAN2 < 1 ms; TEC/REC bằng 0. |
 
-OS-T8 là phần mở rộng đã được chấp thuận trong roadmap: CAN chỉ xuất state từ MCU, không thay thế hoặc tham gia bridge UART. Với OS-T5, baud rate chưa thống nhất là vấn đề cấu hình cần giải quyết trước khi chạy, không phải kết quả đo.
+OS-T8 là phần mở rộng đã được chấp thuận trong roadmap: CAN chỉ xuất state từ MCU, không thay thế hoặc tham gia bridge UART.
 
 ## Kết quả và trạng thái bằng chứng
 
