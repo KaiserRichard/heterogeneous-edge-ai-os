@@ -7,6 +7,34 @@ the bridge. HSI time ran fast (31 echoes: slope 1.01884, residual RMS about 1.08
 100.004 ms MCU status intervals per 98.19 ms Pi). Those observations describe the
 previous firmware, not validation of these changes.
 
+## Bench state LEDs
+
+The NUCLEO-F446RE state map follows **UM1724 Rev. 17, Table 19, “ARDUINO®
+connectors on NUCLEO-F446RE”** (CN5/CN9 digital rows; [ST user manual
+UM1724](https://www.st.com/resource/en/user_manual/dm00105823.pdf)). That table
+maps D4 to PB5, D5 to PB4, D6 to PB10, and D9 to PC7. The board's LD2 remains on
+PA5. A host test checks the pure state-to-pin-mask mapping in `board_leds.h`:
+
+| State | PA5 (LD2) | D4 / PB5 green | D5 / PB4 yellow | D6 / PB10 red | D9 / PC7 blue |
+|---|---:|---:|---:|---:|---|
+| INIT | off | off | off | off | retains activity level (starts off) |
+| FRESH | on | on | off | off | toggles for every accepted frame |
+| HOLD | off | off | on | off | toggles for every accepted frame |
+| FAILSAFE | off | off | off | on | toggles for every accepted frame |
+
+The three state LEDs are mutually exclusive; INIT is the all-off startup state.
+The supervisor task performs each state update with GPIO BSRR writes. The RX ISR
+does not touch D9: the supervisor task toggles it when the frame adapter advances
+its accepted wire sequence (including sender-session establishment). FAILSAFE
+remains latched according to the supervisor core; the red LED reflects that state.
+The optional `BRINGUP_BLINK=1` diagnostic image keeps its earlier behavior:
+inside the supervisor loop it forces D4/PB5 off and blinks PA5 at 1 Hz. PA5 is
+diagnostic and no longer a stable FRESH signal; D4 is suppressed, while D5/HOLD
+and D6/FAILSAFE still follow the supervisor state and D9 still shows accepted-frame
+activity. Use the default `BRINGUP_BLINK=0` for the normal map.
+
+No LEDs or firmware behavior described here have been checked on physical hardware.
+
 From the repository root on macOS:
 
 ```sh

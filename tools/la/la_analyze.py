@@ -86,7 +86,36 @@ def uart_ends(rows, baud=921600):
     return ends
 
 
-def analyze(rows, run=None):
+def analyze_one_hot(rows):
+    """Decode D0..D2 as state LEDs and D3 as the D9 link-activity LED."""
+    states = [pins[:3] for _, pins in rows]
+    if any(sum(state) > 1 for state in states):
+        raise ValueError('one-hot mode requires at most one state LED at a time')
+    transitions = []
+    previous = states[0]
+    names = ('FRESH', 'HOLD', 'FAILSAFE')
+    for (time, _), state in zip(rows[1:], states[1:]):
+        if state != previous:
+            transitions.append((time, names[state.index(1)] if any(state) else 'INIT'))
+        previous = state
+    activity = [time for (time, pins), (_, old_pins) in zip(rows[1:], rows)
+                if pins[3] != old_pins[3]]
+    first = lambda name: next((time for time, state in transitions if state == name), None)
+    return dict(mode='one-hot', state_transitions=len(transitions),
+                fresh_transitions=sum(state == 'FRESH' for _, state in transitions),
+                hold_transitions=sum(state == 'HOLD' for _, state in transitions),
+                failsafe_transitions=sum(state == 'FAILSAFE' for _, state in transitions),
+                t_first_fresh_s=first('FRESH'), t_first_hold_s=first('HOLD'),
+                t_first_failsafe_s=first('FAILSAFE'), link_toggles=len(activity),
+                t_last_link_activity_s=activity[-1] if activity else None,
+                status='decoded', evidence='UNVERIFIED ON HARDWARE')
+
+
+def analyze(rows, run=None, mode='two-wire'):
+    if mode == 'one-hot':
+        return analyze_one_hot(rows)
+    if mode != 'two-wire':
+        raise ValueError(f'unknown decoder mode: {mode}')
     rise = next((b[0] for a,b in zip(rows, rows[1:]) if a[1][3] == 0 and b[1][3] == 1), None)
     if rise is None:
         raise ValueError('no marker rising edge')
@@ -147,21 +176,32 @@ def analyze(rows, run=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('outdir', type=Path)
+    parser.add_argument('--mode', choices=('two-wire', 'one-hot'), default='two-wire',
+                        help='decode archived PA5/PB5 or D4/D5/D6/D9 LED captures')
     args = parser.parse_args()
     reports, traces = [], []
     for capture in sorted(args.outdir.glob('*/capture.vcd')):
         rows = read_trace(capture)
         runs = list(capture.parent.glob('pi/F*/run.json'))
-        report = analyze(rows, runs[0].parent if len(runs) == 1 else None)
+        report = analyze(rows, runs[0].parent if len(runs) == 1 and args.mode == 'two-wire' else None,
+                         mode=args.mode)
         reports.append(dict(capture=capture.parent.name, **report)); traces.append(rows)
     if not reports:
         parser.error('no */capture.vcd files')
     with (args.outdir/'la_e4.csv').open('w', newline='') as stream:
         writer = csv.DictWriter(stream, fieldnames=reports[0]); writer.writeheader(); writer.writerows(reports)
     def num(v): return '--' if v is None else f'{v:.3f}'
-    lines = ['% UNVERIFIED ON HARDWARE', r'\begin{tabular}{lrrrrr}', r'Capture & Marker-safe (us) & UART-safe (us) & MCU-safe (us) & Delta (us) & UART-HOLD (us) \\', r'\hline']
-    for r in reports:
-        lines.append(' & '.join([r['capture'].replace('_', r'\_')] + [num(r[k]) for k in ('marker_safe_us','uart_safe_us','mcu_safe_us','delta_safe_us','uart_hold_us')])+r' \\')
+    if args.mode == 'one-hot':
+        lines = ['% UNVERIFIED ON HARDWARE', r'\begin{tabular}{lrrrr}',
+                 r'Capture & FRESH entries & HOLD entries & FAILSAFE entries & D9 toggles \\', r'\hline']
+        for r in reports:
+            values = ('fresh_transitions', 'hold_transitions', 'failsafe_transitions', 'link_toggles')
+            lines.append(' & '.join([r['capture'].replace('_', r'\_')] +
+                                     [str(r[k]) for k in values]) + r' \\')
+    else:
+        lines = ['% UNVERIFIED ON HARDWARE', r'\begin{tabular}{lrrrrr}', r'Capture & Marker-safe (us) & UART-safe (us) & MCU-safe (us) & Delta (us) & UART-HOLD (us) \\', r'\hline']
+        for r in reports:
+            lines.append(' & '.join([r['capture'].replace('_', r'\_')] + [num(r[k]) for k in ('marker_safe_us','uart_safe_us','mcu_safe_us','delta_safe_us','uart_hold_us')])+r' \\')
     (args.outdir/'la_e4.tex').write_text('\n'.join(lines+[r'\end{tabular}', '']))
     try:
         import matplotlib
@@ -170,13 +210,21 @@ def main():
     except ImportError:
         print('matplotlib unavailable: PNG omitted (no dependency installed)')
     else:
-        rows = traces[0]; marker = reports[0]['t_marker_rise_s']
+        rows = traces[0]; marker = reports[0].get('t_marker_rise_s') or rows[0][0]
         fig, ax = plt.subplots(figsize=(12,4))
         # Display sparse UART edges; no expansion into millions of samples.
-        for i, label in enumerate(('PA5 fresh','PB5 grace','UART RX','GPIO27 marker')):
+        labels = (('D4 FRESH','D5 HOLD','D6 FAILSAFE','D9 activity') if args.mode == 'one-hot'
+                  else ('PA5 fresh','PB5 grace','UART RX','GPIO27 marker'))
+        for i, label in enumerate(labels):
             ax.step([(t-marker)*1000 for t,p in rows], [p[i]*.7+i for t,p in rows], where='post', label=label)
-        ax.axvline(0, color='black', linestyle=':'); ax.set_xlabel('Analyzer time from marker (ms)')
-        ax.set_yticks(range(4), ('PA5','PB5','UART','marker')); ax.set_title('UNVERIFIED ON HARDWARE — '+reports[0]['capture'])
+        if args.mode == 'two-wire':
+            ax.axvline(0, color='black', linestyle=':')
+            ax.set_xlabel('Analyzer time from marker (ms)')
+        else:
+            ax.set_xlabel('Analyzer time from capture start (ms)')
+        ticks = (('D4','D5','D6','D9') if args.mode == 'one-hot'
+                 else ('PA5','PB5','UART','marker'))
+        ax.set_yticks(range(4), ticks); ax.set_title('UNVERIFIED ON HARDWARE — '+reports[0]['capture'])
         fig.tight_layout(); fig.savefig(args.outdir/'la_timing.png', dpi=160); plt.close(fig)
     print(f'{len(reports)} captures: {args.outdir}/la_e4.csv, la_e4.tex; UNVERIFIED ON HARDWARE')
 

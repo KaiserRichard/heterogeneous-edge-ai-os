@@ -8,6 +8,7 @@
 #include "rx_dma_cursor.h"
 #include "tick_diagnostic.h"
 #include "uart_budget.h"
+#include "board_leds.h"
 
 #define REG32(a) (*(volatile uint32_t *)(a))
 #define FRAME_DEPTH 8u
@@ -93,24 +94,17 @@ static void dma_drop(void)
 }
 #endif
 
-static void output(supervisor_state_t state)
-{
-    /* Two-wire code: PA5/PB5 = 00 safe INIT/FAILSAFE, 11 FRESH, 01 HOLD.
-     * HOLD explicitly inhibits new output on PA5, PB5 denotes grace state. */
-    GPIOA->BSRR = state == SUPERVISOR_STATE_FRESH ? (1u << 5) : (1u << 21);
-    GPIOB->BSRR = (state == SUPERVISOR_STATE_FRESH || state == SUPERVISOR_STATE_HOLD)
-                    ? (1u << 5) : (1u << 21);
-}
-
 void firmware_fault(void)
 {
     __asm volatile ("cpsid i" ::: "memory");
-    RCC->AHB1ENR |= 3u;
+    RCC->AHB1ENR |= 7u;
     (void)RCC->AHB1ENR;
-    GPIOA->BSRR = 1u << 21;
-    GPIOB->BSRR = 1u << 21;
+    board_leds_output(SUPERVISOR_STATE_FAILSAFE);
+    GPIOC->BSRR = BOARD_LED_PC7 << 16;
     GPIOA->MODER = (GPIOA->MODER & ~(3u << 10)) | (1u << 10);
-    GPIOB->MODER = (GPIOB->MODER & ~(3u << 10)) | (1u << 10);
+    GPIOB->MODER = (GPIOB->MODER & ~((3u << 10) | (3u << 8) | (3u << 20))) |
+                   (1u << 10) | (1u << 8) | (1u << 20);
+    GPIOC->MODER = (GPIOC->MODER & ~(3u << 14)) | (1u << 14);
     for (;;) __asm volatile ("wfi");
 }
 void vApplicationStackOverflowHook(TaskHandle_t task, char *name)
@@ -138,11 +132,17 @@ static void irq_enable(unsigned irq)
 }
 static void board_init(void)
 {
-    RCC->AHB1ENR |= 3u;
+    RCC->AHB1ENR |= 7u; /* GPIOA, GPIOB and GPIOC */
     (void)RCC->AHB1ENR;
-    output(SUPERVISOR_STATE_INIT);
+    /* Preload all LED latches off before enabling their output drivers. */
+    GPIOA->BSRR = BOARD_LED_PA5 << 16;
+    GPIOB->BSRR = (BOARD_LED_PB5 | BOARD_LED_PB4 | BOARD_LED_PB10) << 16;
+    GPIOC->BSRR = BOARD_LED_PC7 << 16;
     GPIOA->MODER = (GPIOA->MODER & ~(3u << 10)) | (1u << 10);
-    GPIOB->MODER = (GPIOB->MODER & ~(3u << 10)) | (1u << 10);
+    GPIOB->MODER = (GPIOB->MODER & ~((3u << 10) | (3u << 8) | (3u << 20))) |
+                   (1u << 10) | (1u << 8) | (1u << 20);
+    GPIOC->MODER = (GPIOC->MODER & ~(3u << 14)) | (1u << 14);
+    board_leds_output(SUPERVISOR_STATE_INIT);
     /* HSE bypass 8 MHz: M=8; HSI 16 MHz: M=16. N=336/P=4 in both.
      * APB1 /2 = 42 MHz, timer clock doubles to 84 MHz; APB2 /1. */
     RCC->CR |= 1u;
@@ -431,17 +431,25 @@ static void supervisor_task(void *argument)
         for (unsigned i = 0; i < FRAME_DEPTH; ++i) {
             frame_event_t event;
             if (xQueueReceive(frames, &event, 0) != pdPASS) break;
+            bool had_wire_seq = supervisor.has_wire_seq;
+            uint16_t old_wire_seq = supervisor.last_wire_seq;
+            uint64_t old_generation = supervisor.generation;
             supervisor_receive_frame(&supervisor, &event.frame, event.generation,
                                      event.receipt, now_task());
+            if (supervisor.generation != old_generation ||
+                (!had_wire_seq && supervisor.has_wire_seq) ||
+                (supervisor.has_wire_seq && supervisor.last_wire_seq != old_wire_seq))
+                board_leds_toggle_activity();
         }
         if (previous != SUPERVISOR_STATE_FAILSAFE && supervisor.state == SUPERVISOR_STATE_FAILSAFE &&
             supervisor.last_transition_reason == SUPERVISOR_REASON_HEARTBEAT_TIMEOUT &&
             missed_heartbeats != UINT16_MAX) ++missed_heartbeats;
         published_state = supervisor.state;
-        output(published_state);
+        board_leds_output(published_state);
         if (!events_pending && (supervisor.transition_count != 0u || supervisor.inf_rx_count != 0u)) xTaskNotifyGive(status_handle);
 #if BRINGUP_BLINK
-        /* Diagnostic image only: PB5 stays safe; PA5 toggles at 1 Hz. */
+        /* Diagnostic image only: state mapping above still applies; D4/D5/D6
+         * indicate state, while PA5 toggles at 1 Hz for the legacy bench test. */
         GPIOB->BSRR = 1u << 21;
         GPIOA->BSRR = (release % 1000u < 500u) ? (1u << 5) : (1u << 21);
 #endif
