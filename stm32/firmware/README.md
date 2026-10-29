@@ -67,6 +67,7 @@ make -C stm32 firmware CLOCK_SOURCE=HSE RX_MODE=DMA UART_BAUD=921600 DEBUG_VCP=0
 make -C stm32 firmware CLOCK_SOURCE=HSI # deliberate fallback profile
 make -C stm32 firmware RX_MODE=IRQ # per-byte ISR fallback
 make -C stm32 firmware DEBUG_VCP=1 BRINGUP_BLINK=1
+make -C stm32/firmware firmware CLOCK_SOURCE=HSE RX_MODE=DMA UART_BAUD=921600 CAN_OUT=1
 ```
 
 Default flags include `-mcpu=cortex-m4 -mthumb -mfloat-abi=hard
@@ -108,6 +109,36 @@ Clock and timing decisions:
   115068.493, **-0.11416%**, excluding HSI error.
 - IRQs USART1 and TIM2 use preemption priority 6; four priority bits, grouping 3,
   syscall ceiling 5 (0x50), SysTick/PendSV 15. Both use `FromISR` APIs and yield.
+
+### Optional FW4 CAN state output
+
+`CAN_OUT=0` is the default and excludes `can_out.c`, its supervisor hooks, and its
+CAN receive vector. `CAN_OUT=1` enables register-level bxCAN1 TX on PB9/PB8 AF9
+and bxCAN2 RX on PB13/PB12 AF9. The Pi-to-MCU bridge remains USART1 UART; CAN is
+an output-only bench observation path. CAN1 sends standard data ID `0x120` with
+an 8-byte payload (`state`, `reason`, `seq` LE16, last FRESH inference
+`input_seq` LE32) on a supervisor state/reason change and every 100 ms. The frame
+ID holds through HOLD/FAILSAFE and resets to zero on a session change. A full
+TX mailbox drops that send and increments `can_out_stats.tx_mailbox_full`; the
+supervisor never waits for CAN transmission. CAN2 filter bank 14 accepts only
+standard data ID `0x120` into FIFO0, and its bounded RX interrupt increments
+`can_out_stats.rx_frames` for each valid 8-byte frame.
+The optional image copies the existing vector table to aligned SRAM and replaces
+only the CAN2_RX0 entry; that ISR does not call FreeRTOS. The default image keeps
+the flash vector table and interrupt routing unchanged.
+
+Both HSE and HSI profiles configure SYSCLK=84 MHz and APB1=42 MHz. At 500 kbit/s,
+the CAN bit uses 14 time quanta: prescaler 6, BS1 11 tq, BS2 2 tq and SJW 1 tq.
+The BTR fields are BRP=5, TS1=10, TS2=1 and SJW=0, giving `BTR=0x001A0005`
+and sample point `(1+11)/14 = 85.7%`. The MCR enables automatic bus-off recovery
+(ABOM); NART disables retransmission of an individual failed state frame so old
+frames cannot occupy all three mailboxes indefinitely. Periodic state frames
+resume after the controller's hardware recovery sequence. Error snapshots and
+event counters are exposed as `can_out_stats` (`can1_esr`, `can2_esr`, TEC/REC,
+bus-off, warning/passive, TX and RX counts). The state-to-RX latency histogram
+supports OS-T8's 1 ms check. `make -C stm32 test` includes the Mac-hosted frame
+packing test. Physical bus behavior and OS-T8 latency remain unverified until
+the transceivers are wired and tested.
 
 Ownership and scheduling support the OS experiments:
 

@@ -27,13 +27,24 @@ UART_BAUD ?= 921600
 # Optional measured override may only increase that allowance (static asserts).
 DEBUG_VCP ?= 0
 BRINGUP_BLINK ?= 0
+CAN_OUT ?= 0
+ifeq ($(CAN_OUT),0)
+CAN_OUT_ENABLED := 0
+else ifeq ($(CAN_OUT),1)
+CAN_OUT_ENABLED := 1
+else
+$(error CAN_OUT must be 0 or 1)
+endif
 ARCH := -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
-CPPFLAGS := -DHEA_REFERENCE_PORTMACRO='"$(KERNEL)/portable/GCC/ARM_CM4F/portmacro.h"' -DRX_DMA=$(RX_DMA) -I. -I../include -I../../protocol/include -I$(REF_BOARD)/src -I$(KERNEL)/include -I$(KERNEL)/portable/GCC/ARM_CM4F -DCLOCK_HSE=$(CLOCK_HSE) -DUART_BAUD=$(UART_BAUD) -DDEBUG_VCP=$(DEBUG_VCP) -DBRINGUP_BLINK=$(BRINGUP_BLINK)
+CPPFLAGS := -DHEA_REFERENCE_PORTMACRO='"$(KERNEL)/portable/GCC/ARM_CM4F/portmacro.h"' -DRX_DMA=$(RX_DMA) -I. -I../include -I../../protocol/include -I$(REF_BOARD)/src -I$(KERNEL)/include -I$(KERNEL)/portable/GCC/ARM_CM4F -DCLOCK_HSE=$(CLOCK_HSE) -DUART_BAUD=$(UART_BAUD) -DDEBUG_VCP=$(DEBUG_VCP) -DBRINGUP_BLINK=$(BRINGUP_BLINK) -DCAN_OUT=$(CAN_OUT_ENABLED)
 ifdef UART_TRANSIT_US
 CPPFLAGS += -DUART_TRANSIT_US=$(UART_TRANSIT_US)
 endif
 CFLAGS := $(ARCH) -std=c11 -Os -g3 -Wall -Wextra -Werror -ffunction-sections -fdata-sections -fno-common -MMD -MP
 SOURCES := main.c irq_timing.c ../src/supervisor.c ../src/supervisor_protocol.c ../../protocol/src/hea_proto.c $(KERNEL)/tasks.c $(KERNEL)/queue.c $(KERNEL)/list.c $(KERNEL)/stream_buffer.c $(KERNEL)/portable/GCC/ARM_CM4F/port.c
+ifeq ($(CAN_OUT_ENABLED),1)
+SOURCES += can_out.c
+endif
 OBJECTS := $(addprefix $(BUILD)/,$(notdir $(SOURCES:.c=.o))) $(BUILD)/startup.o
 # GNU make 3.81 on macOS compares timestamps at one-second resolution.
 # A changed profile must rebuild/relink even within the same timestamp second.
@@ -43,9 +54,10 @@ CONFIG_CHANGED := $(shell printf '%s\n' $(call shell_quote,$(CONFIG_TEXT)) | cmp
 ifeq ($(CONFIG_CHANGED),yes)
 .PHONY: $(OBJECTS) $(BUILD)/firmware.elf $(BUILD)/firmware.bin
 endif
-.PHONY: all clean FORCE
+.PHONY: all firmware clean FORCE
 all: $(BUILD)/firmware.elf $(BUILD)/firmware.bin
 	$(SIZE) $(BUILD)/firmware.elf | tee $(BUILD)/size.txt
+firmware: all
 $(BUILD):
 	mkdir -p $@
 # Rebuild when command-line configuration changes, without requiring clean.
