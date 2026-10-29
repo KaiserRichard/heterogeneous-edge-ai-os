@@ -45,13 +45,66 @@ def load_image(np, seed, path=None):
 
 
 def preprocess(np, image):
-    # Fixed nearest-neighbor resize 256 -> 224; all allocations included in pre_ns.
-    indices = np.arange(224, dtype=np.int64) * 256 // 224
-    rgb = image[indices[:, None], indices[None, :], :].astype(np.float32)
+    # Nearest-neighbor resize; identical indices for the original 256x256 input.
+    rows = np.arange(224, dtype=np.int64) * image.shape[0] // 224
+    cols = np.arange(224, dtype=np.int64) * image.shape[1] // 224
+    rgb = image[rows[:, None], cols[None, :], :].astype(np.float32)
     rgb /= np.float32(255)
     rgb -= np.array([0.485, 0.456, 0.406], dtype=np.float32)
     rgb /= np.array([0.229, 0.224, 0.225], dtype=np.float32)
     return np.ascontiguousarray(rgb.transpose(2, 0, 1)[None, ...])
+
+
+class ShmImage:
+    """Lazy native seqlock reader. Open after the first camera notification.
+
+    ctypes releases the GIL during the bounded atomic copy. No view into shared
+    memory escapes the native sequence check; preprocessing uses a private copy.
+    """
+    def __init__(self, name):
+        import ctypes
+        import re
+        import sys
+        if not re.fullmatch(r'/?[A-Za-z0-9_-]{1,100}', name):
+            raise ValueError('invalid shared-memory name')
+        self.name = name
+        suffix = 'dylib' if sys.platform == 'darwin' else 'so'
+        path = Path(__file__).resolve().parents[1] / 'camera/build' / f'libhea_camera.{suffix}'
+        self.lib = ctypes.CDLL(str(path))
+        self.lib.hea_camera_open.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_uint32),
+                                           ctypes.POINTER(ctypes.c_uint32)]
+        self.lib.hea_camera_open.restype = ctypes.c_void_p
+        self.lib.hea_camera_read.argtypes = [ctypes.c_void_p, ctypes.c_uint32,
+                                           ctypes.POINTER(ctypes.c_uint8), ctypes.c_size_t]
+        self.lib.hea_camera_read.restype = ctypes.c_int
+        self.lib.hea_camera_close.argtypes = [ctypes.c_void_p]
+        self.lib.hea_camera_close.restype = None
+        self.lib.hea_camera_error.restype = ctypes.c_char_p
+        self.handle = None
+
+    def read(self, np, frame_id):
+        import ctypes
+        if self.handle is None:
+            width, height = ctypes.c_uint32(), ctypes.c_uint32()
+            self.handle = self.lib.hea_camera_open(self.name.encode(), ctypes.byref(width),
+                                                 ctypes.byref(height))
+            if not self.handle:
+                raise RuntimeError(self.lib.hea_camera_error().decode())
+            self.width, self.height = width.value, height.value
+            self.buffer = (ctypes.c_uint8 * (self.width * self.height * 3))()
+        result = self.lib.hea_camera_read(self.handle, frame_id, self.buffer, len(self.buffer))
+        if result < 0:
+            raise RuntimeError(self.lib.hea_camera_error().decode())
+        if result:
+            return None, {1: 'overwritten', 2: 'torn'}[result]
+        # bytes owns the verified copy, including across subsequent read calls.
+        return np.frombuffer(bytes(self.buffer), dtype=np.uint8).reshape(
+            self.height, self.width, 3), None
+
+    def close(self):
+        if self.handle is not None:
+            self.lib.hea_camera_close(self.handle)
+            self.handle = None
 
 
 class Model:
