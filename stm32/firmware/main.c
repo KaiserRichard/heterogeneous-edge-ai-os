@@ -9,6 +9,12 @@
 #include "tick_diagnostic.h"
 #include "uart_budget.h"
 #include "board_leds.h"
+#ifndef IMU
+#define IMU 0
+#endif
+#if IMU
+#include "imu_mpu6050.h"
+#endif
 
 #define REG32(a) (*(volatile uint32_t *)(a))
 #define FRAME_DEPTH 8u
@@ -66,8 +72,11 @@ static StaticQueue_t frame_control, echo_control, capture_control;
 static uint8_t frame_storage[FRAME_DEPTH * sizeof(frame_event_t)];
 static uint8_t echo_storage[FRAME_DEPTH * sizeof(struct hea_echo_resp)];
 static uint8_t capture_storage[8u * sizeof(uint32_t)];
-static StaticTask_t task_controls[3], idle_control;
-static StackType_t stacks[3][APP_STACK], idle_stack[configMINIMAL_STACK_SIZE];
+static StaticTask_t task_controls[3 + IMU], idle_control;
+static StackType_t stacks[3 + IMU][APP_STACK], idle_stack[configMINIMAL_STACK_SIZE];
+#if IMU
+imu_mpu6050_state_t imu_state;
+#endif
 static volatile uint32_t rx_dropped, uart_errors, capture_lost;
 static volatile uint32_t uart_ore, uart_fe, uart_ne, uart_pe;
 extern volatile uint32_t max_irq_masked_cycles;
@@ -540,6 +549,32 @@ static void status_task(void *argument)
         (void)ulTaskNotifyTake(pdTRUE, 1); /* event wakeup, otherwise one-tick polling */
     }
 }
+#if IMU
+static void imu_task(void *argument)
+{
+    (void)argument;
+    if (!imu_mpu6050_init(&imu_state)) {
+        for (;;) vTaskDelay(portMAX_DELAY);
+    }
+    TickType_t release = xTaskGetTickCount();
+    uint32_t previous = REG32(0xe0001004u);
+    const uint32_t period_cycles = configCPU_CLOCK_HZ / 200u;
+    for (;;) {
+        vTaskDelayUntil(&release, pdMS_TO_TICKS(5));
+        uint32_t actual = REG32(0xe0001004u);
+        uint32_t elapsed = actual - previous;
+        previous = actual;
+        uint32_t error = elapsed > period_cycles ? elapsed - period_cycles : period_cycles - elapsed;
+        imu_mpu6050_record_jitter(&imu_state, error);
+        if (elapsed >= period_cycles * 2u) {
+            uint32_t missed = elapsed / period_cycles - 1u;
+            imu_state.missed_periods = missed > UINT32_MAX - imu_state.missed_periods ?
+                                      UINT32_MAX : imu_state.missed_periods + missed;
+        }
+        (void)imu_mpu6050_sample(&imu_state);
+    }
+}
+#endif
 int main(void)
 {
     board_init();
@@ -565,6 +600,10 @@ int main(void)
 #endif
     status_handle = xTaskCreateStatic(status_task, "status_tx", APP_STACK, NULL, 1, stacks[2], &task_controls[2]);
     configASSERT(status_handle);
+#if IMU
+    configASSERT(xTaskCreateStatic(imu_task, "imu_200hz", APP_STACK, NULL, tskIDLE_PRIORITY,
+                                   stacks[3], &task_controls[3]));
+#endif
     vTaskStartScheduler();
     firmware_fault();
 }
