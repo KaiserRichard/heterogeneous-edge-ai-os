@@ -36,6 +36,8 @@ python3 linux/camera/analyze_t1.py results/$(date +%F)_os_t1_camera/frames.csv -
   --output results/$(date +%F)_os_t1_camera/summary.json
 ```
 Pass criteria: `docs/TEST_SCENARIOS.md` OS-T1. Exact CLI flags: `linux/camera/README.md`.
+With no reader on the socket the source still records timing, but rows show `dropped`; for the
+full pipeline start `linux/inference/infer_server.py --image-source shm:hea_cam` first (README).
 
 ## 3. Switch the Nucleo to the OS firmware (owner types `CONFIRM flash nucleo os-supervisor`)
 Owner's hands: BOOT0 to 3V3 (jumper CN7-5 to CN7-7), press RESET when the script asks.
