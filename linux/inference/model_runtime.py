@@ -1,5 +1,8 @@
 """Fixed MobileNetV2 workload. Third-party imports occur only when needed."""
 from pathlib import Path
+import mmap
+import struct
+import sys
 
 DEFAULT_MODEL = 'mobilenetv2-12.onnx'
 INPUT_SHAPE = (1, 3, 224, 224)
@@ -81,6 +84,8 @@ class ShmImage:
         self.lib.hea_camera_close.restype = None
         self.lib.hea_camera_error.restype = ctypes.c_char_p
         self.handle = None
+        self.mapping = None
+        self.last_frame_id = None
 
     def read(self, np, frame_id):
         import ctypes
@@ -101,7 +106,70 @@ class ShmImage:
         return np.frombuffer(bytes(self.buffer), dtype=np.uint8).reshape(
             self.height, self.width, 3), None
 
+    def _ensure_mapping(self):
+        if self.mapping is not None:
+            return
+        # The native reader owns the bounded pixel copy and its acquire
+        # ordering. This mapping is only for candidate slot IDs; every chosen
+        # frame is copied and verified again by hea_camera_read.
+        path = (Path('/tmp') / f'hea-cam-{self.name.lstrip("/")}') if sys.platform == 'darwin' \
+            else Path('/dev/shm') / self.name.lstrip('/')
+        self.ring_stream = path.open('rb')
+        self.mapping = mmap.mmap(self.ring_stream.fileno(), 0, access=mmap.ACCESS_READ)
+
+    def read_latest(self, np):
+        """Read the newest published frame with a native seqlock-checked copy.
+
+        Slot metadata identifies candidates only. The native read validates the
+        chosen frame ID and copies pixels between sequence checks, so a racing
+        producer cannot yield a mixed frame.
+        """
+        if self.handle is None:
+            self.read(np, 0)  # Open the native handle; frame zero is just a probe.
+        self._ensure_mapping()
+        slots = struct.unpack_from('<I', self.mapping, 16)[0]
+        stride = struct.unpack_from('<I', self.mapping, 24)[0]
+        candidates = []
+        for index in range(slots):
+            offset = 64 + index * stride
+            before = struct.unpack_from('<Q', self.mapping, offset)[0]
+            if not before or before & 1:
+                continue
+            frame_id = struct.unpack_from('<I', self.mapping, offset + 8)[0]
+            after = struct.unpack_from('<Q', self.mapping, offset)[0]
+            if before == after and not after & 1:
+                candidates.append(frame_id)
+        # A producer can overwrite a candidate between discovery and native
+        # copy. Try the remaining newest candidates, then rescan a bounded few
+        # times so a transient write does not become a failed inference.
+        last_status = 'overwritten'
+        for _ in range(3):
+            for frame_id in sorted(set(candidates), reverse=True):
+                image, status = self.read(np, frame_id)
+                if status is None:
+                    freshness = 'repeated' if frame_id == self.last_frame_id else 'new'
+                    self.last_frame_id = frame_id
+                    return image, frame_id, freshness
+                last_status = status
+            candidates = []
+            for index in range(slots):
+                offset = 64 + index * stride
+                before = struct.unpack_from('<Q', self.mapping, offset)[0]
+                if not before or before & 1:
+                    continue
+                frame_id = struct.unpack_from('<I', self.mapping, offset + 8)[0]
+                after = struct.unpack_from('<Q', self.mapping, offset)[0]
+                if before == after and not after & 1:
+                    candidates.append(frame_id)
+        return None, None, last_status
+
     def close(self):
+        if self.mapping is not None:
+            self.mapping.close()
+            self.mapping = None
+        if hasattr(self, 'ring_stream'):
+            self.ring_stream.close()
+            del self.ring_stream
         if self.handle is not None:
             self.lib.hea_camera_close(self.handle)
             self.handle = None

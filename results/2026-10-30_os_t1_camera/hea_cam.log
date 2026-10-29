@@ -1,0 +1,11 @@
+{"backend":"libcamera","shm":"hea_cam","width":640,"height":480,"slots":4,"fps":30.000000,"clock_boottime_ns":206389932818,"clock_monotonic_ns":206389932873,"t_input_clock":"SensorTimestamp (CLOCK_BOOTTIME; requires no suspend)"}
+[0:03:26.390216340] [2264]  INFO Camera camera_manager.cpp:340 libcamera v0.7.2+rpt20261009
+[0:03:26.411571971] [2267]  INFO RPI pisp.cpp:725 libpisp version v1.5.0 86d71c805c3f 29-10-2026 (04:58:22)
+[0:03:26.414600960] [2267]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /opt/rpi-cam/share/libcamera/ipa/rpi/pisp/imx219.json
+[0:03:26.423459784] [2267]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@120000/rp1/i2c@88000/imx219@10' for pipeline handler rpi/pisp
+[0:03:26.423503216] [2267]  INFO RPI pisp.cpp:1186 Registered camera /base/axi/pcie@120000/rp1/i2c@88000/imx219@10 to CFE device /dev/media0 and ISP device /dev/media2 using PiSP variant BCM2712_C0
+[0:03:26.423794202] [2267]  WARN V4L2 v4l2_pixelformat.cpp:346 Unsupported V4L2 pixel format RPBP
+[0:03:26.423904681] [2264]  INFO Camera camera.cpp:1216 configuring streams: (0) 640x480-BGR888/sRGB
+[0:03:26.424032384] [2267]  INFO RPI pisp.cpp:1502 Sensor: /base/axi/pcie@120000/rp1/i2c@88000/imx219@10 - Selected sensor format: 640x480-SBGGR10_1X10/RAW - Selected CFE format: 640x480-PC1B/RAW
+{"generated":9000,"sent":9000,"dropped":0,"missed_releases":0}
+rc=0
