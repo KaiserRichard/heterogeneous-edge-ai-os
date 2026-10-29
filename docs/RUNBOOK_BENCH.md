@@ -36,8 +36,11 @@ python3 linux/camera/analyze_t1.py results/$(date +%F)_os_t1_camera/frames.csv -
   --output results/$(date +%F)_os_t1_camera/summary.json
 ```
 Pass criteria: `docs/TEST_SCENARIOS.md` OS-T1. Exact CLI flags: `linux/camera/README.md`.
-With no reader on the socket the source still records timing, but rows show `dropped`; for the
-full pipeline start `linux/inference/infer_server.py --image-source shm:hea_cam` first (README).
+A receiver must be bound to `--output` first: `hea_runtime` stops on the first failed `sendto`.
+For timing only, start `python3 scripts/pi/hea_sink.py /tmp/hea_src.sock &` before `hea_cam`;
+for the full pipeline start `linux/inference/infer_server.py --image-source shm:hea_cam` (README).
+After a crash, remove the stale ring with `rm -f /dev/shm/hea_cam` (`open ring: File exists`).
+The first frames after start carry libcamera `FrameStartup` (AGC/AWB settling); they are used.
 
 ## 3. Switch the Nucleo to the OS firmware (owner types `CONFIRM flash nucleo os-supervisor`)
 Owner's hands: BOOT0 to 3V3 (jumper CN7-5 to CN7-7), press RESET when the script asks.

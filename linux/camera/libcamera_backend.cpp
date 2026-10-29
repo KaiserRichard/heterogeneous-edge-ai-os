@@ -108,7 +108,10 @@ private:
             const char *status = "missing_timestamp";
             if (sensor) {
                 status = "capture_error";
-                if (meta.status == libcamera::FrameMetadata::FrameSuccess &&
+                // FrameStartup (rpt libcamera): full frame while AGC/AWB settle; timing is valid.
+                const bool usable = meta.status == libcamera::FrameMetadata::FrameSuccess ||
+                                    meta.status == libcamera::FrameMetadata::FrameStartup;
+                if (usable &&
                         meta.planes().size() == 1 && meta.planes()[0].bytesused >= size_t(stride) * height) {
                     const auto &mapping = maps.at(buffer);
                     dma_buf_sync sync{DMA_BUF_SYNC_START | DMA_BUF_SYNC_READ};
