@@ -9,6 +9,7 @@ test:
 	$(MAKE) -C linux all test
 	$(PYTHON) -m unittest discover -s analysis/tests -v
 	$(PYTHON) -m unittest discover -s tools/la/tests -v
+	$(MAKE) -C linux/camera test
 	$(PYTHON) -m unittest discover -s linux/inference/tests -v
 
 firmware:

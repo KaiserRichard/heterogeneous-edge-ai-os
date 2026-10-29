@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sequential Unix datagram inference stage with fixed deterministic image input."""
+"""Sequential Unix datagram inference stage with fixed or shared-memory images."""
 import argparse
 import csv
 import errno
@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 
 from bench_common import SOURCE_RECORD, clock, pack_result, parse_cpu, pin_cpu, unpack_source
-from model_runtime import Model, add_runtime_args, classify, load_image, preprocess
+from model_runtime import Model, ShmImage, add_runtime_args, classify, load_image, preprocess
 
 DRAIN_LIMIT = 64
 DRAIN_NS = 2_000_000
@@ -63,19 +63,30 @@ def receive_input(receiver, input_policy='fifo', samples=None, now=None):
 
 
 def serve(model, np, image, source_path, bridge_path, now, max_frames=None, samples=None,
-          input_policy='fifo'):
+          input_policy='fifo', image_source=None):
     """Bind without deleting existing endpoints; unlink only our own bound socket."""
     source_path = Path(source_path)
     handled = 0
     skipped = 0
+    image_drops = {'overwritten': 0, 'torn': 0}
+    received = 0
     with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as receiver, \
             socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as sender:
         receiver.bind(str(source_path))
         try:
-            while max_frames is None or handled < max_frames:
+            while max_frames is None or received < max_frames:
                 (frame_id, t_input_ns), stale = receive_input(receiver, input_policy, samples, now)
                 skipped += stale
-                output = model.run(preprocess(np, image))
+                received += 1
+                frame_image = image
+                if image_source is not None:
+                    frame_image, image_status = image_source.read(np, frame_id)
+                    if image_status is not None:
+                        image_drops[image_status] += 1
+                        if samples is not None:
+                            samples.writerow((frame_id, t_input_ns, '', image_status))
+                        continue
+                output = model.run(preprocess(np, frame_image))
                 class_id, confidence = classify(np, output)
                 t_done_ns = now()  # Completion includes preprocessing + postprocessing.
                 if t_done_ns < t_input_ns:
@@ -94,13 +105,18 @@ def serve(model, np, image, source_path, bridge_path, now, max_frames=None, samp
                 handled += 1
         finally:
             source_path.unlink()
-            print(json.dumps(dict(processed=handled, skipped=skipped)), file=sys.stderr)
+            counts = dict(processed=handled, skipped=skipped)
+            if image_source is not None:
+                counts.update(image_drops)
+            print(json.dumps(counts), file=sys.stderr)
     return handled
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     add_runtime_args(parser)
+    parser.add_argument('--image-source', default='fixed', metavar='fixed|shm:NAME',
+                        help='fixed image (default) or camera shared-memory ring')
     parser.add_argument('--socket', '--source-socket', dest='source_socket', required=True)
     parser.add_argument('--output', '--bridge-socket', dest='bridge_socket', required=True)
     parser.add_argument('--fifo-priority', type=int, choices=range(100), default=0)
@@ -108,6 +124,11 @@ def main(argv=None):
     parser.add_argument('--csv', help='log completions, IPC drops and skipped_stale inputs')
     parser.add_argument('--max-frames', type=int, help='exit after N valid frames; default unlimited')
     args = parser.parse_args(argv)
+    if args.image_source != 'fixed' and not (args.image_source.startswith('shm:') and
+                                            args.image_source[4:]):
+        parser.error('image-source must be fixed or shm:NAME')
+    if args.image_source != 'fixed' and args.image:
+        parser.error('--image cannot be combined with a shared-memory image source')
     if args.seed < 0 or (args.max_frames is not None and args.max_frames < 1):
         parser.error('seed must be nonnegative and max-frames positive')
     if args.source_socket == args.bridge_socket:
@@ -120,9 +141,13 @@ def main(argv=None):
     import numpy as np
     import onnxruntime as ort
 
-    image = load_image(np, args.seed, args.image)
+    image_source = ShmImage(args.image_source[4:]) if args.image_source != 'fixed' else None
+    image = None if image_source else load_image(np, args.seed, args.image)
     model = Model(ort, args.model, args.threads)
     now, clock_name = clock()
+    if image_source is not None:
+        now = lambda: time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+        clock_name = 'CLOCK_MONOTONIC (camera; verify BOOTTIME offset)'
     print(f'inference ready: clock={clock_name}; source must use the same clock', file=sys.stderr)
 
     def stop(_signum, _frame):
@@ -135,12 +160,15 @@ def main(argv=None):
                 samples = csv.writer(stream)
                 samples.writerow(('frame_id', 't_input_ns', 't_done_ns', 'status'))
                 serve(model, np, image, args.source_socket, args.bridge_socket, now,
-                      args.max_frames, samples, args.input_policy)
+                      args.max_frames, samples, args.input_policy, image_source)
         else:
             serve(model, np, image, args.source_socket, args.bridge_socket, now, args.max_frames,
-                  input_policy=args.input_policy)
+                  input_policy=args.input_policy, image_source=image_source)
     except KeyboardInterrupt:
         pass
+    finally:
+        if image_source is not None:
+            image_source.close()
 
 
 if __name__ == '__main__':
