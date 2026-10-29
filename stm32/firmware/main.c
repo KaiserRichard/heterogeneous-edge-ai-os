@@ -9,6 +9,9 @@
 #include "tick_diagnostic.h"
 #include "uart_budget.h"
 #include "board_leds.h"
+#if CAN_OUT
+#include "can_out.h"
+#endif
 
 #define REG32(a) (*(volatile uint32_t *)(a))
 #define FRAME_DEPTH 8u
@@ -79,6 +82,9 @@ static uint16_t tx_seq;
 static TaskHandle_t status_handle;
 static uint8_t clock_fallback;
 static tick_diagnostic_t tick_diagnostic;
+#if CAN_OUT
+static uint32_t can_last_fresh_frame_id;
+#endif
 
 static void increment(volatile uint32_t *counter)
 {
@@ -385,6 +391,19 @@ static uint64_t now_task(void)
     taskEXIT_CRITICAL();
     return now;
 }
+#if CAN_OUT
+static void can_out_notify_if_changed(supervisor_state_t old_state,
+                                      supervisor_reason_t old_reason)
+{
+    if (!supervisor.has_input_seq) can_last_fresh_frame_id = 0u;
+    else if (supervisor.state == SUPERVISOR_STATE_FRESH && supervisor.has_result)
+        can_last_fresh_frame_id = supervisor.last_input_seq;
+    if (supervisor.state == old_state && supervisor.last_transition_reason == old_reason) return;
+    can_out_update(TIM2->CNT, (uint8_t)supervisor.state,
+                   (uint8_t)supervisor.last_transition_reason,
+                   can_last_fresh_frame_id);
+}
+#endif
 static void supervisor_task(void *argument)
 {
     (void)argument;
@@ -426,16 +445,29 @@ static void supervisor_task(void *argument)
         (void)tick_diagnostic_sample(&tick_diagnostic, diagnostic_ticks, diagnostic_us);
         bool events_pending = supervisor.transition_count != 0u || supervisor.inf_rx_count != 0u;
         supervisor_state_t previous = supervisor.state;
+#if CAN_OUT
+        supervisor_reason_t previous_reason = supervisor.last_transition_reason;
+#endif
         supervisor_update(&supervisor, NULL, now_task());
+#if CAN_OUT
+        can_out_notify_if_changed(previous, previous_reason);
+#endif
         /* Bounded batch prevents traffic from extending one release forever. */
         for (unsigned i = 0; i < FRAME_DEPTH; ++i) {
             frame_event_t event;
             if (xQueueReceive(frames, &event, 0) != pdPASS) break;
+#if CAN_OUT
+            supervisor_state_t frame_previous_state = supervisor.state;
+            supervisor_reason_t frame_previous_reason = supervisor.last_transition_reason;
+#endif
             bool had_wire_seq = supervisor.has_wire_seq;
             uint16_t old_wire_seq = supervisor.last_wire_seq;
             uint64_t old_generation = supervisor.generation;
             supervisor_receive_frame(&supervisor, &event.frame, event.generation,
                                      event.receipt, now_task());
+#if CAN_OUT
+            can_out_notify_if_changed(frame_previous_state, frame_previous_reason);
+#endif
             if (supervisor.generation != old_generation ||
                 (!had_wire_seq && supervisor.has_wire_seq) ||
                 (supervisor.has_wire_seq && supervisor.last_wire_seq != old_wire_seq))
@@ -446,6 +478,11 @@ static void supervisor_task(void *argument)
             missed_heartbeats != UINT16_MAX) ++missed_heartbeats;
         published_state = supervisor.state;
         board_leds_output(published_state);
+#if CAN_OUT
+        can_out_update(TIM2->CNT, (uint8_t)supervisor.state,
+                       (uint8_t)supervisor.last_transition_reason,
+                       can_last_fresh_frame_id);
+#endif
         if (!events_pending && (supervisor.transition_count != 0u || supervisor.inf_rx_count != 0u)) xTaskNotifyGive(status_handle);
 #if BRINGUP_BLINK
         /* Diagnostic image only: state mapping above still applies; D4/D5/D6
@@ -543,6 +580,9 @@ static void status_task(void *argument)
 int main(void)
 {
     board_init();
+#if CAN_OUT
+    can_out_init(PCLK1_HZ);
+#endif
     extended_us = TIM2->CNT;
     /* PROVISIONAL educational thresholds, in us; calibrate on the rig. */
     const supervisor_config_t config = {100000, 200000, 500000, 1000000, UART_TRANSIT_US};
