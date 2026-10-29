@@ -7,6 +7,7 @@ test:
 	$(MAKE) -C protocol test
 	$(MAKE) -C stm32 test
 	$(MAKE) -C linux all test
+	$(PYTHON) -m unittest discover -s scripts/stm32/tests -v
 	$(PYTHON) -m unittest discover -s analysis/tests -v
 	$(PYTHON) -m unittest discover -s tools/la/tests -v
 	$(PYTHON) -m unittest discover -s linux/inference/tests -v
