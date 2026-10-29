@@ -9,6 +9,7 @@ extern "C" {
 #include <atomic>
 #include <chrono>
 #include <cstring>
+#include <span>
 #include <linux/dma-buf.h>
 #include <map>
 #include <stdexcept>
@@ -81,7 +82,7 @@ public:
         camera->requestCompleted.connect(this, &Capture::completed);
         libcamera::ControlList controls(camera->controls());
         const std::array<int64_t, 2> limits{duration, duration};
-        controls.set(libcamera::controls::FrameDurationLimits, libcamera::Span<const int64_t, 2>(limits));
+        controls.set(libcamera::controls::FrameDurationLimits, std::span<const int64_t, 2>(limits));
         check(camera->start(&controls), "start camera"); started = true;
         for (auto &request : requests) check(camera->queueRequest(request.get()), "queue initial request");
         while (!hea_stop && !finished.load(std::memory_order_acquire))

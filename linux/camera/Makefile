@@ -2,7 +2,7 @@ CXX ?= c++
 CC ?= cc
 PYTHON ?= python3
 CPPFLAGS += -D_GNU_SOURCE -D_DEFAULT_SOURCE -D_DARWIN_C_SOURCE -D_POSIX_C_SOURCE=200809L -I../include
-CXXFLAGS ?= -std=c++17 -O2 -g -Wall -Wextra -Wpedantic -Werror
+CXXFLAGS ?= -std=c++20 -O2 -g -Wall -Wextra -Wpedantic -Werror
 CFLAGS ?= -std=c99 -O2 -g -Wall -Wextra -Wpedantic -Werror
 HAVE_LIBCAMERA := $(shell pkg-config --exists libcamera 2>/dev/null && echo yes)
 ifeq ($(HAVE_LIBCAMERA),yes)
