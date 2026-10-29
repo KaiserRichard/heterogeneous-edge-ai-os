@@ -133,6 +133,28 @@ class CameraInferenceTests(unittest.TestCase):
         old = np.ascontiguousarray(old.transpose(2, 0, 1)[None, ...])
         self.assertEqual(old.tobytes(), preprocess(np, image).tobytes())
 
+    def test_latest_reader_returns_newest_consistent_slot_and_repeated_status(self):
+        name = 'latest-test-' + uuid.uuid4().hex[:12]
+        self.addCleanup(lambda: ring_path(name).unlink(missing_ok=True))
+        source_tx, source_rx = socket.socketpair(socket.AF_UNIX, socket.SOCK_DGRAM)
+        with source_tx, source_rx:
+            result = subprocess.run([str(CAMERA / 'build/hea_cam'), '--shm', name,
+                '--width', '16', '--height', '8', '--slots', '4', '--fps', '1000',
+                '--count', '7', '--output-fd', str(source_tx.fileno())],
+                pass_fds=(source_tx.fileno(),),
+                capture_output=True, text=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        reader = ShmImage(name)
+        try:
+            image, sequence, freshness = reader.read_latest(np)
+            self.assertEqual((sequence, freshness), (6, 'new'))
+            self.assertEqual(tuple(image[0, 0]), (6, 6, 6))
+            repeated, repeated_seq, repeated_status = reader.read_latest(np)
+            self.assertEqual((repeated_seq, repeated_status), (6, 'repeated'))
+            np.testing.assert_array_equal(image, repeated)
+        finally:
+            reader.close()
+
 
 class CameraCliTests(unittest.TestCase):
     def test_fixed_default_and_explicit_csv_identical(self):

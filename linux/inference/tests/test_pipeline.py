@@ -63,6 +63,50 @@ class BenchmarkTests(unittest.TestCase):
             self.assertEqual((root / 'run/samples.csv').read_text().splitlines(),
                              ['run_idx,pre_ns,infer_ns', '0,10,10', '1,10,10', '2,10,10'])
 
+    def test_camera_benchmark_logs_frame_sequence_and_freshness(self):
+        class FakeModel:
+            def __init__(self, ort, path, threads):
+                self.session = SimpleNamespace(get_providers=lambda: ['CPUExecutionProvider'])
+
+            def run(self, tensor):
+                pass
+
+        class FakeReader:
+            def __init__(self, name):
+                self.frames = iter([('cold', 10, 'new'), ('warm', 10, 'repeated'),
+                                    ('timed-a', 11, 'new'), ('timed-b', 11, 'repeated')])
+
+            def read_latest(self, np):
+                return next(self.frames)
+
+            def close(self):
+                pass
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model = root / 'fixture.onnx'
+            model.write_bytes(b'fake model; not a measurement')
+            ticks = iter(range(0, 10000, 10))
+            with patch.dict(sys.modules, {
+                    'numpy': SimpleNamespace(__version__='fake-numpy'),
+                    'onnxruntime': SimpleNamespace(__version__='fake-ort')}), \
+                    patch.object(infer_bench, 'Model', FakeModel), \
+                    patch.object(infer_bench, 'ShmImage', FakeReader), \
+                    patch.object(infer_bench, 'preprocess', side_effect=lambda np, image: image), \
+                    patch.object(infer_bench, 'clock', return_value=(lambda: next(ticks), 'synthetic')), \
+                    patch.object(infer_bench, 'pin_cpu', return_value=[0]), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                infer_bench.main(['--model', str(model), '--warmup', '1', '--runs', '2',
+                                  '--image-source', 'shm:fixture', '--output', str(root / 'run')])
+            with (root / 'run/samples.csv').open() as stream:
+                rows = list(csv.reader(stream))
+            self.assertEqual(rows, [['run_idx', 'pre_ns', 'infer_ns', 'frame_seq', 'frame_status'],
+                                    ['0', '10', '10', '11', 'new'],
+                                    ['1', '10', '10', '11', 'repeated']])
+            report = json.loads((root / 'run/summary.json').read_text())
+            self.assertEqual(report['summary']['camera_frames']['sequence_status'],
+                             [{'seq': 11, 'status': 'new'}, {'seq': 11, 'status': 'repeated'}])
+
 
 @unittest.skipUnless(hasattr(socket, 'AF_UNIX'), 'Unix sockets unavailable')
 class ServerTests(unittest.TestCase):

@@ -17,6 +17,32 @@ vcgencmd get_throttled            # expect throttled=0x0
 date                              # the Pi clock was ~1 h behind on 2026-10-29 (no NTP)
 ```
 
+## OS-T2 (camera-frame inference baseline)
+
+With the camera v2 connected and the libcamera backend built, run this on the Pi:
+
+```bash
+cd ~/course-stage/os
+scripts/pi/os_t2.sh
+```
+
+The script runs threads 1, 2, and 4 sequentially. For each run it starts a datagram
+sink and the camera at 10 fps, then measures 1000 warm-up and 5000 timed inference
+calls against the newest seqlock-verified frame in `hea_cam`. It records a temperature
+sample every 5 seconds, `vcgencmd get_throttled` and temperature before/after, the
+commands, camera/benchmark logs, `platform-metadata.json` from
+`collect_metadata.sh`, `meta.json`, and the benchmark's `samples.csv` and `summary.json`
+under `results/<UTC-date>_os_t2_infer/threads<N>/`. It removes the
+shared-memory ring and socket on exit. The final table reports latency percentiles,
+P99/P50, maximum sampled temperature, and throttling before/after.
+
+The model defaults to `~/osbuild/wheels/mobilenetv2-12.onnx`; override it with
+`MODEL_PATH=/path/to/model.onnx scripts/pi/os_t2.sh`. To select a new evidence
+directory, set `RESULTS_DIR=/path/to/new-directory`. Use an empty/nonexistent
+directory. Review `docs/TEST_SCENARIOS.md` OS-T2 for validity and pass criteria;
+the run is valid only when the governor is `performance`, SSH is idle, and throttling
+is `0x0` before and after.
+
 ## 1. Camera (owner: power off, connect Pi Camera v2 to CAM/DISP 0, 22-to-15-pin cable, boot)
 ```bash
 dmesg | grep -i imx219            # expect: imx219 ... probe / registered
