@@ -67,7 +67,20 @@ make -C stm32 firmware CLOCK_SOURCE=HSE RX_MODE=DMA UART_BAUD=921600 DEBUG_VCP=0
 make -C stm32 firmware CLOCK_SOURCE=HSI # deliberate fallback profile
 make -C stm32 firmware RX_MODE=IRQ # per-byte ISR fallback
 make -C stm32 firmware DEBUG_VCP=1 BRINGUP_BLINK=1
+make -C stm32/firmware firmware IMU=1
 ```
+
+`IMU=0` is the default and excludes the MPU6050 driver/task from the image.
+`IMU=1` adds a statically allocated idle-priority task (priority 0, below the
+supervisor, RX, and status TX tasks) with 5 ms `vTaskDelayUntil` releases. I2C1 uses PB6/PB7 AF4,
+open-drain with external pull-ups, 400 kHz at 42 MHz APB1. The driver checks
+WHO_AM_I (0x68), wakes the device, and reads the 14-byte burst from 0x3B. The
+public `imu_state` contains the latest raw/scaled sample, DWT CYCCNT sample
+timestamp, saturating I2C/sample/missed-period counters and an eight-bin absolute
+period-jitter histogram (10 us bins, final overflow bin). It is available for
+debugger inspection; no UART frame or supervisor policy changes are made.
+The board harness/wiring and values still require bench verification. Run
+`make -C stm32 test` for the host-only big-endian conversion test.
 
 Default flags include `-mcpu=cortex-m4 -mthumb -mfloat-abi=hard
 -mfpu=fpv4-sp-d16 -Os -Wall -Wextra -Werror`. No RTOS dynamic allocation is enabled;
