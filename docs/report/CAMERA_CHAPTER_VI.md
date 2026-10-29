@@ -115,7 +115,7 @@ Thực hiện theo [RUNBOOK_BENCH.md](../RUNBOOK_BENCH.md): owner xác nhận kh
 - Giả định không suspend và kiểm tra offset dương/có giới hạn là điều kiện cần cho mốc sensor, nhưng không chứng minh hai clock tương đương trong cả run. Nếu kiểm tra thất bại, phải báo mốc receive-time dự phòng; không trình bày AoI từ sensor như kết quả hợp lệ.
 - `hea_cam` sao chép pixel và ghi CSV trong completion callback; các chi phí này thuộc overhead của source. Ring có thể ghi đè frame và reader chủ động bỏ slot bị torn hoặc đã cũ.
 - Camera mode và bridge hiện tại dùng clock domain Linux khác nhau (`CLOCK_MONOTONIC` và `CLOCK_MONOTONIC_RAW`). Cần giải quyết giao diện này trước khi dùng age ở bridge hoặc MCU làm AoI camera.
-- Dữ liệu source tổng hợp, pty và dữ liệu bị gắn cờ lỗi nguồn điện không chứng minh hiệu năng camera, lợi ích latest-value khi tải trong điều kiện hợp lệ, độ tin cậy điện hoặc deadline xấu nhất. Baud rate trong OS-T5 cũng cần thống nhất trước khi chạy.
+- Dữ liệu source tổng hợp, pty và dữ liệu bị gắn cờ lỗi nguồn điện không chứng minh hiệu năng camera, lợi ích latest-value khi tải trong điều kiện hợp lệ, độ tin cậy điện hoặc deadline xấu nhất.
 
 ## Bảng thuật ngữ
 
