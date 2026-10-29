@@ -64,6 +64,31 @@ class AnalyzeTests(unittest.TestCase):
             self.assertAlmostEqual(r['delta_safe_us'],-10/921600*1e6)
             write(1); self.assertIsNone(la.analyze(self.trace(),run)['mcu_safe_us'])
 
+    def test_legacy_two_wire_mode_is_default(self):
+        report = la.analyze(self.trace())
+        self.assertEqual(report['status'], 'observed')
+        self.assertEqual(report['t_safe_s'], .005)
+
+    def test_one_hot_led_mode_and_activity(self):
+        rows = [(0.0, (0, 0, 0, 0)),
+                (0.1, (1, 0, 0, 0)),
+                (0.2, (1, 0, 0, 1)),
+                (0.3, (0, 1, 0, 1)),
+                (0.4, (0, 1, 0, 0)),
+                (0.5, (0, 0, 1, 0))]
+        report = la.analyze(rows, mode='one-hot')
+        self.assertEqual(report['state_transitions'], 3)
+        self.assertEqual(report['fresh_transitions'], 1)
+        self.assertEqual(report['hold_transitions'], 1)
+        self.assertEqual(report['failsafe_transitions'], 1)
+        self.assertEqual(report['link_toggles'], 2)
+        self.assertEqual(report['t_last_link_activity_s'], .4)
+        self.assertEqual(report['t_first_failsafe_s'], .5)
+
+    def test_one_hot_mode_rejects_overlapping_state_leds(self):
+        with self.assertRaisesRegex(ValueError, 'at most one'):
+            la.analyze([(0.0, (1, 1, 0, 0))], mode='one-hot')
+
 if __name__ == '__main__': unittest.main()
 
 class FramingTests(unittest.TestCase):

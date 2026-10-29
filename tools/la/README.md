@@ -5,6 +5,14 @@ been run. No Pi, ST-LINK, or analyzer commands were executed during implementati
 No new dependencies are installed. Python standard library suffices for analysis;
 an existing matplotlib installation enables the optional timing PNG.
 
+The decoder retains its default archived-capture mode for the original D0=PA5,
+D1=PB5 two-wire state code, D2=UART RX, D3=marker traces. For the FW1 one-hot bench
+LED capture, wire D0=D4/PB5 (FRESH), D1=D5/PB4 (HOLD), D2=D6/PB10 (FAILSAFE), and
+D3=D9/PC7 (accepted-frame activity), then select `--mode one-hot`. It validates
+that no two state LEDs overlap, counts state entries and D9 transitions, and does
+not infer UART timing or marker latency from this four-LED capture. INIT is the
+all-off state. Existing captures continue to decode with the default mode.
+
 Wiring (3.3 V logic; shared ground): D0 PA5, D1 PB5, D2 PA10 UART RX from Pi
 921600 8N1 idle high, D3 Pi GPIO27/header pin 13. State codes in D0/D1 order:
 11 FRESH, 01 HOLD, 00 INIT/FAILSAFE. The analyzer requires FRESH before the
@@ -51,6 +59,7 @@ tools/la/la_e4.sh results/la-e4-F1-001 5 fault=F1
 tools/la/la_e4.sh results/la-e4-F2-001 5 fault=F2
 tools/la/la_e4.sh results/la-e4-F4-001 5 fault=F4
 python3 tools/la/la_analyze.py results/la-e4-F1-001
+python3 tools/la/la_analyze.py --mode one-hot results/la-fw1-capture
 ```
 
 Tonight checklist (Mac, after deploying this branch and its E4 firmware):
