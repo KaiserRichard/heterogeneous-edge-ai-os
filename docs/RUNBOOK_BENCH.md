@@ -45,6 +45,11 @@ is `0x0` before and after.
 
 ## OS-T3 / OS-T4 (camera source)
 
+Camera AoI starts at the libcamera sensor exposure timestamp mapped from
+CLOCK_BOOTTIME to CLOCK_MONOTONIC_RAW. This assumes no suspend and negligible slew
+during the three back-to-back clock-pair samples. Check per-frame
+`t_clock_offset_ns` stability before interpreting camera AoI.
+
 After confirming the libcamera backend is built and the Pi Camera v2 works, run
 `scripts/pi/os_t3_t4.sh` from the repository root. It runs OS-T3 E1/E2 with three
 60-second repetitions, then E1/E3/E3B campaign conditions for OS-T4, using the

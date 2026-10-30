@@ -92,7 +92,19 @@ public:
     }
 private:
     void completed(libcamera::Request *request) {
-        const uint64_t recv = hea_now(CLOCK_MONOTONIC); // First action in completion handler.
+        // Bracket each BOOTTIME sample with RAW and use the narrowest pair.
+        uint64_t boot_now = 0, raw_now = 0, best_width = UINT64_MAX;
+        for (int i = 0; i < 3; ++i) {
+            const uint64_t before = hea_raw_now();
+            const uint64_t boot = hea_now(CLOCK_BOOTTIME);
+            const uint64_t after = hea_raw_now();
+            if (after - before < best_width) {
+                best_width = after - before;
+                boot_now = boot;
+                raw_now = before + best_width / 2;
+            }
+        }
+        const uint64_t recv = raw_now;
         if (request->status() == libcamera::Request::RequestCancelled || hea_stop || finished.load()) return;
         try {
             auto *buffer = request->findBuffer(stream);
@@ -104,6 +116,8 @@ private:
             last_sequence = sequence; have_sequence = true;
             auto timestamp = request->metadata().get(libcamera::controls::SensorTimestamp);
             uint64_t sensor = timestamp && *timestamp > 0 ? static_cast<uint64_t>(*timestamp) : 0;
+            const uint64_t input_raw = sensor && boot_now >= sensor
+                ? raw_now - (boot_now - sensor) : 0;
             const uint8_t *pixels = nullptr;
             const char *status = "missing_timestamp";
             if (sensor) {
@@ -126,7 +140,7 @@ private:
                     pixels = rgb.data();
                 }
             }
-            if (!frame(sequence, sensor, recv, pixels, status)) { finished.store(true); return; }
+            if (!frame(sequence, sensor, recv, input_raw, pixels, status)) { finished.store(true); return; }
             request->reuse(libcamera::Request::ReuseBuffers);
             check(camera->queueRequest(request), "requeue request");
         } catch (const std::exception &e) {

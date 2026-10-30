@@ -98,7 +98,7 @@ class CameraInferenceTests(unittest.TestCase):
             self.assertEqual(json.loads(stderr.getvalue()), dict(processed=2, skipped=0, overwritten=3, torn=0))
             for index, frame_id in enumerate((3, 4)):
                 record = RESULT_RECORD.unpack(bridge_rx.recv(100))
-                self.assertEqual(record[:2], (frame_id, int(source_rows[frame_id]['t_sensor_ns'])))
+                self.assertEqual(record[:2], (frame_id, int(source_rows[frame_id]['t_input_ns'])))
                 self.assertEqual(record[3:], (7, 100))
                 self.assertGreaterEqual(record[2], record[1])
                 image = np.empty((8, 16, 3), dtype=np.uint8)
@@ -182,17 +182,17 @@ class CameraCliTests(unittest.TestCase):
                 outputs.append(path.read_bytes())
         self.assertEqual(outputs, [b'frame_id,t_input_ns,t_done_ns,status\r\n3,100,200,sent\r\n'] * 2)
 
-    def test_shm_cli_selects_monotonic_and_closes_reader(self):
+    def test_shm_cli_selects_bridge_clock_and_closes_reader(self):
         with patch.dict(sys.modules, {'numpy': SimpleNamespace(), 'onnxruntime': SimpleNamespace()}), \
                 patch.object(infer_server, 'Model'), patch.object(infer_server, 'load_image') as fixed, \
                 patch.object(infer_server, 'ShmImage') as shm, patch.object(infer_server, 'serve') as serve, \
+                patch.object(infer_server, 'clock', return_value=(lambda: 123, 'bridge-clock')) as selected_clock, \
                 patch.object(infer_server.signal, 'signal'), contextlib.redirect_stderr(io.StringIO()):
             infer_server.main(['--socket', 's', '--output', 'b', '--image-source', 'shm:test'])
         fixed.assert_not_called()
         shm.assert_called_once_with('test')
-        with patch.object(infer_server.time, 'clock_gettime_ns', return_value=123) as now:
-            self.assertEqual(serve.call_args.args[5](), 123)
-            now.assert_called_once_with(time.CLOCK_MONOTONIC)
+        self.assertEqual(serve.call_args.args[5](), 123)
+        self.assertEqual(selected_clock.call_count, 2)
         self.assertIs(serve.call_args.kwargs['image_source'], shm.return_value)
         shm.return_value.close.assert_called_once()
 

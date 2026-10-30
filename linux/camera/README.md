@@ -41,8 +41,9 @@ one frame, and the main thread handles shutdown. Callback CSV and pixel-copy cos
 are included in source overhead and must be measured on the Pi.
 
 Fake pixels at (x,y) are `(x+frame_id, y+frame_id, frame_id)` modulo 256.
-`--fake-offset-ns N` defaults to 1000000 and subtracts N from the receive
-CLOCK_MONOTONIC reading. `--fake-drop-every N` suppresses every Nth capture
+`--fake-offset-ns N` defaults to 1000000 and subtracts N from the generated
+capture time; `t_input_ns` is represented in the host bridge clock domain.
+`--fake-drop-every N` suppresses every Nth capture
 (sequence  N-1, 2N-1, ...); zero disables injection. Missed fake releases advance
 the sequence without a callback and are reported separately. Frame IDs never wrap
 within a run. Use a fresh name for each run.
@@ -100,40 +101,35 @@ Missing/nonpositive SensorTimestamp or failed buffers are logged without publish
 
 ## Clocks, output, and analysis
 
-CSV is exactly:
+CSV is:
 
 ```text
-frame_id,seq,t_sensor_ns,t_recv_mono_ns,t_input_ns,status
+frame_id,seq,t_sensor_ns,t_recv_raw_ns,t_input_ns,status,t_clock_offset_ns
 ```
 
-`seq` is capture sequence, **not** the internal slot seqlock. `t_recv_mono_ns` is
-sampled as the first completion-handler action; `t_input_ns` is the unmodified
-SensorTimestamp. Status is `sent`, `dropped` (IPC backpressure), `injected_drop`,
+`seq` is capture sequence, **not** the internal slot seqlock. `t_sensor_ns` keeps
+the unmodified SensorTimestamp. `t_recv_raw_ns` is a nearby RAW clock sample and
+`t_input_ns` is the sensor time mapped to CLOCK_MONOTONIC_RAW; this is the value
+sent in `hea_input`. `t_clock_offset_ns` (`t_input_ns - t_sensor_ns`) is appended,
+preserving the prior column order. Status is `sent`, `dropped` (IPC backpressure), `injected_drop`,
 `missing_timestamp`, or `capture_error`. The callback logs unsuccessful capture
 rows too; an unavailable timestamp is zero. Startup metadata is JSON on stderr
 and `<csv>.meta.json` when `--csv` is specified, including requested configuration
-and one adjacent BOOTTIME/MONOTONIC pair (BOOTTIME is null where unavailable).
+and startup BOOTTIME/MONOTONIC/RAW readings (BOOTTIME is null where unavailable).
 Stderr ends with generated/sent/dropped/missed_releases counts. Camera inference
 retains the old CSV schema, using blank completion times for `overwritten`/`torn`,
 and counts these statuses on stderr.
 
-Libcamera specifies SensorTimestamp in CLOCK_BOOTTIME, not MONOTONIC. This ticket
-preserves the mandated raw sensor value and assumes the Pi never suspends, as in
-the roadmap; it does **not** silently convert or substitute a timestamp. Camera-mode
-inference explicitly calls POSIX CLOCK_MONOTONIC (Python's `monotonic_ns` uses a
-different epoch on the tested Mac). The analyzer reports negative offsets and
-checks positive/P99-bounded offsets. A single startup pair cannot establish clock
-constancy; repeat measurements and Pi run metadata are still required. No hardware
-pass is claimed, and the analyzer never grants overall hardware validity.
+Libcamera specifies SensorTimestamp in CLOCK_BOOTTIME. For each completed request
+the callback takes three BOOTTIME/RAW pairs, selecting the narrowest RAW bracket,
+then maps sensor time by subtracting `(boottime_now - raw_now)`. AoI origin is the
+sensor exposure timestamp mapped to CLOCK_MONOTONIC_RAW. This assumes no suspend
+and negligible clock slew between samples. Check that per-frame
+`t_clock_offset_ns` remains stable. Camera inference uses the bridge clock
+(`CLOCK_MONOTONIC_RAW` on Linux, `perf_counter_ns` elsewhere).
 
-**Integration limitation for conductor review:** the unchanged Linux bridge uses
-CLOCK_MONOTONIC_RAW for send-time age validation and clock synchronization. This
-is a different clock domain from CAM1. Byte-compatible packets do not establish
-valid end-to-end ages; the bridge may reject camera results or calculate biased
-ages. A separately authorized clock-domain decision is required before connecting
-this source to the real bridge for AoI experiments. CAM1 does not modify the bridge,
-UART, clock-sync protocol, or the fixed-image path. The example result endpoint
-above should be a camera-mode MONOTONIC-aware test receiver until that is resolved.
+Camera timestamps now share the bridge's RAW clock domain, so bridge age validation
+and AoI use compatible timestamps under the stated no-suspend assumption.
 
 The analyzer uses capture rows (`sent` and IPC `dropped`) for sensor intervals,
 absolute jitter `|delta - 1e9/fps|`, and recv−sensor offset percentiles. Percentiles

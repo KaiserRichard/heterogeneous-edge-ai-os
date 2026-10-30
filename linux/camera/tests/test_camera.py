@@ -12,7 +12,7 @@ import uuid
 
 CAMERA = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(CAMERA))
-from analyze_t1 import COLUMNS, summarize
+from analyze_t1 import COLUMNS, boottime_to_raw, summarize
 
 
 def ring_path(name):
@@ -40,10 +40,9 @@ class CameraTests(unittest.TestCase):
                 self.assertEqual([r['status'] for r in rows], ['sent', 'injected_drop'] * 3)
                 rx.settimeout(1)
                 for row in rows:
-                    self.assertEqual(int(row['t_recv_mono_ns']) - int(row['t_sensor_ns']), 2000000)
-                    self.assertEqual(row['t_input_ns'], row['t_sensor_ns'])
+                    self.assertEqual(int(row['t_recv_raw_ns']) - int(row['t_input_ns']), 2000000)
                     if row['status'] == 'sent':
-                        self.assertEqual(rx.recv(100), struct.pack('<IQ', int(row['frame_id']), int(row['t_sensor_ns'])))
+                        self.assertEqual(rx.recv(100), struct.pack('<IQ', int(row['frame_id']), int(row['t_input_ns'])))
                 metadata = json.loads(Path(str(path) + '.meta.json').read_text())
                 self.assertEqual(metadata['slots'], 4)
                 self.assertGreater(metadata['clock_monotonic_ns'], 0)
@@ -70,7 +69,8 @@ class CameraTests(unittest.TestCase):
     def test_analysis_exact_metrics_and_invalid_clock(self):
         def row(seq, sensor, offset=10):
             return dict(frame_id=seq, seq=seq, t_sensor_ns=sensor,
-                        t_recv_mono_ns=sensor + offset, t_input_ns=sensor, status='sent')
+                        t_recv_raw_ns=sensor + offset, t_input_ns=sensor,
+                        t_clock_offset_ns=0, status='sent')
         result = summarize([row(0, 100), row(1, 100000100, 20), row(3, 300000100, 40)], 10)
         self.assertEqual(result['interval_mean_ns'], 150000000)
         self.assertEqual(result['jitter_p99_ns'], 99000000)
@@ -83,6 +83,11 @@ class CameraTests(unittest.TestCase):
             summarize([row(0, 100), row(1, 99)], 10)
         with self.assertRaises(ValueError):
             summarize([], 10)
+
+    def test_boottime_to_raw_mapping_arithmetic(self):
+        self.assertEqual(boottime_to_raw(9_900, 10_000, 8_000), 7_900)
+        with self.assertRaises(ValueError):
+            boottime_to_raw(10_001, 10_000, 8_000)
 
 
 if __name__ == '__main__':

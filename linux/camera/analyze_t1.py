@@ -7,8 +7,16 @@ import json
 import math
 from pathlib import Path
 
-COLUMNS = ['frame_id', 'seq', 't_sensor_ns', 't_recv_mono_ns', 't_input_ns', 'status']
+OLD_COLUMNS = ['frame_id', 'seq', 't_sensor_ns', 't_recv_mono_ns', 't_input_ns', 'status']
+COLUMNS = ['frame_id', 'seq', 't_sensor_ns', 't_recv_raw_ns', 't_input_ns', 'status', 't_clock_offset_ns']
 STATUSES = {'sent', 'dropped', 'injected_drop', 'missing_timestamp', 'capture_error'}
+
+
+def boottime_to_raw(sensor_ns, boottime_now_ns, raw_now_ns):
+    """Map a BOOTTIME sensor value using a nearby BOOTTIME/RAW pair."""
+    if sensor_ns < 0 or boottime_now_ns < sensor_ns or raw_now_ns < 0:
+        raise ValueError('invalid clock mapping values')
+    return raw_now_ns - (boottime_now_ns - sensor_ns)
 
 
 def percentile(values, p):
@@ -27,14 +35,17 @@ def summarize(rows, fps):
         raise ValueError('CSV contains no frames')
     previous = None
     for row in rows:
-        for key in COLUMNS[:-1]:
+        if 't_recv_raw_ns' not in row:
+            row['t_recv_raw_ns'] = row['t_recv_mono_ns']
+            row.setdefault('t_clock_offset_ns', '0')
+        for key in ('frame_id', 'seq', 't_sensor_ns', 't_recv_raw_ns', 't_input_ns'):
             row[key] = int(row[key])
             if row[key] < 0:
                 raise ValueError('negative timestamp or sequence')
         if row['status'] not in STATUSES or row['frame_id'] != row['seq']:
             raise ValueError('invalid status or frame/sequence mismatch')
-        if row['t_sensor_ns'] != row['t_input_ns']:
-            raise ValueError('input timestamp differs from sensor timestamp')
+        if 't_clock_offset_ns' in row:
+            row['t_clock_offset_ns'] = int(row['t_clock_offset_ns'])
         if previous is not None and row['seq'] <= previous:
             raise ValueError('sequence regressed/wrapped; analyze separate runs')
         previous = row['seq']
@@ -43,7 +54,8 @@ def summarize(rows, fps):
     intervals = [b['t_sensor_ns'] - a['t_sensor_ns'] for a, b in zip(captures, captures[1:])]
     if any(delta <= 0 for delta in intervals) or any(r['t_sensor_ns'] <= 0 for r in captures):
         raise ValueError('capture sensor timestamps must be positive and increasing')
-    offsets = [r['t_recv_mono_ns'] - r['t_sensor_ns'] for r in captures]
+    offsets = [r['t_recv_raw_ns'] - r['t_input_ns'] for r in captures]
+    clock_offsets = [r['t_clock_offset_ns'] for r in captures if 't_clock_offset_ns' in r]
     missing = sum(b['seq'] - a['seq'] - 1 for a, b in zip(rows, rows[1:]))
     gaps = sum(b['seq'] - a['seq'] - 1 for a, b in zip(captures, captures[1:]))
     explicit_drops = sum(counts[s] for s in ('injected_drop', 'missing_timestamp', 'capture_error'))
@@ -65,7 +77,10 @@ def summarize(rows, fps):
                            jitter_below_2ms=jitter is not None and jitter < 2_000_000,
                            drops_below_point_one_percent=(missing + explicit_drops) / expected < .001,
                            offset_positive_and_bounded=bool(offsets) and min(offsets) > 0 and offset_p99 < period + 10_000_000),
-        clock_stability='not established: one startup pair cannot prove constancy',
+        sensor_to_raw_offset_ns=dict(p50=percentile(clock_offsets, 50), p99=percentile(clock_offsets, 99),
+                                     min=min(clock_offsets) if clock_offsets else None,
+                                     max=max(clock_offsets) if clock_offsets else None),
+        clock_stability='inspect per-frame t_clock_offset_ns stability; no suspend and negligible slew assumed',
         hardware_validity='not established: requires Pi metadata and no-suspend clock validation')
 
 
@@ -77,7 +92,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     with args.csv.open(newline='') as stream:
         reader = csv.DictReader(stream)
-        if reader.fieldnames != COLUMNS:
+        if reader.fieldnames not in (COLUMNS, OLD_COLUMNS):
             parser.error('unexpected camera CSV schema')
         try:
             result = summarize(list(reader), args.fps)

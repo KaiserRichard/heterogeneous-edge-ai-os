@@ -146,8 +146,8 @@ def main(argv=None):
     model = Model(ort, args.model, args.threads)
     now, clock_name = clock()
     if image_source is not None:
-        now = lambda: time.clock_gettime_ns(time.CLOCK_MONOTONIC)
-        clock_name = 'CLOCK_MONOTONIC (camera; verify BOOTTIME offset)'
+        now, clock_name = clock()
+        clock_name += ' (camera; sensor BOOTTIME mapped to bridge clock)'
     print(f'inference ready: clock={clock_name}; source must use the same clock', file=sys.stderr)
 
     def stop(_signum, _frame):
