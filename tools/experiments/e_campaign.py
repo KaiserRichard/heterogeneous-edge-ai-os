@@ -24,6 +24,13 @@ import e_summary
 STRESSORS = ['B0_idle', 'CPU_c23', 'B1_stream_c2', 'C1_cache2M_c2', 'B2_memrate_c23']
 
 
+def camera_command(binary, socket, csv_path, fps, source_options=()):
+    """Build the Pi Camera v2 source command; options retain source placement."""
+    return [str(binary), '--backend', 'libcamera', '--width', '640', '--height', '480',
+            '--fps', str(fps), '--shm', 'hea_cam', '--output', str(socket), '--csv',
+            str(csv_path), *source_options]
+
+
 def stress_commands(condition):
     options = {
         'CPU_c23': ([2, 3], ['--cpu', '1']),
@@ -201,7 +208,9 @@ def execute_run(args, experiment, condition):
     pipeline = None
     stressor_ok = True
     rc = 1
-    command = ['bash', str(ROOT / 'scripts/pi/run_pipeline.sh'), '--duration', str(args.seconds),
+    source_mode = getattr(args, 'source', 'synthetic')
+    pipeline_script = ('camera_pipeline.sh' if source_mode == 'camera' else '../../scripts/pi/run_pipeline.sh')
+    command = ['bash', str(ROOT / 'tools/experiments' / pipeline_script), '--duration', str(args.seconds),
                '--period-ms', '100', '--policy', bridge_policy, '--input-policy', input_policy,
                '--stage', args.stage, '--threads', '1',
                '--source-cpu', '1', '--infer-cpu', '0', '--bridge-cpu', '1',
@@ -211,6 +220,10 @@ def execute_run(args, experiment, condition):
                     '--reset-command', args.rearm_command]
     if args.model:
         command += ['--model', str(args.model)]
+    if source_mode == 'camera':
+        camera_fps = 30 if experiment in ('E3', 'E3B') else 15
+        command += ['--camera-fps', str(camera_fps)]
+    command_env = None
     elevated = profile == 'P1'
     if elevated:
         command += ['--source-priority', '60', '--bridge-priority', '70', '--mlock']
@@ -229,7 +242,8 @@ def execute_run(args, experiment, condition):
             time.sleep(5)
         handle = (run / 'pipeline.log').open('w')
         handles.append(handle)
-        pipeline = subprocess.Popen(command, cwd=ROOT, stdout=handle, stderr=subprocess.STDOUT, start_new_session=True)
+        pipeline = subprocess.Popen(command, cwd=ROOT, stdout=handle, stderr=subprocess.STDOUT,
+                                    start_new_session=True, env=command_env)
         while pipeline.poll() is None:
             if any(p.poll() is not None for p in processes):
                 stressor_ok = False
@@ -274,11 +288,12 @@ def positive(value):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('experiment', choices=['E1', 'E2', 'E3', 'E3B', 'ALL'])
+    parser.add_argument('experiment', choices=['E1', 'E2', 'E3', 'E3B', 'E3+E3B', 'ALL'])
     parser.add_argument('out', type=Path)
     parser.add_argument('reps', type=positive, nargs='?', default=3)
     parser.add_argument('seconds', type=positive, nargs='?', default=60)
     parser.add_argument('--stage', choices=['onnx', 'stub'], default='stub')
+    parser.add_argument('--source', choices=['synthetic', 'camera'], default='synthetic')
     parser.add_argument('--model', type=Path)
     args = parser.parse_args()
     args.out = args.out.resolve()
@@ -302,15 +317,22 @@ def main():
             if shutil.which('sudo') is None or subprocess.run(['sudo', '-n', 'true']).returncode:
                 raise ValueError('P1 requires passwordless sudo: sudo -n true failed.')
         subprocess.run(['make', '-C', str(ROOT / 'linux'), 'all'], check=True)
+        if args.source == 'camera':
+            subprocess.run(['make', '-C', str(ROOT / 'linux/camera'), 'clean', 'all'], check=True)
         args.out.mkdir(parents=True)
         json_write(args.out / 'campaign.json', dict(experiment=args.experiment, reps=args.reps, seconds=args.seconds,
-                   stage=args.stage, model=str(args.model) if args.model else None,
+                   stage=args.stage, source=args.source,
+                   camera=({'backend': 'libcamera', 'width': 640, 'height': 480,
+                            'fps_e3_e3b': 30, 'fps_other': 15, 'shm': 'hea_cam'}
+                           if args.source == 'camera' else None),
+                   model=str(args.model) if args.model else None,
                    model_sha256=hashlib.sha256(args.model.read_bytes()).hexdigest() if args.model else None,
                    seed=42, warmup_seconds=5, cooldown_seconds=5, source_cpu=1, inference_cpu=0, bridge_cpu=1,
                    source_period_ms=100, python=args.python, p2='not done: systemd quota/delegation not validated',
                    evidence=e_summary.EVIDENCE, ranking='E1 median per-run delivery P99; ties: max then stressor name'))
         (args.out / 'platform.txt').write_text(capture(['stress-ng', '--version']) + '\n' + capture(['lscpu']) + '\n')
         experiments = (['E1', 'E2', 'E3', 'E3B'] if args.experiment == 'ALL' else
+                       ['E1', 'E3', 'E3B'] if args.experiment == 'E3+E3B' else
                        [args.experiment] if args.experiment in ('E1', 'E3B') else ['E1', args.experiment])
         worst = None
         for experiment in experiments:

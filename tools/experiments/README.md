@@ -27,7 +27,14 @@ warm-up exclusion: all source/inference samples, including initial calls, are
 retained. The stressor alone has a 5 s warm-up.
 
 `E1`, `E2`, `E3`, `E3B` and `ALL` accept `[reps=3] [seconds=60]` followed by `--stage`
-and `--model`. E2 and E3 invoked alone first perform E1 in the same new output
+and `--model`. `--source synthetic|camera` selects the input; synthetic remains the
+default. Camera mode uses `hea_cam --backend libcamera` at 640x480 with a fresh
+`/dev/shm/hea_cam` ring per run, and ONNX inference reads `shm:hea_cam`. It uses
+15 fps except for E3/E3B, which use 30 fps. The camera process receives the same
+CPU affinity, FIFO priority and memory-lock placement as the synthetic source.
+Camera metadata is retained in `source.csv.meta.json`, `camera-command.txt`, and
+the campaign configuration. Camera mode requires a Pi libcamera build and the
+ONNX stage; it has not been run on hardware for CAM34. E2 and E3 invoked alone first perform E1 in the same new output
 directory. Their rankings use valid E1 condition medians of per-run delivery
 P99; ties use maximum delivery latency, then stressor name. At least two stress
 conditions need a valid repetition. No ranking or timing numbers are invented
@@ -63,6 +70,15 @@ Use the installed ONNX interpreter and model paths if they differ. The output
 directory must be new. E3B uses the same scheduling, stress warm-up, shutdown
 drain, cooldown and validity rules as E3; it does not claim a measured improvement
 until the Pi campaign is run. `ALL` includes E3B after E3.
+
+For the OS-T3 and OS-T4 Pi camera runs (do not run this on macOS), use
+`scripts/pi/os_t3_t4.sh`. It runs E2 with three 60-second repetitions under
+P0/P1 and ALL for E3/E3B in `results/<Pi-local-date>_os_t3_contention/` and
+`results/<Pi-local-date>_os_t4_policy/`. Set `PYTHON` to the interpreter containing
+onnxruntime and `MODEL_PATH` to override the defaults. The runner prints campaign
+summary tables alongside the OS-T3/OS-T4 criteria; inspect per-run AoI and FIFO
+queue evidence to determine those criteria. All bridge traffic remains on socat
+PTYs; the script never opens a UART device.
 For the paths recorded by `results/2026-10-11_e1_e2_e3_pty/20261008T103412Z_e_onnx/campaign.json`:
 
 ```sh
