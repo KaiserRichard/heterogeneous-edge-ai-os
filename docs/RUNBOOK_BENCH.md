@@ -43,6 +43,24 @@ directory. Review `docs/TEST_SCENARIOS.md` OS-T2 for validity and pass criteria;
 the run is valid only when the governor is `performance`, SSH is idle, and throttling
 is `0x0` before and after.
 
+## OS-T3 / OS-T4 (camera source)
+
+Camera AoI starts at the libcamera sensor exposure timestamp mapped from
+CLOCK_BOOTTIME to CLOCK_MONOTONIC_RAW. This assumes no suspend and negligible slew
+during the three back-to-back clock-pair samples. Check per-frame
+`t_clock_offset_ns` stability before interpreting camera AoI.
+
+After confirming the libcamera backend is built and the Pi Camera v2 works, run
+`scripts/pi/os_t3_t4.sh` from the repository root. It runs OS-T3 E1/E2 with three
+60-second repetitions, then E1/E3/E3B campaign conditions for OS-T4, using the
+camera at 15 fps except 30 fps for E3/E3B. Output directories use the Pi's local
+date. `PYTHON` defaults to `~/course-stage/cn-venv/bin/python3` and must provide
+numpy/onnxruntime; `MODEL_PATH` defaults to `~/osbuild/wheels/mobilenetv2-12.onnx`.
+This is the software PTY setup: it does not use the STM32 or `/dev/ttyAMA0`.
+The script prints summary tables and the fixed criteria from OS-T3/OS-T4 in
+`docs/TEST_SCENARIOS.md`; review run validity and raw per-run results before
+reporting a pass. CAM34 has not been run on the Pi, so no results are claimed.
+
 ## 1. Camera (owner: power off, connect Pi Camera v2 to CAM/DISP 0, 22-to-15-pin cable, boot)
 ```bash
 dmesg | grep -i imx219            # expect: imx219 ... probe / registered

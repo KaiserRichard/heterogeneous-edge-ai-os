@@ -1,0 +1,9 @@
+{
+  "experiment": "E1",
+  "profile": "P0",
+  "stressor": "C1_cache2M_c2",
+  "policy": "latest",
+  "input_policy": "fifo",
+  "repetition": 2,
+  "exact_load": "taskset -c 2 stress-ng --cache 1 --cache-level 3 --cache-size 2M --cache-no-affinity --metrics-brief"
+}

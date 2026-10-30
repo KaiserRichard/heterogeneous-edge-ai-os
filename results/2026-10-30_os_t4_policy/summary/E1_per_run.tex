@@ -1,0 +1,38 @@
+% MEASURED; software timestamps; pty link; no physical UART, no MCU
+\par\noindent MEASURED; software timestamps; pty link; no physical UART, no MCU\par
+\begin{tabular}{llllllll}
+\toprule
+Condition & Service latency & Delivery latency & CPU & RAM & Drops & Overflows & Exact load \\
+\midrule
+\multicolumn{8}{l}{E1\_P0\_B0\_idle\_latest\_r1; OK} \\
+B0\_idle & 57.93/59.33/67.99 ms & 58.09/59.93/68.14 ms & 73.25 \% & 125.9 MiB & 0 & 0 & idle \\
+\multicolumn{8}{l}{E1\_P0\_B0\_idle\_latest\_r2; OK} \\
+B0\_idle & 58.07/59.68/67.76 ms & 58.23/60.01/67.91 ms & 73.52 \% & 125.9 MiB & 0 & 0 & idle \\
+\multicolumn{8}{l}{E1\_P0\_B0\_idle\_latest\_r3; OK} \\
+B0\_idle & 57.78/59.29/67.73 ms & 57.94/59.85/67.88 ms & 73.41 \% & 125.9 MiB & 0 & 0 & idle \\
+\multicolumn{8}{l}{E1\_P0\_B1\_stream\_c2\_latest\_r1; OK} \\
+B1\_stream\_c2 & 320.3/354.6/364.8 ms & 320.8/355.2/365.3 ms & 114.2 \% & 125.9 MiB & 0 & 0 & taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_B1\_stream\_c2\_latest\_r2; OK} \\
+B1\_stream\_c2 & 320.9/355.9/358.5 ms & 321.6/357/358.9 ms & 114.7 \% & 125.9 MiB & 0 & 0 & taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_B1\_stream\_c2\_latest\_r3; OK} \\
+B1\_stream\_c2 & 320.4/355.6/363.7 ms & 320.9/356.9/364.3 ms & 114.5 \% & 125.9 MiB & 0 & 0 & taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_B2\_memrate\_c23\_latest\_r1; OK} \\
+B2\_memrate\_c23 & 370.6/422.9/626.4 ms & 371.6/423.6/626.9 ms & 117.8 \% & 125.9 MiB & 0 & 0 & taskset -c 2 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief ; taskset -c 3 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_B2\_memrate\_c23\_latest\_r2; INVALID: scheduling/affinity/mlock verification failed} \\
+B2\_memrate\_c23 & unavailable/unavailable/unavailable ms & unavailable/unavailable/unavailable ms & unavailable \% & unavailable MiB & unavailable & unavailable & taskset -c 2 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief ; taskset -c 3 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_B2\_memrate\_c23\_latest\_r3; OK} \\
+B2\_memrate\_c23 & 368.5/416.6/606.1 ms & 370.1/417.9/607.5 ms & 117.2 \% & 125.9 MiB & 0 & 0 & taskset -c 2 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief ; taskset -c 3 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_C1\_cache2M\_c2\_latest\_r1; OK} \\
+C1\_cache2M\_c2 & 76.32/84.95/104.9 ms & 77.18/86.61/105.3 ms & 101.8 \% & 125.9 MiB & 0 & 0 & taskset -c 2 stress-ng --cache 1 --cache-level 3 --cache-size 2M --cache-no-affinity --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_C1\_cache2M\_c2\_latest\_r2; OK} \\
+C1\_cache2M\_c2 & 70.96/120.2/144.4 ms & 71.24/121.9/145.1 ms & 93.87 \% & 126.2 MiB & 0 & 0 & taskset -c 2 stress-ng --cache 1 --cache-level 3 --cache-size 2M --cache-no-affinity --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_C1\_cache2M\_c2\_latest\_r3; OK} \\
+C1\_cache2M\_c2 & 69.94/75.01/91.46 ms & 70.22/75.44/91.78 ms & 92.61 \% & 125.9 MiB & 0 & 0 & taskset -c 2 stress-ng --cache 1 --cache-level 3 --cache-size 2M --cache-no-affinity --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_CPU\_c23\_latest\_r1; OK} \\
+CPU\_c23 & 54.38/56.18/63.49 ms & 54.65/56.83/63.66 ms & 68.51 \% & 125.9 MiB & 0 & 0 & taskset -c 2 stress-ng --cpu 1 --metrics-brief ; taskset -c 3 stress-ng --cpu 1 --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_CPU\_c23\_latest\_r2; OK} \\
+CPU\_c23 & 54.46/56.58/66.13 ms & 54.71/57.02/66.31 ms & 68.46 \% & 125.9 MiB & 0 & 0 & taskset -c 2 stress-ng --cpu 1 --metrics-brief ; taskset -c 3 stress-ng --cpu 1 --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_CPU\_c23\_latest\_r3; OK} \\
+CPU\_c23 & 54.57/56.52/63.88 ms & 54.83/57.17/64.19 ms & 68.75 \% & 125.9 MiB & 0 & 0 & taskset -c 2 stress-ng --cpu 1 --metrics-brief ; taskset -c 3 stress-ng --cpu 1 --metrics-brief \\
+\bottomrule
+\end{tabular}

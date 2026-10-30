@@ -1,0 +1,2 @@
+inference ready: clock=CLOCK_MONOTONIC_RAW (camera; sensor BOOTTIME mapped to bridge clock); source must use the same clock
+{"processed": 513, "skipped": 0, "overwritten": 376, "torn": 13}

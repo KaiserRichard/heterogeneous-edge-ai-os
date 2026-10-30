@@ -82,18 +82,20 @@ int main(int argc, char **argv) {
         hea::Ring ring(name, width, height, slots);
         std::vector<uint8_t> pixels(ring.header().pixels);
         int fd = hea_socket_output(&options);
-        FILE *csv = hea_csv_open(options.csv_path, "frame_id,seq,t_sensor_ns,t_recv_mono_ns,t_input_ns,status");
+        FILE *csv = hea_csv_open(options.csv_path, "frame_id,seq,t_sensor_ns,t_recv_raw_ns,t_input_ns,status,t_clock_offset_ns");
         uint64_t boot = 0;
 #ifdef CLOCK_BOOTTIME
         boot = hea_now(CLOCK_BOOTTIME);
 #endif
         uint64_t mono = hea_now(CLOCK_MONOTONIC);
+        uint64_t raw = hea_raw_now();
         std::string metadata = "{\"backend\":\"" + backend + "\",\"shm\":\"" + name +
             "\",\"width\":" + std::to_string(width) + ",\"height\":" + std::to_string(height) +
             ",\"slots\":" + std::to_string(slots) + ",\"fps\":" + std::to_string(fps) +
             ",\"clock_boottime_ns\":" + (boot ? std::to_string(boot) : "null") +
             ",\"clock_monotonic_ns\":" + std::to_string(mono) +
-            ",\"t_input_clock\":\"" + (backend == "fake" ? "CLOCK_MONOTONIC" : "SensorTimestamp (CLOCK_BOOTTIME; requires no suspend)") + "\"}";
+            ",\"clock_raw_ns\":" + std::to_string(raw) +
+            ",\"t_input_clock\":\"CLOCK_MONOTONIC_RAW (sensor BOOTTIME mapped; no suspend assumed)\"}";
         std::cerr << metadata << '\n';
         if (options.csv_path) {
             std::string path = std::string(options.csv_path) + ".meta.json";
@@ -102,18 +104,19 @@ int main(int argc, char **argv) {
             if (std::fprintf(meta, "%s\n", metadata.c_str()) < 0 || std::fclose(meta)) hea_fatal("write camera metadata");
         }
         uint64_t generated = 0, sent = 0, missed = 0;
-        Frame frame = [&](uint32_t sequence, uint64_t sensor, uint64_t recv, const uint8_t *rgb, const char *status) {
+        Frame frame = [&](uint32_t sequence, uint64_t sensor, uint64_t recv, uint64_t input_raw, const uint8_t *rgb, const char *status) {
             if (hea_stop || (options.count && generated >= options.count)) return false;
             if (rgb) {
                 ring.write(sequence, rgb);
-                hea_input record{sequence, sensor};
+                hea_input record{sequence, input_raw};
                 uint8_t bytes[HEA_INPUT_SIZE]; hea_input_pack(&record, bytes);
                 int ok = hea_send_record(fd, options.output_path, bytes, sizeof(bytes));
                 status = ok ? "sent" : "dropped"; sent += static_cast<uint64_t>(ok);
             }
-            if (std::fprintf(csv, "%u,%u,%llu,%llu,%llu,%s\n", sequence, sequence,
+            if (std::fprintf(csv, "%u,%u,%llu,%llu,%llu,%s,%lld\n", sequence, sequence,
                     static_cast<unsigned long long>(sensor), static_cast<unsigned long long>(recv),
-                    static_cast<unsigned long long>(sensor), status) < 0) hea_fatal("camera CSV");
+                    static_cast<unsigned long long>(input_raw), status,
+                    static_cast<long long>(input_raw) - static_cast<long long>(sensor)) < 0) hea_fatal("camera CSV");
             ++generated;
             return !hea_stop && (!options.count || generated < options.count);
         };
@@ -124,6 +127,7 @@ int main(int argc, char **argv) {
                 if (rc && !(rc == EINTR && hea_stop)) { errno = rc; hea_fatal("camera sleep"); }
                 if (hea_stop) break;
                 uint64_t recv = hea_now(CLOCK_MONOTONIC);
+                uint64_t recv_raw = hea_raw_now();
                 if (recv < offset) throw std::runtime_error("fake offset exceeds monotonic timestamp");
                 for (uint32_t y = 0; y < height; ++y) for (uint32_t x = 0; x < width; ++x) {
                     size_t p = (size_t(y) * width + x) * 3;
@@ -132,7 +136,8 @@ int main(int argc, char **argv) {
                     pixels[p + 2] = static_cast<uint8_t>(sequence);
                 }
                 bool drop = drop_every && (sequence + 1) % drop_every == 0;
-                if (!frame(static_cast<uint32_t>(sequence), recv - offset, recv,
+                if (!frame(static_cast<uint32_t>(sequence), recv - offset, recv_raw,
+                           recv_raw - (recv - (recv - offset)),
                            drop ? nullptr : pixels.data(), "injected_drop")) break;
                 ++sequence; deadline += period;
                 uint64_t now = hea_now(CLOCK_MONOTONIC);
