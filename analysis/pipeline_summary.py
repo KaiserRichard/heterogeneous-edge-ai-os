@@ -88,7 +88,9 @@ def summarize(run, state=None):
     source = indexed(source_records, "source CSV") if source_records is not None else None
     infer = indexed(infer_records, "inference CSV") if infer_records is not None else None
     # A skipped input has no completion; retain it for counts/identity only.
-    completed = {k: r for k, r in infer.items() if r['status'] != 'skipped_stale'} if infer is not None else None
+    # Camera mode also logs ring frames that never reached inference (overwritten/torn): no t_done.
+    completed = {k: r for k, r in infer.items()
+                 if r['status'] != 'skipped_stale' and r.get('t_done_ns')} if infer is not None else None
     metrics = {key: [] for key in ("input_to_done_us", "done_to_send_us", "send_to_rx_us", "aoi_at_reception_us")}
     inference_samples = completed if completed is not None else bridge
     for frame_id, record in inference_samples.items():
@@ -122,6 +124,8 @@ def summarize(run, state=None):
         "infer_completed": len(completed) if completed is not None else None,
         "infer_skipped_stale": sum(r["status"] == "skipped_stale" for r in infer.values()) if infer is not None else None,
         "infer_ipc_dropped": sum(r["status"] == "dropped" for r in infer.values()) if infer is not None else None,
+        "infer_ring_overwritten": sum(r["status"] == "overwritten" for r in infer.values()) if infer is not None else None,
+        "infer_ring_torn": sum(r["status"] == "torn" for r in infer.values()) if infer is not None else None,
         "bridge_sent": len(bridge), "rx_received": len(rx),
         "joined": len(bridge.keys() & rx.keys()),
         "bridge_to_rx_missing": len(bridge.keys() - rx.keys()),
