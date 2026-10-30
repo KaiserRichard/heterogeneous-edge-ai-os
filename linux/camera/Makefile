@@ -8,7 +8,8 @@ HAVE_LIBCAMERA := $(shell pkg-config --exists libcamera 2>/dev/null && echo yes)
 ifeq ($(HAVE_LIBCAMERA),yes)
 CAM_SRC := libcamera_backend.cpp
 CAM_FLAGS := $(shell pkg-config --cflags libcamera) -DHEA_HAVE_LIBCAMERA
-CAM_LIBS := $(shell pkg-config --libs libcamera)
+# rpath: sudo (P1 runs) drops LD_LIBRARY_PATH, so the binary must find a non-system libcamera itself.
+CAM_LIBS := $(shell pkg-config --libs libcamera) -Wl,-rpath,$(shell pkg-config --variable=libdir libcamera)
 else
 $(info libcamera unavailable via pkg-config: skipping real backend; building fake backend)
 endif
