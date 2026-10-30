@@ -1,0 +1,10 @@
+{
+  "stressor_ok": true,
+  "stress_exit_codes": [
+    0,
+    0
+  ],
+  "monitor_ok": true,
+  "monitor_errors": [],
+  "settings_ok": false
+}

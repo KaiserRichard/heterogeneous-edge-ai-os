@@ -1,0 +1,7 @@
+Profile,Service latency,Delivery latency,CPU,RAM,Drops,Overflows,Exact load
+P0,58.22/59.89/70.05 ms,58.38/60.15/70.19 ms,73.9 %,125.9 MiB,0,0,idle
+P0,321/355.3/374.7 ms,321.8/356.2/375.3 ms,114.8 %,125.9 MiB,0,0,taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --metrics-brief
+P0,363/408.2/584.6 ms,364.1/408.8/586.5 ms,116.4 %,125.9 MiB,0,0,taskset -c 2 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief ; taskset -c 3 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief
+P1,58.09/59.61/68.29 ms,58.26/59.89/68.43 ms,73.51 %,182.4 MiB,0,0,idle
+P1,320.9/355.4/365 ms,321.4/356.1/366.3 ms,114.4 %,182.4 MiB,0,0,taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --metrics-brief
+P1,370.6/421.9/643.5 ms,371.5/422.4/644 ms,116.9 %,182.7 MiB,0,0,taskset -c 2 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief ; taskset -c 3 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief

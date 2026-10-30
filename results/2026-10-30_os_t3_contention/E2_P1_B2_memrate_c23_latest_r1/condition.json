@@ -1,0 +1,9 @@
+{
+  "experiment": "E2",
+  "profile": "P1",
+  "stressor": "B2_memrate_c23",
+  "policy": "latest",
+  "input_policy": "fifo",
+  "repetition": 1,
+  "exact_load": "taskset -c 2 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief ; taskset -c 3 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief"
+}

@@ -1,0 +1,1 @@
+{"backend":"libcamera","shm":"hea_cam","width":640,"height":480,"slots":4,"fps":15.000000,"clock_boottime_ns":11240253841298,"clock_monotonic_ns":11240253841576,"clock_raw_ns":11240162103096,"t_input_clock":"CLOCK_MONOTONIC_RAW (sensor BOOTTIME mapped; no suspend assumed)"}

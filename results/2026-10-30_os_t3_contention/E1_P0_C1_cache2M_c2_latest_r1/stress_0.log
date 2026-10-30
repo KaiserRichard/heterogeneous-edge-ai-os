@@ -1,0 +1,13 @@
+stress-ng: info:  [100825] defaulting to a 1 day, 0 secs run per stressor
+stress-ng: info:  [100825] dispatching hogs: 1 cache
+stress-ng: info:  [100825] note: /proc/sys/kernel/sched_autogroup_enabled is 1 and this can impact scheduling throughput for processes not attached to a tty. Setting this to 0 may improve performance metrics
+stress-ng: info:  [100828] cache: cache flags used: none
+stress-ng: info:  [100828] cache: use --cache-enable-all to enable all cache flags for heavier cache stressing
+stress-ng: metrc: [100825] stressor       bogo ops real time  usr time  sys time   bogo ops/s     bogo ops/s
+stress-ng: metrc: [100825]                           (secs)    (secs)    (secs)   (real time) (usr+sys time)
+stress-ng: metrc: [100825] cache          17404332     68.26     68.13      0.07    254977.13      255184.95
+stress-ng: info:  [100825] skipped: 0
+stress-ng: info:  [100825] passed: 0
+stress-ng: info:  [100825] failed: 0
+stress-ng: info:  [100825] metrics untrustworthy: 0
+stress-ng: info:  [100825] successful run completed in 1 min, 8.26 secs
