@@ -143,7 +143,8 @@ def build():
                 rows.append(lines[i].strip()); i += 1
             rows = [r for r in rows if not re.fullmatch(r'[| :\-]+', r)]
             n = len(rows[0].strip('|').split('|'))
-            widths = [2268, 3175, 3628] if glossary and n == 3 else [9071 // n] * n
+            widths = ([2550, 1400, 5121] if cover and n == 3 else
+                      [2268, 3175, 3628] if glossary and n == 3 else [9071 // n] * n)
             tbl = '<w:tbl><w:tblPr><w:tblW w:w="9071" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders>'
             tbl += ''.join(f'<w:{side} w:val="single" w:sz="4" w:color="808080"/>' for side in ('top','left','bottom','right','insideH','insideV'))
             tbl += '</w:tblBorders><w:tblCellMar><w:top w:w="60" w:type="dxa"/><w:left w:w="115" w:type="dxa"/><w:bottom w:w="60" w:type="dxa"/><w:right w:w="115" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>'

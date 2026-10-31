@@ -4,22 +4,22 @@
   "all_xml_and_relationships_parse": "PASS",
   "part_page_breaks_figure_limits_table_pagination": "PASS",
   "property_child_schema_order": "PASS",
-  "property_nodes_checked": 974,
+  "property_nodes_checked": 880,
   "static_toc_matches_headings": "PASS",
   "relationship_targets": "PASS",
   "reproducible_build": "PASS",
   "a4_margins_styles_toc_cover_footer": "PASS",
-  "body_whitespace_words_including_tables": 4148,
+  "body_whitespace_words_including_tables": 3990,
   "body_words_per_part_including_headings": {
-    "1": 212,
-    "2": 363,
-    "3": 481,
-    "4": 765,
-    "5": 394,
-    "6": 1293,
-    "7": 235,
-    "8": 332,
-    "9": 78
+    "1": 211,
+    "2": 380,
+    "3": 545,
+    "4": 727,
+    "5": 317,
+    "6": 1085,
+    "7": 309,
+    "8": 329,
+    "9": 92
   },
   "forced_front_matter_breaks": 3,
   "target_word_pages": "≤20",
@@ -30,5 +30,5 @@
   "rendered_page_count": null,
   "rendering_limit": "Word pagination requires rendering; target is at most 20 pages, not a verified page count.",
   "output_document": "BaoCao_HDH_Nhom3Stars_GiuaKy.docx",
-  "docx_sha256": "f028a8961e47b81d38e1395fcb8da8ea9c433bd33dce93d435bcefb6c733c9da"
+  "docx_sha256": "a76a0fa67a5937c17f7b0585c01a294936bed99320dc7f842bf6add68509abe1"
 }

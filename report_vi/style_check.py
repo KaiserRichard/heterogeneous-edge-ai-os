@@ -9,9 +9,8 @@ print(f"sentences={len(L)} mean={statistics.mean(L):.1f} median={statistics.medi
 sp = [len(re.split(r'(?<=[.?!])\s+', p.strip())) for p in paras]
 print(f"paragraphs={len(sp)} mean_sentences_per_para={statistics.mean(sp):.1f}")
 
-assert 22 <= statistics.mean(L) <= 28, 'Mean sentence length outside TICKET5 target'
-assert statistics.pstdev(L) >= 9, 'Sentence-length variation below TICKET5 target'
-assert .25 <= sum(l >= 28 for l in L)/len(L) <= .45, 'Long-sentence share outside target'
-assert .08 <= sum(l <= 12 for l in L)/len(L) <= .20, 'Short-sentence share outside target'
-assert 4 <= statistics.mean(sp) <= 6, 'Paragraph rhythm outside TICKET5 target'
-print('TICKET5 targets: PASS')
+# OS-TIGHT replaces TICKET5's long-sentence rhythm with concise prose.
+assert 12 <= statistics.mean(L) <= 22, 'Mean sentence length outside OS-TIGHT target'
+assert sum(l >= 28 for l in L)/len(L) <= .20, 'Too many long sentences'
+assert 2 <= statistics.mean(sp) <= 5, 'Paragraphs outside concise-prose target'
+print('OS-TIGHT concise-prose targets: PASS')

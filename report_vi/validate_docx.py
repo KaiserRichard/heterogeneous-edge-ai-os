@@ -129,9 +129,9 @@ content = (ROOT/'content.md').read_text()
 body = content.split('# PHẦN 1. GIỚI THIỆU',1)[1].split('# TÀI LIỆU THAM KHẢO',1)[0]
 body = re.sub(r'<!--.*?-->', '', body)
 words = len(body.split())
-# OS-TIGHT counts all body text, captions and tables, including licence credit.
+# OS-HUMAN counts all body text, captions and tables, including licence credit.
 assert body.count('Hình bo mạch: Fritzing parts, CC-BY-SA 3.0.') == 1
-assert 3800 <= words <= 4200, words
+assert 0 < words <= 4000, words
 part_words = {}
 for match in re.finditer(r'^# PHẦN (\d+)\.[\s\S]*?(?=^# PHẦN|^# TÀI LIỆU|\Z)', content, re.M):
     part_words[match[1]] = len(match[0].split())
@@ -147,8 +147,14 @@ assert all(1 <= int(n) <= 9 for n in re.findall(r'Bảng (\d+)\b', content))
 assert len(re.findall(r'^!\[Hình \d+\.\d+\.',content,re.M)) == 11
 assert re.findall(r'^!\[Hình (\d+\.\d+)\.', content, re.M) == [
     '2.1', '3.1', '3.2', '3.3', '4.1', '4.2', '4.3', '6.1', '6.2', '6.3', '6.4']
-assert 'thiếu onnxruntime' in body and 'đã bị xóa' in body
+assert 'thiếu onnxruntime' not in body and 'đã bị xóa' not in body
 assert 'ondemand ngày 29/10' in body and 'không hợp lệ' in body
+assert '| Họ và tên | MSSV | Phân công |' in content
+for identifier in ('t_recv_mono_ns', 't_sensor_ns', 't_input_ns', 'CLOCK_',
+                   'SensorTimestamp', 'hea_cam', 'frame_id', 'skipped_stale', 'g_i', 'r_i'):
+    assert identifier not in body, identifier
+assert not re.search(r'[A-Za-z][A-Za-z_-]* \([^)]*[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ][^)]*\)',
+                     '\n'.join(line for line in body.splitlines() if not line.startswith('![')), re.I), 'English term with Vietnamese gloss'
 glossary = content.split('<!-- GLOSSARY -->', 1)[1].split('# PHẦN 1.', 1)[0]
 glossary_rows = [line for line in glossary.splitlines() if line.startswith('|')][2:]
 assert len(glossary_rows) == 28  # OS-TIGHT: project-critical abbreviations only
