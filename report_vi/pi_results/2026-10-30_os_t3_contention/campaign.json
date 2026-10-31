@@ -1,0 +1,28 @@
+{
+  "experiment": "E2",
+  "reps": 3,
+  "seconds": 60,
+  "stage": "onnx",
+  "source": "camera",
+  "camera": {
+    "backend": "libcamera",
+    "width": 640,
+    "height": 480,
+    "fps_e3_e3b": 30,
+    "fps_other": 15,
+    "shm": "hea_cam"
+  },
+  "model": "/home/richard/osbuild/wheels/mobilenetv2-12.onnx",
+  "model_sha256": "c0c3f76d93fa3fd6580652a45618618a220fced18babf65774ed169de0432ad5",
+  "seed": 42,
+  "warmup_seconds": 5,
+  "cooldown_seconds": 5,
+  "source_cpu": 1,
+  "inference_cpu": 0,
+  "bridge_cpu": 1,
+  "source_period_ms": 100,
+  "python": "/home/richard/course-stage/cn-venv/bin/python3",
+  "p2": "not done: systemd quota/delegation not validated",
+  "evidence": "MEASURED; software timestamps; pty link; no physical UART, no MCU",
+  "ranking": "E1 median per-run delivery P99; ties: max then stressor name"
+}

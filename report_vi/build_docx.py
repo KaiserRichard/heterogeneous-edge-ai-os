@@ -120,6 +120,8 @@ def build():
             w, h = dimensions(data)
             logo = cover
             scale = 1080000 / w if logo else min(4320000 / w, 2340000 / h)  # Logo 3 cm; figures 12 × 6.5 cm
+            if path == 'figures/os_bench_wiring.png':
+                scale = 5759952 / w  # Breadboard at full A4 text width (about 16 cm), preserving aspect.
             cx, cy = int(w * scale), int(h * scale)
             index = len(media) + 1
             name = f'image{index}{Path(path).suffix.lower()}'

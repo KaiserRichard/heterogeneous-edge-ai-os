@@ -1,0 +1,311 @@
+# OS-FIX3: all waypoints hand routed; see README.md for pin table and review.
+title: 'Sơ đồ đấu nối bàn thử OS: Raspberry Pi 5, NUCLEO-F446RE, Pi Camera v2, MPU6050,
+  LED trạng thái'
+canvas:
+- 2450
+- 2030
+output: os_bench_wiring
+parts:
+- id: pi
+  svg: wiring_diagram/parts/raspberry-pi-4B_1_breadboard.svg
+  fzp: wiring_diagram/parts/raspberry-pi-4B_1.fzp
+  x: 40
+  y: 250
+  scale: 0.213
+  title: Raspberry Pi 5 (hình Pi 4B; cùng header 40 chân)
+  title_xy:
+  - 250
+  - 230
+  extra_pins:
+    USB:
+    - 3460
+    - 1074
+    CSI:
+    - 1860
+    - 1850
+  title_size: 32
+- id: nuc
+  svg: wiring_diagram/parts/STM32_Nucleo_board_breadboard.svg
+  fzp: wiring_diagram/parts/STM32_Nucleo_board.fzp
+  x: 900
+  y: 290
+  scale: 3.0
+  title: NUCLEO-F446RE
+  title_xy:
+  - 905
+  - 278
+  extra_pins:
+    USB:
+    - 1
+    - 62.9
+  title_size: 32
+- id: imu
+  svg: wiring_diagram/parts/MPU6050_GY521_9.svg
+  fzp: wiring_diagram/parts/InvenSense_MPU6050.fzp
+  x: 1830
+  y: 140
+  scale: 0.216
+  title: GY-521 MPU6050
+  title_xy:
+  - 2180
+  - 240
+  title_size: 28
+- id: bb
+  kind: breadboard
+  x: 898.9
+  y: 990
+  cols: 30
+  pitch: 21.6
+  title: 'Breadboard: nguồn + LED'
+  title_xy:
+  - 905
+  - 978
+  title_size: 32
+- id: camera
+  svg: wiring_diagram/parts/pi_camera_v2.svg
+  svg_pin_prefix: pin_
+  x: 270
+  y: 850
+  scale: 1
+  title: Pi Camera v2 (IMX219)
+  title_xy:
+  - 40
+  - 830
+  title_size: 32
+components:
+- kind: resistor
+  from: bb.e23
+  to: bb.f23
+  ohms: 330
+- kind: led
+  anode: bb.i23
+  cathode: bb.i24
+  colour: '#43d14b'
+- kind: resistor
+  from: bb.e25
+  to: bb.f25
+  ohms: 330
+- kind: led
+  anode: bb.i25
+  cathode: bb.i26
+  colour: '#ffd21f'
+- kind: resistor
+  from: bb.e27
+  to: bb.f27
+  ohms: 330
+- kind: led
+  anode: bb.i27
+  cathode: bb.i28
+  colour: '#f23a2e'
+- kind: resistor
+  from: bb.e29
+  to: bb.f29
+  ohms: 150
+- kind: led
+  anode: bb.i29
+  cathode: bb.i30
+  colour: '#2f7bff'
+wires:
+- id: UART Pi TX
+  from: pi.connector7
+  to: nuc.connector1163
+  colour: '#fb8c00'
+  via:
+  - y=100
+  - x=1525.3
+- id: UART Pi RX
+  from: pi.connector9
+  to: nuc.connector1151
+  colour: '#fdd835'
+  via:
+  - y=130
+  - x=1382.8
+- id: Pi GND
+  from: pi.connector5
+  to: nuc.connector1157
+  colour: '#212121'
+  via:
+  - y=115
+  - x=1253.2
+- id: USB
+  from: pi.USB
+  to: nuc.USB
+  colour: '#9e9e9e'
+  width: 9
+- id: IMU SCL
+  from: nuc.connector1153
+  to: imu.SCL
+  colour: '#00acc1'
+  via:
+  - y=360.7
+  - x=1342
+  - y=194.0
+- id: IMU SDA
+  from: nuc.connector3329
+  to: imu.SDA
+  colour: '#00796b'
+  via:
+  - y=902.0
+  - x=1790
+  - y=215.6
+- id: LED D9 blue
+  from: nuc.connector1152
+  to: bb.a29
+  colour: '#283593'
+  via:
+  - y=225.0
+  - x=1745
+  - y=962.0
+  - x=1546.9
+- id: LED D6 red
+  from: nuc.connector1167
+  to: bb.a27
+  colour: '#795548'
+  via:
+  - y=242.0
+  - x=1725
+  - y=947.0
+  - x=1503.7
+- id: LED D5 yellow
+  from: nuc.connector1166
+  to: bb.a25
+  colour: '#ffb300'
+  via:
+  - y=259.0
+  - x=1705
+  - y=932.0
+  - x=1460.5
+- id: LED D4 green
+  from: nuc.connector1165
+  to: bb.a23
+  colour: '#43a047'
+  via:
+  - y=360.7
+  - x=1493.2
+  - y=276.0
+  - x=1685
+  - y=917.0
+  - x=1417.3
+- id: K D4
+  from: bb.j24
+  to: bb.B-24
+  colour: '#212121'
+- id: K D5
+  from: bb.j26
+  to: bb.B-26
+  colour: '#212121'
+- id: K D6
+  from: bb.j28
+  to: bb.B-28
+  colour: '#212121'
+- id: K D9
+  from: bb.j30
+  to: bb.B-30
+  colour: '#212121'
+- id: 3V3 rail
+  from: nuc.connector1186
+  to: bb.T+19
+  colour: '#e53935'
+- id: GND rail
+  from: nuc.connector1188
+  to: bb.T-21
+  colour: '#212121'
+- id: GND rail link
+  from: bb.T-1
+  to: bb.B-1
+  colour: '#212121'
+  via:
+  - x=878
+  - y=1352.9
+- id: 3V3 rail link
+  from: bb.T+30
+  to: bb.B+30
+  colour: '#e53935'
+  via:
+  - x=1640
+  - y=1374.5
+- id: IMU VCC
+  from: bb.B+13
+  to: imu.VCC
+  colour: '#e53935'
+  via:
+  - y=1420.0
+  - x=2110
+  - y=105.0
+  - x=1825
+  - y=150.8
+- id: IMU GND
+  from: bb.B-12
+  to: imu.GND
+  colour: '#212121'
+  via:
+  - y=1434.0
+  - x=2125
+  - y=90.0
+  - x=1810
+  - y=172.4
+- id: Ribbon camera
+  from: camera.CSI
+  to: pi.CSI
+  colour: '#d7d7d7'
+  width: 24
+  via:
+  - x=436.2
+  ribbon: true
+notes:
+- x: 40
+  y: 1035
+  size: 30
+  text: 'Ribbon 22-to-15 pin → CAM/DISP 0 (Pi 5)
+
+    Vị trí đầu nối trên hình Pi 4B chỉ minh họa.'
+- x: 2165
+  y: 290
+  size: 24
+  text: 'MPU6050 đã đấu dây;
+
+    firmware OS chưa dùng
+
+    (OS-T7 dự kiến).'
+- x: 40
+  y: 1930
+  size: 28
+  colour: '#555555'
+  text: 'Hình bo mạch: Fritzing parts, CC-BY-SA 3.0.
+
+    Vị trí bo minh họa; kết nối theo bảng pinout.'
+- x: 40
+  y: 1890
+  size: 30
+  weight: bold
+  text: Nhóm 3 Stars
+legend:
+  x: 40
+  y: 1520
+  size: 34
+  title: Chú giải dây nối (UART 921600 baud)
+  items:
+  - colour: '#fb8c00'
+    label: Pi pin 8 GPIO14 TXD → D2 = PA10 USART1 RX
+  - colour: '#fdd835'
+    label: Pi pin 10 GPIO15 RXD ← D8 = PA9 USART1 TX
+  - colour: '#212121'
+    label: 'GND: Pi pin 6 → CN5 GND; thanh nguồn; LED; GY-521'
+  - colour: '#e53935'
+    label: '3V3: header POWER → thanh nguồn → GY-521 VCC'
+  - colour: '#9e9e9e'
+    label: USB-A → ST-LINK mini-USB (cấp nguồn + nạp mã)
+  - colour: '#00acc1'
+    label: D10 = PB6 I2C1 SCL → MPU6050 SCL
+  - colour: '#00796b'
+    label: CN7-21 = PB7 I2C1 SDA ↔ MPU6050 SDA
+  - colour: '#43a047'
+    label: 'D4 = PB5 → 330 Ω → LED xanh lá: FRESH'
+  - colour: '#ffb300'
+    label: 'D5 = PB4 → 330 Ω → LED vàng: HOLD'
+  - colour: '#795548'
+    label: 'D6 = PB10 → 330 Ω → LED đỏ: FAILSAFE (chốt đến rearm)'
+  - colour: '#283593'
+    label: 'D9 = PC7 → 150 Ω → LED xanh dương: đảo mỗi frame hợp lệ'
+  columns: 2
+  column_width: 1200

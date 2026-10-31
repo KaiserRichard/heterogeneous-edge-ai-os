@@ -1,0 +1,1 @@
+seq,version,t_rx_pi_ns,mcu_us,state,missed_heartbeats,rx_crc_errors,diagnostics_present,last_capture_us,capture_count,rx_dropped,uart_errors,queue_dropped,capture_lost,clock_fallback,state_event_lost,uart_ore,uart_fe,uart_ne,uart_pe,max_irq_masked_cycles,tick_rate_ppm,tick_window_ms

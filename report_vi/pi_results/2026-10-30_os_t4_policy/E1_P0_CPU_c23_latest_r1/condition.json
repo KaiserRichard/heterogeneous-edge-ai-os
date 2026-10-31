@@ -1,0 +1,9 @@
+{
+  "experiment": "E1",
+  "profile": "P0",
+  "stressor": "CPU_c23",
+  "policy": "latest",
+  "input_policy": "fifo",
+  "repetition": 1,
+  "exact_load": "taskset -c 2 stress-ng --cpu 1 --metrics-brief ; taskset -c 3 stress-ng --cpu 1 --metrics-brief"
+}

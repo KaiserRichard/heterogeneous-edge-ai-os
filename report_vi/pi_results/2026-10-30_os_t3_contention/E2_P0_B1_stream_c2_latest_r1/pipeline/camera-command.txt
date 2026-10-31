@@ -1,0 +1,1 @@
+/home/richard/course-stage/os/linux/camera/build/hea_cam --backend libcamera --width 640 --height 480 --fps 15 --shm hea_cam --output /tmp/hea-pipeline.G0CjYU/source.sock --csv /home/richard/course-stage/os/results/2026-10-30_os_t3_contention/E2_P0_B1_stream_c2_latest_r1/pipeline/source.csv --cpu 1 

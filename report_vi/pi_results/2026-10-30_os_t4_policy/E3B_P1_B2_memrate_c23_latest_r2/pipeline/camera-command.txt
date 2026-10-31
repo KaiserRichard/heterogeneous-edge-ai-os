@@ -1,0 +1,1 @@
+/home/richard/course-stage/os/linux/camera/build/hea_cam --backend libcamera --width 640 --height 480 --fps 30 --shm hea_cam --output /tmp/hea-pipeline.VLSqJC/source.sock --csv /home/richard/course-stage/os/results/2026-10-30_os_t4_policy/E3B_P1_B2_memrate_c23_latest_r2/pipeline/source.csv --cpu 1 --fifo-priority 60 --mlock 

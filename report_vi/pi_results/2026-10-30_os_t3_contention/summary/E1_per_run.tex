@@ -1,0 +1,38 @@
+% MEASURED; software timestamps; pty link; no physical UART, no MCU
+\par\noindent MEASURED; software timestamps; pty link; no physical UART, no MCU\par
+\begin{tabular}{llllllll}
+\toprule
+Condition & Service latency & Delivery latency & CPU & RAM & Drops & Overflows & Exact load \\
+\midrule
+\multicolumn{8}{l}{E1\_P0\_B0\_idle\_latest\_r1; OK} \\
+B0\_idle & 59.08/61.01/70.22 ms & 59.26/61.12/71.39 ms & 75.4 \% & 125.8 MiB & 0 & 0 & idle \\
+\multicolumn{8}{l}{E1\_P0\_B0\_idle\_latest\_r2; OK} \\
+B0\_idle & 59.47/61.08/69.37 ms & 59.66/61.51/69.53 ms & 75.59 \% & 125.7 MiB & 0 & 0 & idle \\
+\multicolumn{8}{l}{E1\_P0\_B0\_idle\_latest\_r3; OK} \\
+B0\_idle & 60.12/62.07/70.21 ms & 60.28/62.37/71.38 ms & 76.64 \% & 125.8 MiB & 0 & 0 & idle \\
+\multicolumn{8}{l}{E1\_P0\_B1\_stream\_c2\_latest\_r1; OK} \\
+B1\_stream\_c2 & 327.2/362.8/381.8 ms & 327.7/363.3/382.1 ms & 115 \% & 125.7 MiB & 0 & 0 & taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_B1\_stream\_c2\_latest\_r2; OK} \\
+B1\_stream\_c2 & 329.3/363.2/367.5 ms & 330/363.8/367.9 ms & 115 \% & 125.7 MiB & 0 & 0 & taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_B1\_stream\_c2\_latest\_r3; OK} \\
+B1\_stream\_c2 & 327/362.1/404.9 ms & 327.5/363.5/405.4 ms & 114.7 \% & 125.8 MiB & 0 & 0 & taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_B2\_memrate\_c23\_latest\_r1; OK} \\
+B2\_memrate\_c23 & 377.4/436.4/660.1 ms & 378.3/439.3/660.6 ms & 113.2 \% & 125.7 MiB & 0 & 0 & taskset -c 2 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief ; taskset -c 3 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_B2\_memrate\_c23\_latest\_r2; OK} \\
+B2\_memrate\_c23 & 371.4/421.8/640.4 ms & 372.2/422.7/640.9 ms & 113.9 \% & 125.7 MiB & 0 & 0 & taskset -c 2 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief ; taskset -c 3 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_B2\_memrate\_c23\_latest\_r3; OK} \\
+B2\_memrate\_c23 & 371.5/415.2/571.8 ms & 372.1/417.6/573.2 ms & 114.4 \% & 125.7 MiB & 0 & 0 & taskset -c 2 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief ; taskset -c 3 stress-ng --memrate 1 --memrate-bytes 64M --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_C1\_cache2M\_c2\_latest\_r1; OK} \\
+C1\_cache2M\_c2 & 79.78/88.66/113 ms & 80.98/89.7/113.3 ms & 105.9 \% & 125.8 MiB & 0 & 0 & taskset -c 2 stress-ng --cache 1 --cache-level 3 --cache-size 2M --cache-no-affinity --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_C1\_cache2M\_c2\_latest\_r2; OK} \\
+C1\_cache2M\_c2 & 314/352.7/361.9 ms & 314.5/353/362.2 ms & 111.2 \% & 126 MiB & 0 & 0 & taskset -c 2 stress-ng --cache 1 --cache-level 3 --cache-size 2M --cache-no-affinity --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_C1\_cache2M\_c2\_latest\_r3; OK} \\
+C1\_cache2M\_c2 & 319.8/356/365.1 ms & 320.1/356.3/365.6 ms & 112.6 \% & 125.7 MiB & 0 & 0 & taskset -c 2 stress-ng --cache 1 --cache-level 3 --cache-size 2M --cache-no-affinity --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_CPU\_c23\_latest\_r1; OK} \\
+CPU\_c23 & 56.39/58.64/67.07 ms & 56.66/59.24/67.27 ms & 71.16 \% & 125.7 MiB & 0 & 0 & taskset -c 2 stress-ng --cpu 1 --metrics-brief ; taskset -c 3 stress-ng --cpu 1 --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_CPU\_c23\_latest\_r2; OK} \\
+CPU\_c23 & 57.2/59.54/72.74 ms & 57.44/60.15/101.1 ms & 72.76 \% & 125.8 MiB & 0 & 0 & taskset -c 2 stress-ng --cpu 1 --metrics-brief ; taskset -c 3 stress-ng --cpu 1 --metrics-brief \\
+\multicolumn{8}{l}{E1\_P0\_CPU\_c23\_latest\_r3; OK} \\
+CPU\_c23 & 55.78/58.29/67.28 ms & 56.05/58.59/67.51 ms & 70.53 \% & 125.7 MiB & 0 & 0 & taskset -c 2 stress-ng --cpu 1 --metrics-brief ; taskset -c 3 stress-ng --cpu 1 --metrics-brief \\
+\bottomrule
+\end{tabular}
