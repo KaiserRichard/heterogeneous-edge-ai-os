@@ -14,6 +14,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse, Rectangle
+import matplotlib.patheffects as pe
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent
@@ -34,7 +35,7 @@ def main():
     def xy(x, y):
         return x0 + x, y0 + y
 
-    # Thin outlines only. The LED count is obscured by wiring in this photo.
+    # High-contrast outlines with a dark halo. The LED count is obscured by wiring in this photo.
     components = [
         (555, 1000, 650, 490),  # Pi case and fan
         (700, 455, 430, 465),  # Nucleo board, including ST-LINK section
@@ -46,7 +47,9 @@ def main():
     ]
     for x, y, width, height in components:
         ax.add_patch(Ellipse(xy(x, y), width, height, fill=False,
-                             edgecolor='black', lw=.7))
+                             edgecolor='#FFD400', lw=2.7,
+                             path_effects=[pe.Stroke(linewidth=3.7, foreground='#202020'),
+                                           pe.Normal()]))
 
     # Paths terminate on ellipse boundaries. The MPU6050 leader passes below
     # the Nucleo and to the right of the camera, avoiding other leader paths.
@@ -67,7 +70,8 @@ def main():
          [(1460, 1145), (1450, 1145), xy(870, 1060)]),
     ]
     for (x, y, width, height), label, points in labels:
-        ax.plot([p[0] for p in points], [p[1] for p in points], color='black', lw=.7)
+        ax.plot([p[0] for p in points], [p[1] for p in points], color='#FFD400', lw=2.7,
+                path_effects=[pe.Stroke(linewidth=3.7, foreground='#202020'), pe.Normal()])
         ax.add_patch(Rectangle((x, y), width, height, facecolor='white',
                                edgecolor='black', lw=.7))
         ax.text(x + width / 2, y + height / 2, label, ha='center', va='center',

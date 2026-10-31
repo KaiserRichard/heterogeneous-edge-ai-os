@@ -129,28 +129,35 @@ content = (ROOT/'content.md').read_text()
 body = content.split('# PHẦN 1. GIỚI THIỆU',1)[1].split('# TÀI LIỆU THAM KHẢO',1)[0]
 body = re.sub(r'<!--.*?-->', '', body)
 words = len(body.split())
-# OS-FIX3 requires this licence attribution verbatim in the figure caption.
-# Keep the raw count in the report, but exclude its seven mandatory credit
-# words from the existing content budget; other captions still count.
-wiring_credit = 'Hình bo mạch: Fritzing parts, CC-BY-SA 3.0.'
-assert body.count(wiring_credit) == 1
-budget_words = words - len(wiring_credit.split())
-# OS-PHOTO replaces placeholders with two owner-photo captions: the resulting
-# body needs 17 additional words beyond the previous 6500-word ceiling.
-assert 5400 <= budget_words <= 6517, budget_words
+# OS-TIGHT counts all body text, captions and tables, including licence credit.
+assert body.count('Hình bo mạch: Fritzing parts, CC-BY-SA 3.0.') == 1
+assert 3800 <= words <= 4200, words
+part_words = {}
+for match in re.finditer(r'^# PHẦN (\d+)\.[\s\S]*?(?=^# PHẦN|^# TÀI LIỆU|\Z)', content, re.M):
+    part_words[match[1]] = len(match[0].split())
+assert part_words['6'] <= 1300, part_words['6']
+abstract = content.split('<!-- ABSTRACT -->', 1)[1].split('**Từ khóa:**', 1)[0]
+conclusion = content.split('# PHẦN 9. KẾT LUẬN', 1)[1].split('# TÀI LIỆU THAM KHẢO', 1)[0]
+assert len(abstract.split()) <= 150
+assert len(conclusion.split()) <= 150
 assert content.count('<!-- PAGE -->') == 3
 assert '<!-- PAGE -->' not in content.split('# PHẦN 1. GIỚI THIỆU', 1)[1]
 assert [int(n) for n in re.findall(r'^Bảng (\d+)\.',content,re.M)] == list(range(1, 10))
 assert all(1 <= int(n) <= 9 for n in re.findall(r'Bảng (\d+)\b', content))
-assert len(re.findall(r'^!\[Hình \d+\.\d+\.',content,re.M)) == 7
+assert len(re.findall(r'^!\[Hình \d+\.\d+\.',content,re.M)) == 11
+assert re.findall(r'^!\[Hình (\d+\.\d+)\.', content, re.M) == [
+    '2.1', '3.1', '3.2', '3.3', '4.1', '4.2', '4.3', '6.1', '6.2', '6.3', '6.4']
+assert 'thiếu onnxruntime' in body and 'đã bị xóa' in body
+assert 'ondemand ngày 29/10' in body and 'không hợp lệ' in body
 glossary = content.split('<!-- GLOSSARY -->', 1)[1].split('# PHẦN 1.', 1)[0]
 glossary_rows = [line for line in glossary.splitlines() if line.startswith('|')][2:]
-assert len(glossary_rows) == 114  # Expanded camera/bench terminology
+assert len(glossary_rows) == 28  # OS-TIGHT: project-critical abbreviations only
 for row in glossary_rows:
     cells = [cell.strip() for cell in row.strip('|').split('|')]
-    assert len(cells[2].split()) <= 12, cells
-    # The expanded glossary also defines cover, reference and hardware terms.
+    assert len(cells[2].split()) <= 8, cells
+    # Each retained abbreviation must occur in the body (merged pairs split below).
     assert cells[0] and cells[1], cells
+    assert any(token in body for token in cells[0].split('/')), cells
 labels = [line.split('|')[1].strip() for line in glossary_rows]
 assert labels == sorted(labels, key=str.casefold)
 assert 'CHƯƠNG' not in content
@@ -175,7 +182,7 @@ report = {
     'relationship_targets': 'PASS', 'reproducible_build': 'PASS',
     'a4_margins_styles_toc_cover_footer': 'PASS',
     'body_whitespace_words_including_tables': words,
-    'body_budget_words_excluding_mandatory_wiring_credit': budget_words,
+    'body_words_per_part_including_headings': part_words,
     'forced_front_matter_breaks': 3, 'target_word_pages': '≤20', 'report_tables': 9, 'cover_members_table': 1, 'glossary_rows': len(glossary_rows), 'figures': 11,
     'rendered_page_count': None,
     'rendering_limit': 'Word pagination requires rendering; target is at most 20 pages, not a verified page count.',
