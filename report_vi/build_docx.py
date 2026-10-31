@@ -13,6 +13,7 @@ from xml.sax.saxutils import escape
 from xml.dom import minidom
 
 ROOT = Path(__file__).resolve().parent
+OUTPUT_NAME = 'BaoCao_HDH_Nhom3Stars_GiuaKy.docx'
 W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
 R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
 NS = f'xmlns:w="{W}" xmlns:r="{R}"'
@@ -118,7 +119,7 @@ def build():
             data = (ROOT / path).read_bytes()
             w, h = dimensions(data)
             logo = cover
-            scale = 1080000 / w if logo else min(5760000 / w, 3600000 / h)  # Logo 3 cm; figures 16 × 10 cm
+            scale = 1080000 / w if logo else min(4320000 / w, 2340000 / h)  # Logo 3 cm; figures 12 × 6.5 cm
             cx, cy = int(w * scale), int(h * scale)
             index = len(media) + 1
             name = f'image{index}{Path(path).suffix.lower()}'
@@ -182,7 +183,7 @@ def build():
     for part, kind in [('document','document.main'),('styles','styles'),('settings','settings'),('numbering','numbering'),('footer1','footer')]:
         types += f'<Override PartName="/word/{part}.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.{kind}+xml"/>'
     files['[Content_Types].xml'] = types+'</Types>'
-    target = ROOT / 'BaoCao_HDH_Nhom3Stars.docx'
+    target = ROOT / OUTPUT_NAME
     with zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED) as archive:
         for name, data in files.items():
             data = schema_order(data)

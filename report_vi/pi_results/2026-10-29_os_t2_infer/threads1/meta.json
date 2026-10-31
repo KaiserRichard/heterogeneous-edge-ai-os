@@ -1,0 +1,25 @@
+{
+  "scenario": "OS-T2",
+  "utc": "2026-10-29T19:50:28.099039+00:00",
+  "threads": 1,
+  "model": "/home/richard/osbuild/wheels/mobilenetv2-12.onnx",
+  "camera": {
+    "backend": "libcamera",
+    "fps": 10,
+    "width": 640,
+    "height": 480,
+    "shm": "hea_cam",
+    "count": 70000
+  },
+  "inference": {
+    "warmup": 1000,
+    "runs": 5000,
+    "image_source": "shm:hea_cam"
+  },
+  "throttled_before": "throttled=0x0",
+  "throttled_after": "throttled=0x0",
+  "temp_before": "temp=40.6'C",
+  "temp_after": "temp=56.5'C",
+  "command": "python3 /home/richard/course-stage/os/linux/inference/infer_bench.py --model /home/richard/osbuild/wheels/mobilenetv2-12.onnx --warmup 1000 --runs 5000 --threads 1 --image-source shm:hea_cam --output /home/richard/course-stage/os/results/2026-10-29_os_t2_infer/threads1/bench",
+  "camera_command": "/home/richard/course-stage/os/linux/camera/build/hea_cam --backend libcamera --fps 10 --width 640 --height 480 --shm hea_cam --output /tmp/hea_src.sock --count 70000"
+}

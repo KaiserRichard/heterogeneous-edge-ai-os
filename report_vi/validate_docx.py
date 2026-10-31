@@ -8,12 +8,12 @@ import subprocess
 import sys
 import zipfile
 from xml.dom import minidom
-from build_docx import PPR_ORDER, RPR_ORDER
+from build_docx import OUTPUT_NAME, PPR_ORDER, RPR_ORDER
 from xml.etree import ElementTree as ET
 
 ROOT = Path(__file__).resolve().parent
 NS = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
-OUT = ROOT / 'BaoCao_HDH_Nhom3Stars.docx'
+OUT = ROOT / OUTPUT_NAME
 subprocess.run([sys.executable, str(ROOT / 'build_docx.py')], check=True)
 first = OUT.read_bytes()
 subprocess.run([sys.executable, str(ROOT / 'build_docx.py')], check=True)
@@ -56,10 +56,10 @@ with zipfile.ZipFile(OUT) as z:
         assert sec.find('w:pgSz', NS).attrib == {w+'w':'11906', w+'h':'16838'}
         margins = sec.find('w:pgMar', NS)
         assert [margins.get(w+k) for k in ('top','bottom','left','right')] == ['1417','1134','1701','1134']
-    assert len(document.findall('.//w:tbl', NS)) == 9
-    assert len([n for n in z.namelist() if n.startswith('word/media/')]) == 4
-    assert len(document.findall('.//w:br[@w:type="page"]', NS)) == 2
-    assert not document.findall('.//w:pageBreakBefore', NS)
+    assert len(document.findall('.//w:tbl', NS)) == 10
+    assert len([n for n in z.namelist() if n.startswith('word/media/')]) == 5
+    assert not document.findall('.//w:br[@w:type="page"]', NS)
+    assert len(document.findall('.//w:pageBreakBefore', NS)) == 2
     assert len(styles.findall('.//w:pageBreakBefore', NS)) == 1
     for table in document.findall('.//w:tbl', NS):
         assert not table.findall('.//w:keepNext', NS)
@@ -86,7 +86,7 @@ with zipfile.ZipFile(OUT) as z:
         st = styles.find(f"w:style[@w:styleId='{name}']", NS)
         assert st.find('w:rPr/w:sz', NS).get(w+'val') == '24'
         assert st.find('w:rPr/w:i', NS) is not None
-    assert len(re.findall(r'PHẦN [1-8]\.', text)) == 16  # headings and cached TOC
+    assert len(re.findall(r'PHẦN [1-9]\.', text)) == 18  # headings and cached TOC
     heading = styles.find("w:style[@w:styleId='Heading1']", NS)
     assert heading.find('.//w:keepNext', NS) is not None
     assert heading.find('.//w:pageBreakBefore', NS) is not None
@@ -99,10 +99,10 @@ content = (ROOT/'content.md').read_text()
 body = content.split('# PHẦN 1. GIỚI THIỆU',1)[1].split('# TÀI LIỆU THAM KHẢO',1)[0]
 body = re.sub(r'<!--.*?-->', '', body)
 words = len(body.split())
-assert 4400 <= words <= 4600, words
+assert 5400 <= words <= 6500, words
 assert content.count('<!-- PAGE -->') == 3
 assert '<!-- PAGE -->' not in content.split('# PHẦN 1. GIỚI THIỆU', 1)[1]
-assert len(re.findall(r'^Bảng \d+\.',content,re.M)) == 7
+assert len(re.findall(r'^Bảng \d+\.',content,re.M)) == 8
 assert len(re.findall(r'^!\[Hình \d+\.\d+\.',content,re.M)) == 4
 glossary = content.split('<!-- GLOSSARY -->', 1)[1].split('# PHẦN 1.', 1)[0]
 glossary_rows = [line for line in glossary.splitlines() if line.startswith('|')][2:]
@@ -121,6 +121,13 @@ assert content.count('Do đó') <= 2 and content.count('Điều này cho thấy'
 assert 'đang trong quá trình triển khai' in content and 'Kết quả sơ bộ' in content
 for ref in range(1,9):
     assert f'[{ref}]' in body
+assert 'BÁO CÁO BÀI TẬP LỚN GIỮA KỲ' in text
+for code, status in ((1, 'PASS'), (2, 'PASS'), (3, 'FAIL'), (4, 'FAIL')):
+    row = next(line for line in content.splitlines() if line.startswith(f'| OS-T{code} '))
+    assert status in row and 'đang cập nhật' in row
+assert all(f'OS-T{code}' in content for code in range(5, 9))
+assert '30/11/2026' in content
+assert hashlib.sha256((ROOT/'BaoCao_HDH_Nhom3Stars.docx').read_bytes()).hexdigest() == json.loads((ROOT/'c1_t19_sources.json').read_text())['original_docx_sha256']
 report = {
     'clean_submission_text': 'PASS', 'zip_crc': 'PASS', 'all_xml_and_relationships_parse': 'PASS',
     'part_page_breaks_figure_limits_table_pagination': 'PASS',
@@ -129,10 +136,11 @@ report = {
     'relationship_targets': 'PASS', 'reproducible_build': 'PASS',
     'a4_margins_styles_toc_cover_footer': 'PASS',
     'body_whitespace_words_including_tables': words,
-    'forced_front_matter_breaks': 3, 'target_word_pages': '≤20', 'report_tables': 7, 'cover_members_table': 1, 'glossary_rows': len(glossary_rows), 'figures': 4,
+    'forced_front_matter_breaks': 3, 'target_word_pages': '≤20', 'report_tables': 8, 'cover_members_table': 1, 'glossary_rows': len(glossary_rows), 'figures': 4,
     'rendered_page_count': None,
     'rendering_limit': 'Word pagination requires rendering; target is at most 20 pages, not a verified page count.',
+    'output_document': OUTPUT_NAME,
     'docx_sha256': hashlib.sha256(first).hexdigest()
 }
-(ROOT/'validation.json').write_text(json.dumps(report, ensure_ascii=False, indent=2)+'\n')
+(ROOT/'validation_giuaky.json').write_text(json.dumps(report, ensure_ascii=False, indent=2)+'\n')
 print(json.dumps(report, ensure_ascii=False, indent=2))
