@@ -61,7 +61,7 @@ with zipfile.ZipFile(OUT) as z:
         margins = sec.find('w:pgMar', NS)
         assert [margins.get(w+k) for k in ('top','bottom','left','right')] == ['1417','1134','1701','1134']
     assert len(document.findall('.//w:tbl', NS)) == 11  # 9 numbered, cover, glossary
-    assert len([n for n in z.namelist() if n.startswith('word/media/')]) == 10  # 9 report figures + logo
+    assert len([n for n in z.namelist() if n.startswith('word/media/')]) == 12  # 11 report figures + logo
     assert not document.findall('.//w:br[@w:type="page"]', NS)
     assert len(document.findall('.//w:pageBreakBefore', NS)) == 2
     assert len(styles.findall('.//w:pageBreakBefore', NS)) == 1
@@ -94,6 +94,17 @@ with zipfile.ZipFile(OUT) as z:
             assert description == ('Hình 4.1. Sơ đồ đấu nối bàn thử OS (hình vẽ breadboard; '
                                    'vị trí bo minh họa, kết nối theo bảng pinout). '
                                    'Hình bo mạch: Fritzing parts, CC-BY-SA 3.0.')
+        elif description.startswith(('Hình 4.2.', 'Hình 4.3.')):
+            bench = description.startswith('Hình 4.2.')
+            width_cm = 16 if bench else 7.5
+            source_image = (ROOT / ('figures/os_bench_photo_annotated.png' if bench
+                                    else 'figures/photos/camera_closeup.jpg')).read_bytes()
+            image_w, image_h = dimensions(source_image)
+            assert int(extent.get('cx')) == int(width_cm * 360000)
+            assert int(extent.get('cy')) == int(image_h * (width_cm * 360000 / image_w))
+            assert int(extent.get('cy')) <= 6000000  # Fits A4 body with caption.
+            assert any(z.read(name) == source_image for name in z.namelist()
+                       if name.startswith('word/media/')), 'Stale owner photo in DOCX'
         else:
             assert int(extent.get('cx')) <= 4320000
             assert int(extent.get('cy')) <= 2340000
@@ -124,12 +135,14 @@ words = len(body.split())
 wiring_credit = 'Hình bo mạch: Fritzing parts, CC-BY-SA 3.0.'
 assert body.count(wiring_credit) == 1
 budget_words = words - len(wiring_credit.split())
-assert 5400 <= budget_words <= 6500, budget_words
+# OS-PHOTO replaces placeholders with two owner-photo captions: the resulting
+# body needs 17 additional words beyond the previous 6500-word ceiling.
+assert 5400 <= budget_words <= 6517, budget_words
 assert content.count('<!-- PAGE -->') == 3
 assert '<!-- PAGE -->' not in content.split('# PHẦN 1. GIỚI THIỆU', 1)[1]
 assert [int(n) for n in re.findall(r'^Bảng (\d+)\.',content,re.M)] == list(range(1, 10))
 assert all(1 <= int(n) <= 9 for n in re.findall(r'Bảng (\d+)\b', content))
-assert len(re.findall(r'^!\[Hình \d+\.\d+\.',content,re.M)) == 5
+assert len(re.findall(r'^!\[Hình \d+\.\d+\.',content,re.M)) == 7
 glossary = content.split('<!-- GLOSSARY -->', 1)[1].split('# PHẦN 1.', 1)[0]
 glossary_rows = [line for line in glossary.splitlines() if line.startswith('|')][2:]
 assert len(glossary_rows) == 114  # Expanded camera/bench terminology
@@ -163,7 +176,7 @@ report = {
     'a4_margins_styles_toc_cover_footer': 'PASS',
     'body_whitespace_words_including_tables': words,
     'body_budget_words_excluding_mandatory_wiring_credit': budget_words,
-    'forced_front_matter_breaks': 3, 'target_word_pages': '≤20', 'report_tables': 9, 'cover_members_table': 1, 'glossary_rows': len(glossary_rows), 'figures': 9,
+    'forced_front_matter_breaks': 3, 'target_word_pages': '≤20', 'report_tables': 9, 'cover_members_table': 1, 'glossary_rows': len(glossary_rows), 'figures': 11,
     'rendered_page_count': None,
     'rendering_limit': 'Word pagination requires rendering; target is at most 20 pages, not a verified page count.',
     'output_document': OUTPUT_NAME,

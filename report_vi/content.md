@@ -257,11 +257,11 @@ Bảng 2. Pinout kết nối bàn thử OS.
 | MPU6050 SDA | I2C1, đã nối; firmware OS chưa dùng | PB7 / CN7 chân 21 |
 | MPU6050 VCC/GND | VCC/GND; chưa ghi vị trí chân header nguồn | VCC/GND |
 
-Hai vị trí dưới đây dành cho ảnh thực tế của bàn thử.
+Hình 4.2 và 4.3 ghi lại bàn thử thực tế và cận cảnh module camera.
 
-**Ảnh bàn thử: toàn cảnh** — [Chừa vị trí để chủ bench chèn ảnh toàn cảnh.]
+![Hình 4.2. Bàn thử thực tế: Raspberry Pi 5 (4 GB, vỏ có quạt), NUCLEO-F446RE, breadboard với LED trạng thái và MPU6050, Pi Camera v2 nối qua cáp ribbon tới CAM/DISP 0.](figures/os_bench_photo_annotated.png) {width=16cm}
 
-**Ảnh cận cảnh module camera** — [Chừa vị trí để chủ bench chèn ảnh cận camera và đầu ribbon.]
+![Hình 4.3. Cận cảnh Pi Camera Module v2 (IMX219) và cáp ribbon 15 chân phía camera.](figures/photos/camera_closeup.jpg) {width=7.5cm}
 
 # PHẦN 5. NGUỒN CAMERA VÀ PIPELINE ƯU TIÊN ĐỘ MỚI
 

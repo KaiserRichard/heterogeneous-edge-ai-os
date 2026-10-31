@@ -2,7 +2,7 @@
 """Build the Vietnamese report offline using only Python's standard library.
 
 Subset: #/##/### headings, paragraphs, - bullets, **bold**, *italic*, pipe
- tables, ![caption](relative-image), <!-- PAGE -->, <!-- COVER -->,
+ tables, ![caption](relative-image) with optional {width=7.5cm}, <!-- PAGE -->, <!-- COVER -->,
  <!-- ABSTRACT --> and <!-- TOC -->. Parts use the Heading 1 page-break property.
 """
 from pathlib import Path
@@ -113,15 +113,20 @@ def build():
             continue
         if line.startswith('<!--'):
             continue
-        m = re.fullmatch(r'!\[(.*?)\]\((.*?)\)', line)
+        m = re.fullmatch(r'!\[(.*?)\]\((.*?)\)(?:\s*\{width=(\d+(?:\.\d+)?)cm\})?', line)
         if m:
-            caption, path = m.groups()
+            caption, path, width_cm = m.groups()
             data = (ROOT / path).read_bytes()
             w, h = dimensions(data)
             logo = cover
             scale = 1080000 / w if logo else min(4320000 / w, 2340000 / h)  # Logo 3 cm; figures 12 × 6.5 cm
             if path == 'figures/os_bench_wiring.png':
                 scale = 5759952 / w  # Breadboard at full A4 text width (about 16 cm), preserving aspect.
+            if width_cm is not None:
+                width = float(width_cm)
+                if not 0 < width <= 16:
+                    raise ValueError('Figure width must be between 0 and 16 cm')
+                scale = width * 360000 / w
             cx, cy = int(w * scale), int(h * scale)
             index = len(media) + 1
             name = f'image{index}{Path(path).suffix.lower()}'
