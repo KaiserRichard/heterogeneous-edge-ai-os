@@ -1,0 +1,1 @@
+seq,version,t_rx_pi_ns,mcu_us,state,missed_heartbeats,rx_crc_errors,diagnostics_present,last_capture_us,capture_count,rx_dropped,uart_errors,queue_dropped,capture_lost

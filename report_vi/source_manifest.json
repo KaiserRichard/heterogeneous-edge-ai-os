@@ -1,0 +1,74 @@
+[
+  {
+    "path": "PROJECT.md",
+    "sha256": "8ef5fa8972edf5e2a4afd976781b8710f904a638dcfee95267feeff5f8a0bf6f"
+  },
+  {
+    "path": "README.md",
+    "sha256": "9b06451f60620c25dc2d221c71c1249ecc082b31fccbe8a2d47dc9b890759073"
+  },
+  {
+    "path": "slides/main.tex",
+    "sha256": "2777ed34c8216f8b3bfd16915326c85c26db0872d93e0d2f772e9977c9c97acb"
+  },
+  {
+    "path": "slides/images/MAPPING.md",
+    "sha256": "a18524854cde64916b099cbe35ba0768beab76098187d7cd828e5ffafb7fd384"
+  },
+  {
+    "path": "docs/STAGE_REPORT.md",
+    "sha256": "eed0cb189dd57479bbddd65f3d06a98779789ed58c2ca8deeea8687620d5586f"
+  },
+  {
+    "path": "docs/SYSTEM_GUIDE.md",
+    "sha256": "d87ce98ffd897a253a14955a2a1aa197f2ed248b535af8d243d61309f45da56a"
+  },
+  {
+    "path": "docs/SYSTEM_OVERVIEW.md",
+    "sha256": "20f8ec232117542efdf79e3be848de62a4a95408bcc1b624b47a87b0d1cc8988"
+  },
+  {
+    "path": "docs/ROADMAP.md",
+    "sha256": "f47bcfedbcc26ee60b22bbadc7bcfe368b951b549a5027fb389a9f72a3d48a06"
+  },
+  {
+    "path": "docs/ROADMAP_TO_WBROBOT_AND_ARTICLE.md",
+    "sha256": "83c9e31834241040cba64df4c4610feb93b3b6224d2a80781b9dcf5eb3777810"
+  },
+  {
+    "path": "results/README.md",
+    "sha256": "d07529c52a5a48be1ad1553a1c0431ce772f59e42cccc8c89421bd9c80c11755"
+  },
+  {
+    "path": "results/2026-10-11_cyclictest/SUMMARY.md",
+    "sha256": "e42b17423e4b683b7e699d1227f20b8b070ce67f1e964b4ae3bf5ba284bca31d"
+  },
+  {
+    "path": "results/2026-10-11_inference_baseline/SUMMARY.md",
+    "sha256": "e520b5a91d1530ef5008c09d626aebe0062f7699c91b0102e1e8a16248bf5472"
+  },
+  {
+    "path": "results/2026-10-11_e1_e2_e3_pty/20261008T103412Z_e_onnx/summary/README.md",
+    "sha256": "56f7bbe8ee881b2e423068cabfe93d3b30ea4818834e1ba0c20423b1aff51e15"
+  },
+  {
+    "path": "/Users/quockaiser/Desktop/OS/OS-project/heterogeneous-edge-ai-os/slides_course/main.tex",
+    "sha256": "d2a434b83a2f26b2a5a1f6f2b1e840c856517faad6b4bfa44954d16057d1d990"
+  },
+  {
+    "path": "/Users/quockaiser/Desktop/OS/OS-project/heterogeneous-edge-ai-os/slides_course/images/MAPPING.md",
+    "sha256": "138119ad678a287c3a81067943add8a80acc8982fa12746d54df20b4fb1012e4"
+  },
+  {
+    "path": "report_vi/figures/V14.jpg",
+    "sha256": "09a16f679b3c5bba7965bf0e669ff5c19cfb47fee43b6c885fa3b5cd98b1d00d"
+  },
+  {
+    "path": "report_vi/figures/V15.jpg",
+    "sha256": "2f66da1941cac38df227f4ee9e14967b056ad71e0745ad349f66870e40c467f7"
+  },
+  {
+    "path": "report_vi/figures/V20.jpg",
+    "sha256": "727c83d669b561bb0a1714852f870ec6cdc2399459483a4aea1b8faf5a8efa2d"
+  }
+]

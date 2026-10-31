@@ -1,0 +1,13 @@
+stress-ng: info:  [48838] defaulting to a 1 day, 0 secs run per stressor
+stress-ng: info:  [48838] dispatching hogs: 1 memrate
+stress-ng: info:  [48838] note: /proc/sys/kernel/sched_autogroup_enabled is 1 and this can impact scheduling throughput for processes not attached to a tty. Setting this to 0 may improve performance metrics
+stress-ng: info:  [48840] memrate: using buffer size of 65536K, cache flushing disabled
+stress-ng: info:  [48840] memrate: cache flushing can be enabled with --memrate-flush option
+stress-ng: metrc: [48838] stressor       bogo ops real time  usr time  sys time   bogo ops/s     bogo ops/s
+stress-ng: metrc: [48838]                           (secs)    (secs)    (secs)   (real time) (usr+sys time)
+stress-ng: metrc: [48838] memrate             125     70.40     69.26      0.09         1.78           1.80
+stress-ng: info:  [48838] skipped: 0
+stress-ng: info:  [48838] passed: 0
+stress-ng: info:  [48838] failed: 0
+stress-ng: info:  [48838] metrics untrustworthy: 0
+stress-ng: info:  [48838] successful run completed in 1 min, 10.40 secs

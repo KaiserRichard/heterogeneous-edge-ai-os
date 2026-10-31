@@ -1,0 +1,5 @@
+Run command: /home/richard/osbuild/e3r/tools/experiments/e4_campaign.sh --single F4 --rearm-command /home/richard/osbuild/rearm_via_mac.sh /home/richard/osbuild/results/20261012T105039Z_f4b/r2
+Wall-time estimate: >= 0.1 min measured windows; allow about 2.2 min with startup/rearm/timeouts plus initial build. F5 uses acknowledged SIGUSR1 inference suppression.
+make: Entering directory '/home/richard/osbuild/e3r/linux'
+make: Nothing to be done for 'all'.
+make: Leaving directory '/home/richard/osbuild/e3r/linux'

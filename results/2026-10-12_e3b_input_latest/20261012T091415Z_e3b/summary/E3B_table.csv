@@ -1,0 +1,5 @@
+Input policy,Bridge policy,Time-average AoI,Peak AoI,Reception AoI P50,Reception AoI P99,Skipped count,Deadline misses,Delivered count
+fifo,latest,97.63 ms (initialized),188.5 ms,47.08 ms,60.56 ms,0,0/0 of 601,601
+latest,latest,98.07 ms (initialized),189 ms,47.53 ms,61.75 ms,0,0/0 of 602,602
+fifo,latest,unavailable ms (initialized),unavailable ms,unavailable ms,unavailable ms,unavailable,unavailable/unavailable of unavailable,unavailable
+latest,latest,unavailable ms (initialized),unavailable ms,unavailable ms,unavailable ms,unavailable,unavailable/unavailable of unavailable,unavailable

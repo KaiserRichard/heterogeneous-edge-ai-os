@@ -1,0 +1,26 @@
+run,fault,rep,evidence,validity,reasons,false_transitions,clock_rms_max_us,detection_status,failsafe_status,detection_reason,failsafe_reason,local_reference,recovery_status,detection_us,detection_mcu_us,failsafe_us,failsafe_mcu_us,recovery_us
+F1-r01,F1,1,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",VALID,,0,61.435824,observed,observed,9,3,last_hb_mcu_us,observed,83341.81930908203,98128,85341.64379638672,100128,343343.888
+F1-r02,F1,2,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",VALID,,0,66.823767,observed,observed,9,3,last_hb_mcu_us,observed,83356.77170019531,98574,85356.59714453125,100574,442615.026
+F1-r03,F1,3,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",VALID,,0,77.035203,observed,observed,9,3,last_hb_mcu_us,observed,83560.55877783203,98641,85560.38353271484,100641,542968.959
+F1-r04,F1,4,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",VALID,,0,57.585872,observed,observed,9,3,last_hb_mcu_us,observed,83255.83534277344,98165,85255.66061865234,100165,692927.374
+F1-r05,F1,5,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",VALID,,0,57.25907,observed,observed,9,3,last_hb_mcu_us,observed,83208.79882470703,97456,86208.53753613282,100456,442986.752
+F2-r01,F2,1,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",VALID,,0,77.608641,observed,observed,9,3,last_hb_mcu_us,observed,83714.85948681641,98596,85714.68433691407,100596,9799935.236
+F2-r02,F2,2,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",VALID,,0,67.064401,observed,observed,9,3,last_hb_mcu_us,observed,83112.82977294922,97508,86112.56775976563,100508,9649016.374
+F2-r03,F2,3,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",VALID,,0,75.310521,observed,observed,9,3,last_hb_mcu_us,observed,83150.937125,98465,85150.762546875,100465,9349275.678
+F2-r04,F2,4,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",VALID,,0,76.283398,observed,observed,9,3,last_hb_mcu_us,observed,83226.37432421875,98581,85226.19775195312,100581,9648559.0
+F2-r05,F2,5,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",VALID,,0,59.023007,observed,observed,9,3,last_hb_mcu_us,observed,83014.1063359375,97577,86013.84552246094,100577,9698756.267
+F3-r01,F3,1,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",VALID,,0,62.773521,observed,observed,9,10,last_inf_mcu_us,observed,83767.070921875,175766,383740.8078017578,475766,9698769.664
+F3-r02,F3,2,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",VALID,,0,62.460258,observed,observed,9,10,last_inf_mcu_us,observed,85914.09720117187,175815,385887.8389819336,475815,9648959.172
+F3-r03,F3,3,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",VALID,,0,55.123344,observed,observed,9,10,last_inf_mcu_us,observed,83405.58505908203,175371,383379.35893408203,475371,9799633.698
+F3-r04,F3,4,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",VALID,,0,71.151119,observed,observed,9,10,last_inf_mcu_us,observed,83154.47557910156,175240,383128.1758837891,475240,9648410.65
+F3-r05,F3,5,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",VALID,,0,73.0965,observed,observed,9,10,last_inf_mcu_us,observed,83646.3853203125,175754,383620.02671875,475754,9247724.269
+F4-r01,F4,1,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",INVALID,live throttle bits; clock-sync residual RMS exceeds bound,0,226.58543,observed,observed,3,3,last_hb_mcu_us,observed,86680.95466113281,100045,86680.95466113281,100045,9546148.018
+F4-r02,F4,2,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",VALID,,0,67.084752,observed,observed,3,3,last_hb_mcu_us,observed,87871.299375,100931,87871.299375,100931,9546824.674
+F4-r03,F4,3,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",INVALID,clock-sync residual RMS exceeds bound,0,445.817259,observed,observed,3,3,last_hb_mcu_us,observed,86081.1033671875,100558,86081.1033671875,100558,9145977.533
+F4-r04,F4,4,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",VALID,,0,71.572154,observed,observed,3,3,last_hb_mcu_us,observed,87277.34386376954,100639,87277.34386376954,100639,9547165.8
+F4-r05,F4,5,"MEASURED (MCU timestamps + Pi timestamps, no logic analyzer)",INVALID,clock-sync residual RMS exceeds bound,0,346.039565,observed,observed,3,3,last_hb_mcu_us,observed,89384.51922753906,100931,89384.51922753906,100931,9546586.993
+F5-r01,F5,1,NOT DONE,NOT_DONE,bridge has no documented runtime inference-only suppression control; HEARTBEAT must remain active,,,not_observed,not_observed,,,last_inf_mcu_us,not_observed,,,,,
+F5-r02,F5,2,NOT DONE,NOT_DONE,bridge has no documented runtime inference-only suppression control; HEARTBEAT must remain active,,,not_observed,not_observed,,,last_inf_mcu_us,not_observed,,,,,
+F5-r03,F5,3,NOT DONE,NOT_DONE,bridge has no documented runtime inference-only suppression control; HEARTBEAT must remain active,,,not_observed,not_observed,,,last_inf_mcu_us,not_observed,,,,,
+F5-r04,F5,4,NOT DONE,NOT_DONE,bridge has no documented runtime inference-only suppression control; HEARTBEAT must remain active,,,not_observed,not_observed,,,last_inf_mcu_us,not_observed,,,,,
+F5-r05,F5,5,NOT DONE,NOT_DONE,bridge has no documented runtime inference-only suppression control; HEARTBEAT must remain active,,,not_observed,not_observed,,,last_inf_mcu_us,not_observed,,,,,

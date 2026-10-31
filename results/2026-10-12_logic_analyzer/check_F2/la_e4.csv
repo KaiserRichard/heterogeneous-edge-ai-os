@@ -1,0 +1,2 @@
+capture,t_marker_rise_s,t_last_uart_activity_s,t_last_uart_byte_s,t_hold_s,t_safe_s,marker_safe_us,uart_hold_us,uart_safe_us,status,evidence,comparison,mcu_hold_us,delta_hold_us,mcu_safe_us,delta_safe_us,marker_software_bracket_us
+F2-r01,0.6000000000000001,0.5863638750000001,0.5863661006944444,,0.687034125,87034.12499999996,,100668.02430555566,observed,UNVERIFIED ON HARDWARE,MCU last accepted heartbeat vs analyzer last physical UART byte; references differ,,,100601,67.02430555566389,31.371

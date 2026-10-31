@@ -1,0 +1,1 @@
+/home/richard/osbuild/tn/tools/experiments/e4_campaign.sh /home/richard/osbuild/tn/results/la-20261012-230431-14322-3 --single F2 --marker-gpio 27 --serial /dev/ttyAMA0 --rearm-command true --wait-go /home/richard/osbuild/tn/results/la-20261012-230431-14322-3.go

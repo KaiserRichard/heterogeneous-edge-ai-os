@@ -1,0 +1,14 @@
+{
+  "ticket": "C1-T19",
+  "as_of": "30/10/2026",
+  "original_docx_sha256": "1fa2c15c3a5ca0d57786aea79205969abe66b345e01f5b051e888b92fe0b54a3",
+  "camera_chapter": "src_update/feat_report-camera__CAMERA_CHAPTER_VI.md",
+  "scenario_sources": [
+    "src_update/feat_report-camera__TEST_SCENARIOS_VI.md",
+    "src_update/feat_inf1-camera-bench__TEST_SCENARIOS_VI.md"
+  ],
+  "bench_source": "src_update/feat_inf1-camera-bench__RUNBOOK_BENCH.md",
+  "status_source": "User midterm update: IMX219 sensor timestamps working; T1 PASS, T2 PASS, T3 FAIL, T4 bridge FAIL.",
+  "measurement_evidence": "Provided snapshots still say camera tests pending; no new measured camera numbers located. Missing metrics are marked đang cập nhật. Historical values remain separately labelled.",
+  "scope": "OS-T8 source describes CAN extension; current user rules forbid CAN, so report schedules scope review without implementing or promising CAN."
+}

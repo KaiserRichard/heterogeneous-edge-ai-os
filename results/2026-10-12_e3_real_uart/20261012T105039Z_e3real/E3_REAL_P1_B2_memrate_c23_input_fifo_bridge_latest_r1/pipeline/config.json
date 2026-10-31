@@ -1,0 +1,16 @@
+{
+  "evidence": "real UART: UNVERIFIED ON HARDWARE",
+  "cooler": "unknown",
+  "duration_seconds": 60,
+  "drain_seconds": 1,
+  "policy": "latest",
+  "input_policy": "fifo",
+  "period_ms": 100,
+  "heartbeat_ms": 20,
+  "work_us": 20000,
+  "baud": 921600,
+  "serial": "/dev/ttyAMA0",
+  "stage": "onnx",
+  "model": "/home/richard/osbuild/wheels/mobilenetv2-12.onnx",
+  "threads": 1
+}

@@ -1,0 +1,10 @@
+make: Entering directory '/home/richard/osbuild/tn/linux'
+make: Nothing to be done for 'all'.
+make: Leaving directory '/home/richard/osbuild/tn/linux'
+Traceback (most recent call last):
+  File "/home/richard/osbuild/tn/tools/experiments/e3_startup.py", line 32, in <module>
+    wait_fresh(Path(sys.argv[1]), float(sys.argv[2]), tuple(map(int, sys.argv[3:])))
+  File "/home/richard/osbuild/tn/tools/experiments/e3_startup.py", line 28, in wait_fresh
+    raise TimeoutError('no FRESH STATE_EVENT before startup deadline')
+TimeoutError: no FRESH STATE_EVENT before startup deadline
+Run directory: /home/richard/osbuild/results/20261012T160628Z_e3real2/E3_REAL_P1_B2_memrate_c23_input_fifo_bridge_latest_r3/pipeline

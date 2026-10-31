@@ -1,0 +1,23 @@
+UART Pi TX             pi.connector7    -> nuc.connector1163 #fb8c00
+UART Pi RX             pi.connector9    -> nuc.connector1151 #fdd835
+Pi GND                 pi.connector5    -> nuc.connector1157 #212121
+USB                    pi.USB           -> nuc.USB          #9e9e9e
+IMU SCL                nuc.connector1153 -> imu.SCL          #00acc1
+IMU SDA                nuc.connector3329 -> imu.SDA          #00796b
+LED D9 blue            nuc.connector1152 -> bb.a29           #283593
+LED D6 red             nuc.connector1167 -> bb.a27           #795548
+LED D5 yellow          nuc.connector1166 -> bb.a25           #ffb300
+LED D4 green           nuc.connector1165 -> bb.a23           #43a047
+K D4                   bb.j24           -> bb.B-24          #212121
+K D5                   bb.j26           -> bb.B-26          #212121
+K D6                   bb.j28           -> bb.B-28          #212121
+K D9                   bb.j30           -> bb.B-30          #212121
+3V3 rail               nuc.connector1186 -> bb.T+19          #e53935
+GND rail               nuc.connector1188 -> bb.T-21          #212121
+GND rail link          bb.T-1           -> bb.B-1           #212121
+3V3 rail link          bb.T+30          -> bb.B+30          #e53935
+IMU VCC                bb.B+13          -> imu.VCC          #e53935
+IMU GND                bb.B-12          -> imu.GND          #212121
+Ribbon camera          camera.CSI       -> pi.CSI           #d7d7d7
+crossings: 13 (allowed, keep low)
+check: PASS; wrote report_vi/figures/os_bench_wiring.png

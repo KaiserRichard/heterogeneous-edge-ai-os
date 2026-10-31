@@ -1,0 +1,37 @@
+{
+  "fps": 10.0,
+  "nominal_period_ns": 100000000.0,
+  "rows": 3000,
+  "captures": 3000,
+  "interval_mean_ns": 99956931.31043682,
+  "jitter_p99_ns": 359179.9999999998,
+  "sequence_gaps": 0,
+  "missing_sequences": 0,
+  "recorded_capture_drops": 0,
+  "capture_drops": 0,
+  "capture_drop_fraction": 0.0,
+  "ipc_drops": 0,
+  "statuses": {
+    "sent": 3000
+  },
+  "recv_sensor_offset_ns": {
+    "p50": 10367359.0,
+    "p99": 10540402.31,
+    "max": 11105276,
+    "min": 10112511
+  },
+  "timing_checks": {
+    "interval_within_one_percent": true,
+    "jitter_below_2ms": true,
+    "drops_below_point_one_percent": true,
+    "offset_positive_and_bounded": true
+  },
+  "sensor_to_raw_offset_ns": {
+    "p50": -46504231.5,
+    "p99": 22677812.11,
+    "min": -128664352,
+    "max": 23118129
+  },
+  "clock_stability": "inspect per-frame t_clock_offset_ns stability; no suspend and negligible slew assumed",
+  "hardware_validity": "not established: requires Pi metadata and no-suspend clock validation"
+}

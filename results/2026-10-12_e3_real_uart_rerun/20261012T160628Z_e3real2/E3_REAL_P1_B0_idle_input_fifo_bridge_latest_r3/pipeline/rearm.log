@@ -1,0 +1,1 @@
+sudo -n -u richard -- bash /home/richard/osbuild/rearm_via_mac.sh

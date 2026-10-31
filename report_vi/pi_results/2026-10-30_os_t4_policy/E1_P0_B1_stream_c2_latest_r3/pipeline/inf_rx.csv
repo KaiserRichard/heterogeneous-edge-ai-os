@@ -1,0 +1,1 @@
+seq,frame_id,t_input_ns,mcu_rx_us,t_mcu_pi_est_ns,age_mcu_us,state,lost_count,aoi_mapped_us,t_rx_pi_ns

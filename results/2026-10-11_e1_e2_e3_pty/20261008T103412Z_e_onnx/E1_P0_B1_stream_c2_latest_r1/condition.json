@@ -1,0 +1,8 @@
+{
+  "experiment": "E1",
+  "profile": "P0",
+  "stressor": "B1_stream_c2",
+  "policy": "latest",
+  "repetition": 1,
+  "exact_load": "taskset -c 2 stress-ng --stream 1 --stream-l3-size 2M --stream-index 0 --metrics-brief"
+}

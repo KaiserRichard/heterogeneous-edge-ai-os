@@ -15,7 +15,7 @@ All AI coding agents working on this repository must strictly adhere to the foll
   - No ROS 2 or micro-ROS.
   - No Docker / Podman / containers.
   - No Yocto or Buildroot.
-  - No PREEMPT_RT or kernel patching.
+  - No kernel patching or custom kernel builds. The packaged Real-time Ubuntu 24.04 kernel is allowed only as test profile P3 (decision 2026-10-06).
   - No hypervisors or virtualization layers.
   - No SPI, CAN, or Ethernet (the bridge is strictly UART).
   - No TinyML or neural inference on the STM32.

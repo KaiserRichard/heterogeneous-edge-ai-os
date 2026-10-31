@@ -1,0 +1,1 @@
+python3 /home/richard/course-stage/os/linux/inference/infer_bench.py --model /home/richard/osbuild/wheels/mobilenetv2-12.onnx --warmup 1000 --runs 5000 --threads 1 --image-source shm:hea_cam --output /home/richard/course-stage/os/results/2026-10-31_os_t2_infer_performance/threads1/bench 

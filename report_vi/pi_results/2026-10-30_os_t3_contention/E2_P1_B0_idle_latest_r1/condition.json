@@ -1,0 +1,9 @@
+{
+  "experiment": "E2",
+  "profile": "P1",
+  "stressor": "B0_idle",
+  "policy": "latest",
+  "input_policy": "fifo",
+  "repetition": 1,
+  "exact_load": "idle"
+}
